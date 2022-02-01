@@ -9,8 +9,8 @@ namespace koalabox {
     typedef std::string String;
     typedef std::wstring WideString;
 
-    template <typename T>
-    using Vector = std::vector<T>;
+    template<typename T>
+    using Vector [[maybe_unused]] = std::vector<T>;
 
     [[maybe_unused]]
     extern String project_name;
