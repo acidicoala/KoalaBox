@@ -8,7 +8,7 @@ logger::Logger logger::_instance = spdlog::null_logger_mt("null"); // NOLINT(cer
 
 class EmojiFormatterFlag;
 
-[[maybe_unused]] void logger::init(Path& path) {
+[[maybe_unused]] void logger::init(Path path) { // NOLINT(performance-unnecessary-value-param)
     _instance = spdlog::basic_logger_mt("default", path.string(), true);
 
     auto formatter = std::make_unique<spdlog::pattern_formatter>();

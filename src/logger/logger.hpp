@@ -15,7 +15,7 @@ namespace koalabox::logger {
     extern Logger _instance;
 
     [[maybe_unused]]
-    void init(Path& path);
+    void init(Path path);
 
     template<typename... Args>
     [[maybe_unused]]
