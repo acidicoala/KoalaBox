@@ -8,7 +8,7 @@
 namespace koalabox::util {
 
     [[maybe_unused]]
-    void error_box(String& title, String& message);
+    void error_box(String title, String message);
 
     [[maybe_unused]]
     Path get_module_dir(HMODULE& handle);

@@ -3,10 +3,12 @@
 #include "win_util/win_util.hpp"
 #include <Windows.h>
 
+#include <utility>
+
 using namespace koalabox;
 
 [[maybe_unused]]
-void util::error_box(String& title, String& message) {
+void util::error_box(String title, String message) { // NOLINT(performance-unnecessary-value-param)
     ::MessageBoxW(
         nullptr,
         util::to_wstring(message).c_str(),
@@ -50,7 +52,7 @@ void util::panic(String title, String message) {
         );
     }
 
-    error_box(title, message);
+    error_box(std::move(title), message);
 
     logger::critical("{}", message);
 
