@@ -4,21 +4,15 @@ set(CMAKE_CXX_STANDARD 20)
 
 set(SRC_DIR ${CMAKE_SOURCE_DIR}/src)
 
-set(BUILD_ARCH $ENV{BUILD_ARCH}) # 32 | 64
-
 # Configure vcpkg triplet
 
 set(CMAKE_TOOLCHAIN_FILE ${CMAKE_SOURCE_DIR}/vcpkg/scripts/buildsystems/vcpkg.cmake)
-
-if (${BUILD_ARCH} STREQUAL "32")
+if (${CMAKE_GENERATOR_PLATFORM} STREQUAL "Win32")
     set(VCPKG_TARGET_TRIPLET x86-windows-static CACHE STRING "VCPKG Target Triplet to use")
-elseif (${BUILD_ARCH} STREQUAL "64")
+elseif (${CMAKE_GENERATOR_PLATFORM} STREQUAL "x64")
     set(VCPKG_TARGET_TRIPLET x64-windows-static CACHE STRING "VCPKG Target Triplet to use")
 else ()
-    message(
-            FATAL_ERROR
-            "Unexpected argument for the BUILD_ARCH variable. Expected 32 or 64. Got: '${BUILD_ARCH}'"
-    )
+    message(FATAL_ERROR "Unexpected argument for the platform generator")
 endif ()
 
 # Configure project

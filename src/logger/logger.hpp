@@ -10,7 +10,9 @@ using namespace fmt::literals; // "{}"_format() helper
 
 namespace koalabox::logger {
 
-    extern std::shared_ptr<spdlog::logger> _instance;
+    typedef std::shared_ptr<spdlog::logger> Logger;
+
+    extern Logger _instance;
 
     [[maybe_unused]]
     void init(Path& path);

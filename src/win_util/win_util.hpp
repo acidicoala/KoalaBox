@@ -2,7 +2,7 @@
 
 #include "koalabox.hpp"
 
-#include <minwindef.h>
+#include <Windows.h>
 
 namespace koalabox::win_util {
 

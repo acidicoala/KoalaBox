@@ -4,7 +4,7 @@
 
 using namespace koalabox;
 
-auto logger::_instance = spdlog::null_logger_mt("null"); // NOLINT(cert-err58-cpp)
+logger::Logger logger::_instance = spdlog::null_logger_mt("null"); // NOLINT(cert-err58-cpp)
 
 class EmojiFormatterFlag;
 
@@ -26,32 +26,32 @@ public:
         const std::tm&,
         spdlog::memory_buf_t& dest
     ) override {
-        std::string some_txt;
+        String emoji;
         switch (log_msg.level) {
             case spdlog::level::critical:
-                some_txt = "💥";
+                emoji = "💥";
                 break;
             case spdlog::level::err:
-                some_txt = "❌";
+                emoji = "❌";
                 break;
             case spdlog::level::warn:
-                some_txt = "⚠";
+                emoji = "⚠";
                 break;
             case spdlog::level::info:
-                some_txt = "ℹ";
+                emoji = "ℹ";
                 break;
             case spdlog::level::debug:
-                some_txt = "⬛";
+                emoji = "⬛";
                 break;
             case spdlog::level::trace:
-                some_txt = "🔍";
+                emoji = "🔍";
                 break;
             default:
-                some_txt = " ";
+                emoji = " ";
                 break;
         }
 
-        dest.append(some_txt.data(), some_txt.data() + some_txt.size());
+        dest.append(emoji.data(), emoji.data() + emoji.size());
     }
 
     [[nodiscard]]

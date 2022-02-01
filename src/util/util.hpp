@@ -3,10 +3,7 @@
 #include "koalabox.hpp"
 
 #include <fmt/core.h>
-
-/**
- * Functions without arguments memoize the return value
- */
+#include <Windows.h>
 
 namespace koalabox::util {
 
@@ -14,7 +11,7 @@ namespace koalabox::util {
     void error_box(String& title, String& message);
 
     [[maybe_unused]]
-    Path get_working_dir();
+    Path get_module_dir(HMODULE& handle);
 
     [[maybe_unused]]
     bool is_64_bit();

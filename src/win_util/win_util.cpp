@@ -1,7 +1,6 @@
 #include "win_util.hpp"
 #include "logger/logger.hpp"
 #include "util/util.hpp"
-#include <Windows.h>
 
 using namespace koalabox;
 
