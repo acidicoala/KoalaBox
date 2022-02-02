@@ -5,7 +5,7 @@
 using namespace koalabox;
 
 [[maybe_unused]]
-String win_util::format_message(DWORD message_id) {
+String win_util::format_message(const DWORD message_id) {
     wchar_t buffer[1024];
 
     ::FormatMessageW(
@@ -22,7 +22,7 @@ String win_util::format_message(DWORD message_id) {
 }
 
 [[maybe_unused]]
-HMODULE win_util::get_module_handle(String& module_name) {
+HMODULE win_util::get_module_handle(const String& module_name) {
     return win_util::get_module_handle(module_name.c_str());
 }
 
@@ -41,7 +41,7 @@ HMODULE win_util::get_module_handle(LPCSTR module_name) {
 }
 
 [[maybe_unused]]
-String win_util::get_module_file_name(HMODULE handle) {
+String win_util::get_module_file_name(const HMODULE handle) {
     constexpr auto buffer_size = 1024;
     WCHAR buffer[buffer_size];
     auto length = ::GetModuleFileNameW(handle, buffer, buffer_size);
@@ -57,7 +57,7 @@ String win_util::get_module_file_name(HMODULE handle) {
 }
 
 [[maybe_unused]]
-FARPROC win_util::get_proc_address(HMODULE handle, LPCSTR procedure_name) {
+FARPROC win_util::get_proc_address(const HMODULE handle, LPCSTR procedure_name) {
     auto address = ::GetProcAddress(handle, procedure_name);
 
     if (address == nullptr) {
@@ -88,7 +88,7 @@ Path win_util::get_system_directory() {
 }
 
 [[maybe_unused]]
-bool win_util::free_library(HMODULE handle) {
+bool win_util::free_library(const HMODULE handle) {
     auto successful = ::FreeLibrary(handle);
 
     if (not successful) {
@@ -102,7 +102,7 @@ bool win_util::free_library(HMODULE handle) {
 }
 
 [[maybe_unused]]
-HMODULE win_util::load_library(Path& module_path) {
+HMODULE win_util::load_library(const Path& module_path) {
     auto handle = ::LoadLibraryW(module_path.wstring().c_str());
 
     if (handle == nullptr) {

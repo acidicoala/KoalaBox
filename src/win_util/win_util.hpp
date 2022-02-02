@@ -16,7 +16,7 @@ namespace koalabox::win_util {
     HMODULE get_module_handle(const char* module_name);
 
     [[maybe_unused]]
-    HMODULE get_module_handle(String& module_name);
+    HMODULE get_module_handle(const String& module_name);
 
     [[maybe_unused]]
     FARPROC get_proc_address(HMODULE handle, LPCSTR procedure_name);
@@ -28,6 +28,6 @@ namespace koalabox::win_util {
     bool free_library(HMODULE handle);
 
     [[maybe_unused]]
-    HMODULE load_library(Path& module_path);
+    HMODULE load_library(const Path& module_path);
 
 }
