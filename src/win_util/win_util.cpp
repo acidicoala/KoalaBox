@@ -57,6 +57,27 @@ String win_util::get_module_file_name(const HMODULE handle) {
 }
 
 [[maybe_unused]]
+MODULEINFO win_util::get_module_info(const HMODULE module) {
+    MODULEINFO module_info = { nullptr };
+
+    auto result = GetModuleInformation(
+        GetCurrentProcess(),
+        module,
+        &module_info,
+        sizeof(module_info)
+    );
+
+    if (result == 0) {
+        util::panic(__func__,
+            "Failed to get module info of the given module handle: {}",
+            fmt::ptr(module)
+        );
+    }
+
+    return module_info;
+}
+
+[[maybe_unused]]
 FARPROC win_util::get_proc_address(const HMODULE handle, LPCSTR procedure_name) {
     auto address = ::GetProcAddress(handle, procedure_name);
 

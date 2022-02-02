@@ -3,6 +3,7 @@
 #include "koalabox.hpp"
 
 #include <Windows.h>
+#include <Psapi.h>
 
 namespace koalabox::win_util {
 
@@ -11,6 +12,9 @@ namespace koalabox::win_util {
 
     [[maybe_unused]]
     String get_module_file_name(HMODULE handle);
+
+    [[maybe_unused]]
+    MODULEINFO get_module_info(HMODULE module);
 
     [[maybe_unused]]
     HMODULE get_module_handle(const char* module_name);
@@ -29,5 +33,4 @@ namespace koalabox::win_util {
 
     [[maybe_unused]]
     HMODULE load_library(const Path& module_path);
-
 }
