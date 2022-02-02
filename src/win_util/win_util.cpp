@@ -22,18 +22,30 @@ String win_util::format_message(const DWORD message_id) {
 }
 
 [[maybe_unused]]
-HMODULE win_util::get_module_handle(const String& module_name) {
-    return win_util::get_module_handle(module_name.c_str());
+HMODULE win_util::get_current_process_handle() {
+    auto handle = ::GetModuleHandleW(nullptr);
+
+    if (handle == nullptr) {
+        util::panic(__func__, "Failed to get a handle of the current process");
+    }
+
+    return handle;
 }
 
 [[maybe_unused]]
-HMODULE win_util::get_module_handle(LPCSTR module_name) {
-    auto handle = ::GetModuleHandleA(module_name);
+HMODULE win_util::get_module_handle(const String& module_name) {
+    auto name = util::to_wstring(module_name);
+    return win_util::get_module_handle(name.c_str());
+}
+
+[[maybe_unused]]
+HMODULE win_util::get_module_handle(LPCWSTR module_name) {
+    auto handle = ::GetModuleHandleW(module_name);
 
     if (handle == nullptr) {
         util::panic(__func__,
             "Failed to get a handle of the '{}' module",
-            module_name
+            util::to_string(module_name)
         );
     }
 

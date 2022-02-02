@@ -11,13 +11,16 @@ namespace koalabox::win_util {
     String format_message(DWORD message_id);
 
     [[maybe_unused]]
+    HMODULE get_current_process_handle();
+
+    [[maybe_unused]]
     String get_module_file_name(HMODULE handle);
 
     [[maybe_unused]]
     MODULEINFO get_module_info(HMODULE module);
 
     [[maybe_unused]]
-    HMODULE get_module_handle(const char* module_name);
+    HMODULE get_module_handle(LPCWSTR module_name);
 
     [[maybe_unused]]
     HMODULE get_module_handle(const String& module_name);
