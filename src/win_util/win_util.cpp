@@ -71,6 +71,23 @@ FARPROC win_util::get_proc_address(HMODULE handle, LPCSTR procedure_name) {
 }
 
 [[maybe_unused]]
+Path win_util::get_system_directory() {
+    WCHAR path[MAX_PATH];
+    auto result = GetSystemDirectoryW(path, MAX_PATH);
+
+    if (result > MAX_PATH) {
+        util::panic(__func__,
+            "GetSystemDirectoryW path length ({}) is greater than MAX_PATH ({})",
+            result, MAX_PATH
+        );
+    } else if (result == 0) {
+        util::panic(__func__, "Failed to get the path of the system directory");
+    }
+
+    return std::filesystem::absolute(path);
+}
+
+[[maybe_unused]]
 bool win_util::free_library(HMODULE handle) {
     auto successful = ::FreeLibrary(handle);
 

@@ -22,6 +22,9 @@ namespace koalabox::win_util {
     FARPROC get_proc_address(HMODULE handle, LPCSTR procedure_name);
 
     [[maybe_unused]]
+    Path get_system_directory();
+
+    [[maybe_unused]]
     bool free_library(HMODULE handle);
 
     [[maybe_unused]]
