@@ -19,15 +19,11 @@ void util::error_box(String title, String message) { // NOLINT(performance-unnec
 
 [[maybe_unused]]
 Path util::get_module_dir(HMODULE& handle) {
-    static auto working_dir = [&] {
-        auto file_name = win_util::get_module_file_name(handle);
+    auto file_name = win_util::get_module_file_name(handle);
 
-        auto file_path = Path(file_name);
+    auto module_path = Path(file_name);
 
-        return file_path.parent_path();
-    }();
-
-    return working_dir;
+    return module_path.parent_path();
 }
 
 [[maybe_unused]]
