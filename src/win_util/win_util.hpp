@@ -36,4 +36,7 @@ namespace koalabox::win_util {
 
     [[maybe_unused]]
     HMODULE load_library(const Path& module_path);
+
+    [[maybe_unused]]
+    SIZE_T write_process_memory(HANDLE process, LPVOID address, LPCVOID buffer, SIZE_T size);
 }

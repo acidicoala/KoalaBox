@@ -147,3 +147,20 @@ HMODULE win_util::load_library(const Path& module_path) {
 
     return handle;
 }
+
+[[maybe_unused]]
+SIZE_T win_util::write_process_memory(HANDLE process, LPVOID address, LPCVOID buffer, SIZE_T size) {
+    SIZE_T bytes_written = -1;
+
+    auto result = WriteProcessMemory(process, address, buffer, size, &bytes_written);
+
+
+    if (result == 0) {
+        util::panic(__func__,
+            "Failed to write process memory at address: '{}'",
+            fmt::ptr(address)
+        );
+    }
+
+    return bytes_written;
+}
