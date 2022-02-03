@@ -1,9 +1,8 @@
 #include "util.hpp"
-#include "logger/logger.hpp"
-#include "win_util/win_util.hpp"
-#include <Windows.h>
+#include "../logger/logger.hpp"
+#include "../win_util/win_util.hpp"
 
-#include <utility>
+#include <Windows.h>
 
 using namespace koalabox;
 
@@ -56,6 +55,11 @@ void util::panic(String title, String message) {
 }
 
 [[maybe_unused]]
+bool util::strings_are_equal(const String& string1, const String& string2) {
+    return _stricmp(string1.c_str(), string2.c_str()) == 0;
+}
+
+[[maybe_unused]]
 String util::to_string(const WideString& wstr) {
     if (wstr.empty()) {
         return {};
@@ -69,6 +73,7 @@ String util::to_string(const WideString& wstr) {
     );
     return string;
 }
+
 
 [[maybe_unused]]
 WideString util::to_wstring(const String& str) {

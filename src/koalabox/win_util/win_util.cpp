@@ -1,6 +1,6 @@
 #include "win_util.hpp"
-#include "logger/logger.hpp"
-#include "util/util.hpp"
+#include "../logger/logger.hpp"
+#include "../util/util.hpp"
 
 using namespace koalabox;
 

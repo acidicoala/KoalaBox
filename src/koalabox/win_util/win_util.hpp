@@ -1,6 +1,6 @@
 #pragma once
 
-#include "koalabox.hpp"
+#include "../koalabox.hpp"
 
 #include <Windows.h>
 #include <Psapi.h>

@@ -29,6 +29,9 @@ namespace koalabox::util {
     }
 
     [[maybe_unused]]
+    bool strings_are_equal(const String& string1, const String& string2);
+
+    [[maybe_unused]]
     String to_string(const WideString& wstr);
 
     [[maybe_unused]]
