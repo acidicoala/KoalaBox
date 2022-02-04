@@ -1,6 +1,7 @@
 #pragma once
 
 #include "../koalabox.hpp"
+#include "../win_util/win_util.hpp"
 
 #include <fmt/core.h>
 #include <Windows.h>
@@ -10,8 +11,21 @@ namespace koalabox::util {
     [[maybe_unused]]
     void error_box(String title, String message);
 
+    template<typename F>
+    [[maybe_unused]]
+    F fn_cast(FARPROC func_to_cast, [[maybe_unused]] F func_cast_to) {
+        return (F) func_to_cast;
+    }
+
     [[maybe_unused]]
     Path get_module_dir(HMODULE& handle);
+
+    template<typename F>
+    [[maybe_unused]]
+    F get_procedure(HMODULE module, LPCSTR procedure_name, F func_cast_to) {
+        const auto address = win_util::get_proc_address(module, procedure_name);
+        return fn_cast(address, func_cast_to);
+    }
 
     [[maybe_unused]]
     bool is_64_bit();
