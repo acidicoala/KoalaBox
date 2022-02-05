@@ -26,7 +26,7 @@ BEGIN
             VALUE "CompanyName",      "ʕ •ᴥ•ʔ acidicoala"
             VALUE "FileDescription",  "${DLL_VERSION_FILE_DESC}"
             VALUE "FileVersion",      PROJECT_VERSION_STR
-            VALUE "InternalName",     "${DLL_VERSION_InternalName}"
+            VALUE "InternalName",     "${DLL_VERSION_INTERNAL_NAME}"
             VALUE "LegalCopyright",   "Fuck the copyright 🖕"
             VALUE "OriginalFilename", "${CMAKE_PROJECT_NAME}.dll"
             VALUE "ProductName",      "${DLL_VERSION_PRODUCT_NAME}"
