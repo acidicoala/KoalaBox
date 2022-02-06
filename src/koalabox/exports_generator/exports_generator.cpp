@@ -9,6 +9,7 @@
 #include <string>
 #include <iostream>
 #include <vector>
+#include <set>
 #include <regex>
 
 // Ensure that assert macros work
@@ -16,7 +17,7 @@
 
 using namespace std;
 
-vector<string> get_implemented_functions(const filesystem::path& path);
+set<string> get_implemented_functions(const filesystem::path& path);
 
 vector<string> get_exported_functions(filesystem::path& dll_path);
 
@@ -107,8 +108,8 @@ vector<string> get_exported_functions(filesystem::path& dll_path) {
  * Returns a list of functions parsed from the sources
  * in a given directory. Edge cases: Comments
  */
-vector<string> get_implemented_functions(const filesystem::path& path) {
-    vector<string> implemented_functions;
+set<string> get_implemented_functions(const filesystem::path& path) {
+    set<string> implemented_functions;
 
     for (auto& p: filesystem::recursive_directory_iterator(path)) {
         auto file_path = p.path();
@@ -121,7 +122,7 @@ vector<string> get_implemented_functions(const filesystem::path& path) {
         smatch match;
         while (regex_search(file_content, match, func_name_pattern)) {
             auto func_name = match.str(1);
-            implemented_functions.push_back(func_name);
+            implemented_functions.insert(func_name);
             cout << "Implemented: " << func_name << endl;
             file_content = match.suffix();
         }
