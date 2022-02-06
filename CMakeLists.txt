@@ -25,6 +25,7 @@ add_library(
         ${SRC_DIR}/logger/logger.cpp
         ${SRC_DIR}/win_util/win_util.cpp
         ${SRC_DIR}/util/util.cpp
+        ${SRC_DIR}/dll_monitor/dll_monitor.cpp
         ${SRC_DIR}/exports_generator/exports_generator.cpp
 )
 
