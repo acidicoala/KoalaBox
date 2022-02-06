@@ -16,7 +16,7 @@ class EmojiFormatterFlag;
 
     _instance->set_formatter(std::move(formatter));
     _instance->set_level(spdlog::level::trace);
-    _instance->flush_on(spdlog::level::debug);
+    _instance->flush_on(spdlog::level::trace);
 }
 
 class EmojiFormatterFlag : public spdlog::custom_flag_formatter {
