@@ -122,8 +122,12 @@ set<string> get_implemented_functions(const filesystem::path& path) {
         smatch match;
         while (regex_search(file_content, match, func_name_pattern)) {
             auto func_name = match.str(1);
-            implemented_functions.insert(func_name);
-            cout << "Implemented: " << func_name << endl;
+
+            if(not implemented_functions.contains(func_name)){
+                implemented_functions.insert(func_name);
+                cout << "Implemented: " << func_name << endl;
+            }
+
             file_content = match.suffix();
         }
     }
