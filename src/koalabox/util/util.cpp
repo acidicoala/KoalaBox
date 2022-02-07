@@ -46,9 +46,9 @@ void util::panic(String title, String message) {
         );
     }
 
-    error_box(std::move(title), message);
-
     logger::critical("{}", message);
+
+    error_box(std::move(title), message);
 
     exit(static_cast<int>(last_error));
 }
