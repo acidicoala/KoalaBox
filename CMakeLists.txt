@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 3.21)
 
 include(KoalaBox.cmake)
 
-configure_globals()
+configure_globals(".")
 
 project(KoalaBox VERSION 1.0.0)
 

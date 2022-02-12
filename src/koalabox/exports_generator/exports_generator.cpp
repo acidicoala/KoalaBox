@@ -44,6 +44,11 @@ int wmain(const int argc, const wchar_t* argv[]) {
     filesystem::path header_output_path(argv[3]);
     filesystem::path sources_input_path(argc == 5 ? argv[4] : L"");
 
+    if (not exists(dll_input_path)) {
+        cerr << "Dll file " << dll_input_path << " was not found";
+        return 1;
+    }
+
     auto implemented_functions = sources_input_path.empty()
         ? set<string>()
         : get_implemented_functions(sources_input_path);
