@@ -125,9 +125,8 @@ bool win_util::free_library(const HMODULE handle) {
     auto successful = ::FreeLibrary(handle);
 
     if (not successful) {
-        logger::error(__func__,
-            "Failed to free a library with the given module handle: {}",
-            fmt::ptr(handle)
+        logger::error("{} - Failed to free a library with the given module handle: {}",
+            __func__, fmt::ptr(handle)
         );
     }
 
