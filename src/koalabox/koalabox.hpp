@@ -19,7 +19,4 @@ namespace koalabox {
 
     template<typename K, typename V>
     using Map [[maybe_unused]] = std::map<K, V>;
-
-    [[maybe_unused]]
-    extern String project_name;
 }

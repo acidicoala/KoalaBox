@@ -2,6 +2,7 @@
 
 #include "../koalabox.hpp"
 #include "../win_util/win_util.hpp"
+#include <build_config.h>
 
 #include <fmt/core.h>
 #include <Windows.h>
@@ -36,7 +37,7 @@ namespace koalabox::util {
     template<typename... Args>
     [[maybe_unused]]
     void panic(String title, fmt::format_string<Args...> fmt, Args&& ...args) {
-        title = fmt::format("[{}] {}", project_name, title);
+        title = fmt::format("[{}] {}", PROJECT_NAME, title);
         auto message = fmt::format(fmt, std::forward<Args>(args)...);
 
         panic(title, message);

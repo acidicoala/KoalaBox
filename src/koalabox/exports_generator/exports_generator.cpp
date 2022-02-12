@@ -1,5 +1,6 @@
 // Windows headers
 #define UNICODE
+
 #include <Windows.h>
 
 // C++ std lib headers
@@ -32,18 +33,20 @@ bool is_64_bit();
  * 0: program name <br>
  * 1: forwarded dll name <br>
  * 2: dll input path <br>
- * 3: headers input path <br>
+ * 3: sources input path <br>
  * 4: header output path <br>
  */
 int wmain(const int argc, const wchar_t* argv[]) {
-    assert(argc == 5);
+    assert(argc == 4 || argc == 5);
 
     string forwarded_dll_name(to_string(argv[1]));
     filesystem::path dll_input_path(argv[2]);
-    filesystem::path headers_input_path(argv[3]);
-    filesystem::path header_output_path(argv[4]);
+    filesystem::path header_output_path(argv[3]);
+    filesystem::path sources_input_path(argc == 5 ? argv[4] : L"");
 
-    auto implemented_functions = get_implemented_functions(headers_input_path);
+    auto implemented_functions = sources_input_path.empty()
+        ? set<string>()
+        : get_implemented_functions(sources_input_path);
 
     auto exported_functions = get_exported_functions(dll_input_path);
 
@@ -123,7 +126,7 @@ set<string> get_implemented_functions(const filesystem::path& path) {
         while (regex_search(file_content, match, func_name_pattern)) {
             auto func_name = match.str(1);
 
-            if(not implemented_functions.contains(func_name)){
+            if (not implemented_functions.contains(func_name)) {
                 implemented_functions.insert(func_name);
                 cout << "Implemented: " << func_name << endl;
             }
