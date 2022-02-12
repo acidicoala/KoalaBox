@@ -1,10 +1,12 @@
 macro(configure_include_directories)
+    set(EXTRA_INCLUDE_DIRECTORIES "${ARGN}")
+
     target_include_directories(
         ${CMAKE_PROJECT_NAME} PRIVATE
         ${SRC_DIR}
         ${KOALABOX_SRC_DIR}
         ${GEN_DIR}
-        ${ARGN} # Extra arguments
+        ${EXTRA_INCLUDE_DIRECTORIES}
     )
 endmacro()
 
@@ -18,15 +20,15 @@ macro(configure_dependencies)
     endforeach ()
 endmacro()
 
-macro(set_32_and_64 val_for_32 val_for_64)
+macro(set_32_and_64 VAR val_for_32 val_for_64)
     if (IS_64_BIT)
-        set(ORIG_DLL ${val_for_32})
+        set(${VAR} ${val_for_64})
     else ()
-        set(ORIG_DLL ${val_for_64})
+        set(${VAR} ${val_for_32})
     endif ()
 endmacro()
 
-macro(configure_globals)
+macro(configure_globals KOALABOX_DIR)
     # configure c++
     set(CMAKE_CXX_STANDARD 20)
 
@@ -54,29 +56,30 @@ macro(configure_globals)
     set(SRC_DIR "${CMAKE_SOURCE_DIR}/src")
     set(RES_DIR "${CMAKE_SOURCE_DIR}/res")
     set(GEN_DIR "${CMAKE_CURRENT_BINARY_DIR}/generated")
+    file(MAKE_DIRECTORY "${GEN_DIR}")
 
-    get_filename_component(KOALABOX_SRC_DIR "./src/koalabox" REALPATH)
-    get_filename_component(KOALABOX_RES_DIR "./res" REALPATH)
+
+    set(KOALABOX_SRC_DIR "${KOALABOX_DIR}/src")
+    set(KOALABOX_RES_DIR "${KOALABOX_DIR}/res")
 
     set(
         KOALABOX_SOURCES
-        ${KOALABOX_SRC_DIR}/logger/logger.cpp
-        ${KOALABOX_SRC_DIR}/util/util.cpp
-        ${KOALABOX_SRC_DIR}/win_util/win_util.cpp
-        ${KOALABOX_SRC_DIR}/dll_monitor/dll_monitor.cpp
+        ${KOALABOX_SRC_DIR}/koalabox/logger/logger.cpp
+        ${KOALABOX_SRC_DIR}/koalabox/util/util.cpp
+        ${KOALABOX_SRC_DIR}/koalabox/win_util/win_util.cpp
+        ${KOALABOX_SRC_DIR}/koalabox/dll_monitor/dll_monitor.cpp
     )
 
     set(LINKER_EXPORTS ${GEN_DIR}/linker_exports.h)
 endmacro()
 
 macro(configure_exports_generator)
-    add_executable(exports_generator ${KOALABOX_SRC_DIR}/exports_generator/exports_generator.cpp)
+    add_executable(exports_generator ${KOALABOX_SRC_DIR}/koalabox/exports_generator/exports_generator.cpp)
 endmacro()
 
 macro(configure_linker_exports FORWARD_PREFIX INPUT_DLL_PATH INPUT_SOURCES_DIR)
 
     # Make the linker_exports header available before build
-    file(MAKE_DIRECTORY "${GEN_DIR}") # Touch will fail if directory does not exist
     file(TOUCH ${LINKER_EXPORTS})
 
     add_custom_command(
@@ -96,10 +99,13 @@ endmacro()
 macro(configure_build_config)
     set(EXTRA_CONFIGS "${ARGN}")
 
-    configure_file("${RES_DIR}/build_config.gen.h" "${GEN_DIR}/build_config.h")
+    configure_file("${KOALABOX_RES_DIR}/build_config.gen.h" "${GEN_DIR}/build_config.h")
 
     foreach (EXTRA_CONFIG IN LISTS EXTRA_CONFIGS)
-        configure_file(${RES_DIR}/${EXTRA_CONFIG}.gen.h ${GEN_DIR}/${EXTRA_CONFIG}.h)
+        set(GENERATED_EXTRA_CONFIG ${GEN_DIR}/${EXTRA_CONFIG}.h)
+
+        file(TOUCH ${GENERATED_EXTRA_CONFIG})
+        configure_file(${RES_DIR}/${EXTRA_CONFIG}.gen.h ${GENERATED_EXTRA_CONFIG})
         file(APPEND "${GEN_DIR}/build_config.h" "#include <${EXTRA_CONFIG}.h>\n")
     endforeach ()
 endmacro()
@@ -112,10 +118,12 @@ macro(configure_version_resource FILE_DESC)
     configure_file(${KOALABOX_RES_DIR}/version.gen.rc ${GEN_DIR}/version.rc)
 endmacro()
 
-macro(configure_library TYPE SOURCES)
+macro(configure_library TYPE)
+    set(SOURCES "${ARGN}")
 
     add_library(
         ${CMAKE_PROJECT_NAME} ${TYPE}
+        ${KOALABOX_SOURCES}
         ${SOURCES}
 
         ## Resources
