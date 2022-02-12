@@ -118,7 +118,7 @@ set<string> get_implemented_functions(const filesystem::path& path) {
         std::string file_content(istreambuf_iterator<char>{ ifs }, {});
 
         // Matches function name in the 1st group
-        static regex func_name_pattern(R"(\s*DLL_EXPORT\(\w+\)\s*(\w+)\s*\()");
+        static regex func_name_pattern(R"(\s*DLL_EXPORT\([\w|\s]+\**\)\s*(\w+)\s*\()");
         smatch match;
         while (regex_search(file_content, match, func_name_pattern)) {
             auto func_name = match.str(1);
