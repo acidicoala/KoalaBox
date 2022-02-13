@@ -34,7 +34,7 @@ namespace koalabox::hook {
         HMODULE module,
         const char* function_name,
         FunctionPointer callback_function,
-        bool panic_on_fail = true
+        bool panic_on_fail
     ) {
         logger::debug("Hooking '{}'", function_name);
 

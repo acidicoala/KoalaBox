@@ -14,7 +14,7 @@ namespace koalabox::hook {
         HMODULE module,
         const char* function_name,
         FunctionPointer callback_function,
-        bool panic_on_fail
+        bool panic_on_fail = false
     );
 
     [[maybe_unused]]
