@@ -28,6 +28,8 @@ namespace koalabox::hook {
         bool mangle_function_names = false,
         int arg_bytes = 0
     ) {
+        using func_type = RetType(__stdcall*)(ArgTypes...);
+
         if (is_hook_mode) {
             if (not address_book.contains(undecorated_function_name)) {
                 util::panic(__func__,
@@ -35,7 +37,7 @@ namespace koalabox::hook {
                 );
             }
 
-            return (RetType) address_book[undecorated_function_name];
+            return (func_type) address_book[undecorated_function_name];
         } else {
             if (arg_bytes == 0) {
                 // Guess byte count
@@ -46,7 +48,7 @@ namespace koalabox::hook {
                 ? undecorated_function_name
                 : fmt::format("_{}@{}", undecorated_function_name, arg_bytes);
 
-            return (RetType) win_util::get_proc_address(module, function_name.c_str());
+            return (func_type) win_util::get_proc_address(module, function_name.c_str());
         }
     }
 }
