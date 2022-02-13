@@ -2,8 +2,6 @@
 
 // Source: https://github.com/blaquee/dllnotif/blob/master/LdrDllNotification/ntapi.h
 
-#include <Windows.h>
-
 typedef __success(return >= 0) LONG NTSTATUS;
 
 #ifndef NT_STATUS_OK

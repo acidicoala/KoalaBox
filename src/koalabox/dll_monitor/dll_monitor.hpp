@@ -1,8 +1,8 @@
 #pragma once
 
-#include "../koalabox.hpp"
+#include "koalabox/koalabox.hpp"
 
-namespace dll_monitor {
+namespace koalabox::dll_monitor {
     using namespace koalabox;
 
     [[maybe_unused]]

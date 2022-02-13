@@ -1,15 +1,9 @@
 #pragma once
 
-#include <filesystem>
-#include <string>
-#include <vector>
-#include <set>
-#include <map>
-
 namespace koalabox {
-    typedef std::filesystem::path Path;
-    typedef std::string String;
-    typedef std::wstring WideString;
+    using Path = std::filesystem::path;
+    using String = std::string;
+    using WideString = std::wstring;
 
     template<typename T>
     using Vector [[maybe_unused]] = std::vector<T>;

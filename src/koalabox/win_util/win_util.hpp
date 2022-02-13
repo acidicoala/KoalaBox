@@ -1,9 +1,6 @@
 #pragma once
 
-#include "../koalabox.hpp"
-
-#include <Windows.h>
-#include <Psapi.h>
+#include "koalabox/koalabox.hpp"
 
 namespace koalabox::win_util {
 

@@ -3,6 +3,10 @@
   "version": "0.0.0",
   "license": "0BSD",
   "dependencies": [
-    "spdlog"
+    "spdlog",
+    {
+      "name": "polyhook2",
+      "features": ["capstone", "detours"]
+    }
   ]
 }

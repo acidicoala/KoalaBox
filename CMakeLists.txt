@@ -13,7 +13,12 @@ configure_version_resource("A box of koality tools")
 configure_library(
     SHARED
 
-    ${KOALABOX_SOURCES}
+    ${KOALABOX_SRC_DIR}/koalabox/dll_monitor/dll_monitor.cpp
+    ${KOALABOX_SRC_DIR}/koalabox/hook/hook.cpp
+    ${KOALABOX_SRC_DIR}/koalabox/loader/loader.cpp
+    ${KOALABOX_SRC_DIR}/koalabox/logger/logger.cpp
+    ${KOALABOX_SRC_DIR}/koalabox/util/util.cpp
+    ${KOALABOX_SRC_DIR}/koalabox/win_util/win_util.cpp
 )
 
 configure_precompile_headers(${SRC_DIR}/koalabox/pch.hpp)
@@ -22,4 +27,4 @@ configure_output_name(KoalaBox)
 
 configure_include_directories()
 
-configure_dependencies(spdlog)
+configure_dependencies(spdlog PolyHook_2)

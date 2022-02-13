@@ -1,5 +1,6 @@
 #include "util.hpp"
-#include "../logger/logger.hpp"
+
+#include "koalabox/logger/logger.hpp"
 
 namespace koalabox::util {
 
@@ -25,6 +26,8 @@ namespace koalabox::util {
 
     [[maybe_unused]]
     void panic(String title, String message) {
+        title = fmt::format("[{}] {}", PROJECT_NAME, title);
+
         // Add windows last error to title and message, if necessary.
         auto last_error = ::GetLastError();
         if (last_error != 0) {
@@ -36,7 +39,7 @@ namespace koalabox::util {
             );
         }
 
-        logger::critical("{}", message);
+        logger::critical(message);
 
         error_box(std::move(title), message);
 
@@ -54,7 +57,7 @@ namespace koalabox::util {
             return {};
         }
         int size_needed = WideCharToMultiByte(
-            CP_UTF8, 0, &wstr[0], static_cast<int>(wstr.size()), nullptr, 0, nullptr, nullptr
+            CP_UTF8, 0, &wstr[0], (int) wstr.size(), nullptr, 0, nullptr, nullptr
         );
         String string(size_needed, 0);
         WideCharToMultiByte(

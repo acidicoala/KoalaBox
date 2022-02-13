@@ -62,20 +62,11 @@ macro(configure_globals KOALABOX_DIR)
     set(KOALABOX_SRC_DIR "${KOALABOX_DIR}/src")
     set(KOALABOX_RES_DIR "${KOALABOX_DIR}/res")
 
-    set(
-        KOALABOX_SOURCES
-        ${KOALABOX_SRC_DIR}/koalabox/dll_monitor/dll_monitor.cpp
-        ${KOALABOX_SRC_DIR}/koalabox/loader/loader.cpp
-        ${KOALABOX_SRC_DIR}/koalabox/logger/logger.cpp
-        ${KOALABOX_SRC_DIR}/koalabox/util/util.cpp
-        ${KOALABOX_SRC_DIR}/koalabox/win_util/win_util.cpp
-    )
-
     set(LINKER_EXPORTS ${GEN_DIR}/linker_exports.h)
 endmacro()
 
 macro(configure_exports_generator)
-    add_executable(exports_generator ${KOALABOX_SRC_DIR}/koalabox/exports_generator/exports_generator.cpp)
+    add_executable(exports_generator ${KOALABOX_SRC_DIR}/exports_generator/exports_generator.cpp)
 endmacro()
 
 macro(configure_linker_exports FORWARD_PREFIX INPUT_DLL_PATH INPUT_SOURCES_DIR)
@@ -124,12 +115,10 @@ macro(configure_library TYPE)
 
     add_library(
         ${CMAKE_PROJECT_NAME} ${TYPE}
-        ${KOALABOX_SOURCES}
         ${SOURCES}
 
         ## Resources
         ${GEN_DIR}/version.rc
-        ${LINKER_EXPORTS}
     )
 endmacro()
 

@@ -1,12 +1,10 @@
 #include "dll_monitor.hpp"
 #include "ntapi.hpp"
 
-#include "../logger/logger.hpp"
-#include "../util/util.hpp"
+#include "koalabox/logger/logger.hpp"
+#include "koalabox/util/util.hpp"
 
-using namespace koalabox;
-
-namespace dll_monitor {
+namespace koalabox::dll_monitor {
 
     static PVOID cookie = nullptr;
 
