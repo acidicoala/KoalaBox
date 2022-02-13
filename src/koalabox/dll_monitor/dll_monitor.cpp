@@ -45,19 +45,18 @@ namespace dll_monitor {
                 return;
             }
 
-            logger::debug("DLL monitor notification listener callback");
-            logger::debug("buffer: {}", (void*) NotificationData->Loaded.BaseDllName->Buffer);
+            auto base_dll_name = util::to_string(NotificationData->Loaded.BaseDllName->Buffer);
+            auto full_dll_name = util::to_string(NotificationData->Loaded.FullDllName->Buffer);
 
-            auto dll_name = util::to_string(
-                WideString(NotificationData->Loaded.BaseDllName->Buffer)
+            logger::debug("DLL loaded - BaseDllName: '{}', FullDllName: '{}'",
+                base_dll_name,
+                full_dll_name
             );
-
-            logger::debug("DLL loaded: {}", dll_name);
 
             auto data = static_cast<CallbackData*>(context);
 
-            if (util::strings_are_equal(data->target_library_name, dll_name)) {
-                HMODULE loaded_module = win_util::get_module_handle(data->target_library_name);
+            if (util::strings_are_equal(data->target_library_name, base_dll_name)) {
+                HMODULE loaded_module = win_util::get_module_handle(full_dll_name);
 
                 data->callback(loaded_module);
             }
@@ -67,7 +66,7 @@ namespace dll_monitor {
         };
 
         auto context = new CallbackData{
-            .target_library_name=target_library_name,
+            .target_library_name=target_library_name + ".dll",
             .callback=callback,
         };
 
