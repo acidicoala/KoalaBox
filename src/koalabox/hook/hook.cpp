@@ -26,13 +26,14 @@ namespace koalabox::hook {
     typedef PLH::x86Detour Detour;
 #endif
 
-    Map<String, uint64_t> address_book; // NOLINT(cert-err58-cpp)
+    Map<String, FunctionPointer> address_book; // NOLINT(cert-err58-cpp)
+
     Vector<Detour*> hooks; // NOLINT(cert-err58-cpp)
 
     [[maybe_unused]]
     void detour(
         HMODULE module,
-        const char* function_name,
+        const String& function_name,
         FunctionPointer callback_function,
         bool panic_on_fail
     ) {
@@ -44,7 +45,7 @@ namespace koalabox::hook {
                 : PLH::Mode::x86
         );
 
-        const auto address = (FunctionPointer) ::GetProcAddress(module, function_name);
+        const auto address = (FunctionPointer) ::GetProcAddress(module, function_name.c_str());
 
         if (not address) {
             const auto message = fmt::format("Failed to get function address: {}", function_name);
@@ -61,7 +62,7 @@ namespace koalabox::hook {
 
         auto detour = new Detour(address, callback_function, &trampoline, disassembler);
 
-        address_book[function_name] = trampoline;
+        address_book[function_name] = (FunctionPointer) trampoline;
 
         if (detour->hook()) {
             hooks.push_back(detour);
@@ -99,6 +100,5 @@ namespace koalabox::hook {
 
         return not util::strings_are_equal(self_name, orig_library_name + ".dll");
     }
-
 }
 
