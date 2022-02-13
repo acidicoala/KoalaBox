@@ -48,10 +48,10 @@ namespace dll_monitor {
             auto base_dll_name = util::to_string(NotificationData->Loaded.BaseDllName->Buffer);
             auto full_dll_name = util::to_string(NotificationData->Loaded.FullDllName->Buffer);
 
-            logger::debug("DLL loaded - BaseDllName: '{}', FullDllName: '{}'",
-                base_dll_name,
-                full_dll_name
-            );
+//            logger::debug("DLL loaded - BaseDllName: '{}', FullDllName: '{}'",
+//                base_dll_name,
+//                full_dll_name
+//            );
 
             auto data = static_cast<CallbackData*>(context);
 
