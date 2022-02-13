@@ -4,9 +4,6 @@
 #include "../win_util/win_util.hpp"
 #include <build_config.h>
 
-#include <fmt/core.h>
-#include <Windows.h>
-
 namespace koalabox::util {
 
     [[maybe_unused]]
@@ -30,6 +27,9 @@ namespace koalabox::util {
 
     [[maybe_unused]]
     bool is_64_bit();
+
+    [[maybe_unused]]
+    bool is_hook_mode(HMODULE module, const String orig_module_name);
 
     [[maybe_unused]]
     void panic(String title, String message);
