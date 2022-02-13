@@ -15,12 +15,12 @@
 
 // C++ Standard Library
 #include <filesystem>// std::filesystem
+#include <utility>   // std::forward
+#include <functional>// std::function
 #include <fstream>   // std::ifstream
-#include <memory>    // std::shared_ptr
 #include <regex>     // std::regex
 #include <set>       // std::set
+#include <memory>    // std::shared_ptr
 #include <string>    // std::string | std::wstring
 #include <thread>    // std::thread
-#include <utility>   // std::forward
 #include <vector>    // std::vector
-

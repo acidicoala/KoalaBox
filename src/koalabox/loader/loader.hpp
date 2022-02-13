@@ -10,9 +10,9 @@ namespace loader {
     Path get_module_dir(HMODULE& handle);
 
     [[maybe_unused]]
-    bool is_hook_mode(HMODULE self_module, String orig_lib_name);
+    bool is_hook_mode(HMODULE self_module, const String& orig_library_name);
 
     [[maybe_unused]]
-    HMODULE load_original_library(const Path& self_directory, String orig_library);
+    HMODULE load_original_library(const Path& self_directory, const String& orig_library_name);
 
 }

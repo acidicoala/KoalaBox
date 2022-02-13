@@ -6,93 +6,100 @@
 
 using namespace koalabox;
 
-_LdrRegisterDllNotification LdrRegisterDllNotification = nullptr;
-_LdrUnregisterDllNotification LdrUnregisterDllNotification = nullptr;
+namespace dll_monitor {
 
-void init_nt_functions() {
-    const HMODULE hNtDll = GetModuleHandleA("ntdll.dll");
-    if (hNtDll == nullptr) {
-        util::panic(__func__, "Failed to get a handle for ntdll.dll module");
-    }
-    LdrRegisterDllNotification = reinterpret_cast<_LdrRegisterDllNotification>(
-        GetProcAddress(hNtDll, "LdrRegisterDllNotification")
-    );
-    LdrUnregisterDllNotification = reinterpret_cast<_LdrUnregisterDllNotification>(
-        GetProcAddress(hNtDll, "LdrUnregisterDllNotification")
-    );
+    static PVOID cookie = nullptr;
 
-    if (!LdrRegisterDllNotification || !LdrUnregisterDllNotification) {
-        util::panic(__func__, "Some ntdll procedures were not found");
-    }
-}
+    [[maybe_unused]]
+    void init(
+        const String& target_library_name,
+        const std::function<void(HMODULE module)>& callback
+    ) {
+        HMODULE original_library = win_util::get_module_handle(target_library_name);
 
-[[maybe_unused]]
-HMODULE dll_monitor::init(
-    const String& target_dll,
-    const std::function<void(HMODULE module)>& callback
-) {
-    // First check if the target dll is already loaded
-    HMODULE original_module = ::GetModuleHandleA(target_dll.c_str());
+        if (original_library) {
+            // First check if the target dll is already loaded
 
-    if (original_module == nullptr) {
-        // Otherwise, initialize the monitor
+            logger::debug("Library {} is already loaded", target_library_name);
 
-        logger::debug("Initializing DLL monitor");
+            callback(original_library);
+        } else {
+            // Otherwise, initialize the monitor
 
-        init_nt_functions();
+            logger::debug("Initializing DLL monitor");
 
-        struct CallbackData {
-            String target_dll;
-            std::function<void(HMODULE module)> callback;
-        };
+            struct CallbackData {
+                String target_library_name;
+                std::function<void(HMODULE module)> callback;
+            };
 
-        // Pre-process the notification
-        const auto notification_listener = [](
-            ULONG NotificationReason,
-            PLDR_DLL_NOTIFICATION_DATA NotificationData,
-            PVOID context
-        ) {
-            // Only interested in load events
-            if (NotificationReason != LDR_DLL_NOTIFICATION_REASON_LOADED) {
-                return;
-            }
+            // Pre-process the notification
+            const auto notification_listener = [](
+                ULONG NotificationReason,
+                PLDR_DLL_NOTIFICATION_DATA NotificationData,
+                PVOID context
+            ) {
+                // Only interested in load events
+                if (NotificationReason != LDR_DLL_NOTIFICATION_REASON_LOADED) {
+                    return;
+                }
 
-            logger::debug("DLL monitor notification listener callback");
-            logger::debug("buffer: {}", (void*) NotificationData->Loaded.BaseDllName->Buffer);
+                logger::debug("DLL monitor notification listener callback");
+                logger::debug("buffer: {}", (void*) NotificationData->Loaded.BaseDllName->Buffer);
 
-            auto dll_name = util::to_string(
-                WideString(NotificationData->Loaded.BaseDllName->Buffer)
+                auto dll_name = util::to_string(
+                    WideString(NotificationData->Loaded.BaseDllName->Buffer)
+                );
+
+                logger::debug("DLL loaded: {}", dll_name);
+
+                auto data = static_cast<CallbackData*>(context);
+
+                if (util::strings_are_equal(data->target_library_name, dll_name)) {
+                    HMODULE loaded_module = win_util::get_module_handle(data->target_library_name);
+
+                    data->callback(loaded_module);
+                }
+
+                delete data;
+            };
+
+            auto context = new CallbackData{
+                .target_library_name=target_library_name,
+                .callback=callback,
+            };
+
+            static const auto LdrRegisterDllNotification = reinterpret_cast<_LdrRegisterDllNotification>(
+                win_util::get_proc_address(
+                    win_util::get_module_handle("ntdll"),
+                    "LdrRegisterDllNotification"
+                )
             );
 
-            logger::debug("DLL loaded: {}", dll_name);
-
-            auto data = static_cast<CallbackData*>(context);
-
-            if (util::strings_are_equal(data->target_dll, dll_name)) {
-                HMODULE loaded_module = win_util::get_module_handle(data->target_dll);
-
-                data->callback(loaded_module);
+            const auto status = LdrRegisterDllNotification(0, notification_listener, context,
+                &cookie);
+            if (status != STATUS_SUCCESS) {
+                util::panic("dll_monitor::init",
+                    "Failed to register DLL listener. Status code: {}", status
+                );
             }
 
-            delete data;
-        };
+            logger::debug("DLL monitor was successfully initialized");
 
-        static PVOID cookie = nullptr;
-
-        auto context = new CallbackData{
-            .target_dll=target_dll,
-            .callback=callback,
-        };
-        const auto status = LdrRegisterDllNotification(0, notification_listener, context, &cookie);
-        if (status != STATUS_SUCCESS) {
-            util::panic("dll_monitor::init",
-                "Failed to register DLL listener. Status code: {}", status
-            );
         }
-
-        logger::debug("DLL monitor was successfully initialized");
-
     }
 
-    return original_module;
+    [[maybe_unused]]
+    void shutdown() {
+        static const auto LdrUnregisterDllNotification = reinterpret_cast<_LdrUnregisterDllNotification>(
+            win_util::get_proc_address(
+                win_util::get_module_handle("ntdll"),
+                "LdrUnregisterDllNotification"
+            )
+        );
+
+        LdrUnregisterDllNotification(cookie);
+
+        logger::debug("DLL monitor was successfully shut down");
+    }
 }
