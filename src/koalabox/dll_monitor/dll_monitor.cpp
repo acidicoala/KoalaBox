@@ -23,70 +23,71 @@ namespace dll_monitor {
             logger::debug("Library {} is already loaded", target_library_name);
 
             callback(original_library);
-        } else {
-            // Otherwise, initialize the monitor
+        }
 
-            logger::debug("Initializing DLL monitor");
+        // Then start listening for future DLLs
 
-            struct CallbackData {
-                String target_library_name;
-                std::function<void(HMODULE module)> callback;
-            };
+        logger::debug("Initializing DLL monitor");
 
-            // Pre-process the notification
-            const auto notification_listener = [](
-                ULONG NotificationReason,
-                PLDR_DLL_NOTIFICATION_DATA NotificationData,
-                PVOID context
-            ) {
-                // Only interested in load events
-                if (NotificationReason != LDR_DLL_NOTIFICATION_REASON_LOADED) {
-                    return;
-                }
+        struct CallbackData {
+            String target_library_name;
+            std::function<void(HMODULE module)> callback;
+        };
 
-                logger::debug("DLL monitor notification listener callback");
-                logger::debug("buffer: {}", (void*) NotificationData->Loaded.BaseDllName->Buffer);
-
-                auto dll_name = util::to_string(
-                    WideString(NotificationData->Loaded.BaseDllName->Buffer)
-                );
-
-                logger::debug("DLL loaded: {}", dll_name);
-
-                auto data = static_cast<CallbackData*>(context);
-
-                if (util::strings_are_equal(data->target_library_name, dll_name)) {
-                    HMODULE loaded_module = win_util::get_module_handle(data->target_library_name);
-
-                    data->callback(loaded_module);
-                }
-
-                delete data;
-            };
-
-            auto context = new CallbackData{
-                .target_library_name=target_library_name,
-                .callback=callback,
-            };
-
-            static const auto LdrRegisterDllNotification = reinterpret_cast<_LdrRegisterDllNotification>(
-                win_util::get_proc_address(
-                    win_util::get_module_handle("ntdll"),
-                    "LdrRegisterDllNotification"
-                )
-            );
-
-            const auto status = LdrRegisterDllNotification(0, notification_listener, context,
-                &cookie);
-            if (status != STATUS_SUCCESS) {
-                util::panic("dll_monitor::init",
-                    "Failed to register DLL listener. Status code: {}", status
-                );
+        // Pre-process the notification
+        const auto notification_listener = [](
+            ULONG NotificationReason,
+            PLDR_DLL_NOTIFICATION_DATA NotificationData,
+            PVOID context
+        ) {
+            // Only interested in load events
+            if (NotificationReason != LDR_DLL_NOTIFICATION_REASON_LOADED) {
+                return;
             }
 
-            logger::debug("DLL monitor was successfully initialized");
+            logger::debug("DLL monitor notification listener callback");
+            logger::debug("buffer: {}", (void*) NotificationData->Loaded.BaseDllName->Buffer);
 
+            auto dll_name = util::to_string(
+                WideString(NotificationData->Loaded.BaseDllName->Buffer)
+            );
+
+            logger::debug("DLL loaded: {}", dll_name);
+
+            auto data = static_cast<CallbackData*>(context);
+
+            if (util::strings_are_equal(data->target_library_name, dll_name)) {
+                HMODULE loaded_module = win_util::get_module_handle(data->target_library_name);
+
+                data->callback(loaded_module);
+            }
+
+            delete data;
+        };
+
+        auto context = new CallbackData{
+            .target_library_name=target_library_name,
+            .callback=callback,
+        };
+
+        static const auto LdrRegisterDllNotification = reinterpret_cast<_LdrRegisterDllNotification>(
+            win_util::get_proc_address(
+                win_util::get_module_handle("ntdll"),
+                "LdrRegisterDllNotification"
+            )
+        );
+
+        const auto status = LdrRegisterDllNotification(0, notification_listener, context,
+            &cookie);
+        if (status != STATUS_SUCCESS) {
+            util::panic("dll_monitor::init",
+                "Failed to register DLL listener. Status code: {}", status
+            );
         }
+
+        logger::debug("DLL monitor was successfully initialized");
+
+
     }
 
     [[maybe_unused]]
