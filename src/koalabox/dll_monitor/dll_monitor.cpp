@@ -15,7 +15,7 @@ namespace dll_monitor {
         const String& target_library_name,
         const std::function<void(HMODULE module)>& callback
     ) {
-        HMODULE original_library = win_util::get_module_handle(target_library_name);
+        HMODULE original_library = ::GetModuleHandle(util::to_wstring(target_library_name).c_str());
 
         if (original_library) {
             // First check if the target dll is already loaded
