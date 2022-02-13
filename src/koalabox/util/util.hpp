@@ -15,9 +15,6 @@ namespace koalabox::util {
         return (F) func_to_cast;
     }
 
-    [[maybe_unused]]
-    Path get_module_dir(HMODULE& handle);
-
     template<typename F>
     [[maybe_unused]]
     F get_procedure(HMODULE module, LPCSTR procedure_name, F func_cast_to) {
@@ -27,9 +24,6 @@ namespace koalabox::util {
 
     [[maybe_unused]]
     bool is_64_bit();
-
-    [[maybe_unused]]
-    bool is_hook_mode(HMODULE module, const String orig_module_name);
 
     [[maybe_unused]]
     void panic(String title, String message);

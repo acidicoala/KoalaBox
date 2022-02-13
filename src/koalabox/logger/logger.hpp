@@ -2,12 +2,6 @@
 
 #include "../koalabox.hpp"
 
-#include <spdlog/logger.h>
-#include <spdlog/sinks/basic_file_sink.h>
-#include <spdlog/sinks/null_sink.h>
-
-using namespace fmt::literals; // "{}"_format() helper
-
 namespace koalabox::logger {
 
     typedef std::shared_ptr<spdlog::logger> Logger;

@@ -13,14 +13,6 @@ namespace koalabox::util {
         );
     }
 
-    [[maybe_unused]]
-    Path get_module_dir(HMODULE& handle) {
-        auto file_name = win_util::get_module_file_name(handle);
-
-        auto module_path = Path(file_name);
-
-        return module_path.parent_path();
-    }
 
     [[maybe_unused]]
     bool is_64_bit() {
@@ -83,15 +75,4 @@ namespace koalabox::util {
         return wstring;
     }
 
-
-    [[maybe_unused]]
-    bool is_hook_mode(
-        HMODULE module,
-        const String orig_module_name // NOLINT(performance-unnecessary-value-param)
-    ) {
-        const auto module_path = win_util::get_module_file_name(module);
-        const auto self_name = Path(module_path).filename().string();
-
-        return not util::strings_are_equal(self_name, orig_module_name + ".dll");
-    }
 }

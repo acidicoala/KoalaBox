@@ -64,10 +64,11 @@ macro(configure_globals KOALABOX_DIR)
 
     set(
         KOALABOX_SOURCES
+        ${KOALABOX_SRC_DIR}/koalabox/dll_monitor/dll_monitor.cpp
+        ${KOALABOX_SRC_DIR}/koalabox/loader/loader.cpp
         ${KOALABOX_SRC_DIR}/koalabox/logger/logger.cpp
         ${KOALABOX_SRC_DIR}/koalabox/util/util.cpp
         ${KOALABOX_SRC_DIR}/koalabox/win_util/win_util.cpp
-        ${KOALABOX_SRC_DIR}/koalabox/dll_monitor/dll_monitor.cpp
     )
 
     set(LINKER_EXPORTS ${GEN_DIR}/linker_exports.h)
