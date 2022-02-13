@@ -62,7 +62,8 @@ namespace dll_monitor {
                 data->callback(loaded_module);
             }
 
-            delete data;
+            // Do not delete data since it is re-used
+            // delete data;
         };
 
         auto context = new CallbackData{
