@@ -16,6 +16,10 @@ configure_library(
     ${KOALABOX_SOURCES}
 )
 
+configure_precompile_headers(${SRC_DIR}/koalabox/pch.hpp)
+
+configure_output_name(KoalaBox)
+
 configure_include_directories()
 
 configure_dependencies(spdlog)

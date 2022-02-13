@@ -141,9 +141,9 @@ macro(configure_output_name OUTPUT_NAME)
 endmacro()
 
 
-macro(configure_precompile_headers)
+macro(configure_precompile_headers PCH_PATH)
     target_precompile_headers(
         ${CMAKE_PROJECT_NAME} PRIVATE
-        "$<$<COMPILE_LANGUAGE:CXX>:${SRC_DIR}/pch.hpp>"
+        "$<$<COMPILE_LANGUAGE:CXX>:${PCH_PATH}>"
     )
 endmacro()
