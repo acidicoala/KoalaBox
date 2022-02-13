@@ -10,7 +10,12 @@ namespace koalabox::hook {
     extern Map<String, uint64_t> address_book;
 
     [[maybe_unused]]
-    void detour(HMODULE module, const char* function_name, FunctionPointer callback_function);
+    void detour(
+        HMODULE module,
+        const char* function_name,
+        FunctionPointer callback_function,
+        bool panic_on_fail
+    );
 
     [[maybe_unused]]
     void init(const std::function<void()>& callback);

@@ -30,7 +30,12 @@ namespace koalabox::hook {
     Vector<Detour*> hooks; // NOLINT(cert-err58-cpp)
 
     [[maybe_unused]]
-    void detour(HMODULE module, const char* function_name, FunctionPointer callback_function) {
+    void detour(
+        HMODULE module,
+        const char* function_name,
+        FunctionPointer callback_function,
+        bool panic_on_fail = true
+    ) {
         logger::debug("Hooking '{}'", function_name);
 
         static PLH::CapstoneDisassembler disassembler(
@@ -39,7 +44,18 @@ namespace koalabox::hook {
                 : PLH::Mode::x86
         );
 
-        const auto address = (FunctionPointer) win_util::get_proc_address(module, function_name);
+        const auto address = (FunctionPointer) ::GetProcAddress(module, function_name);
+
+        if (not address) {
+            const auto message = fmt::format("Failed to get function address: {}", function_name);
+            if (panic_on_fail) {
+                util::panic(__func__, message);
+            } else {
+                logger::error(message);
+            }
+
+            return;
+        }
 
         uint64_t trampoline;
 
@@ -50,7 +66,13 @@ namespace koalabox::hook {
         if (detour->hook()) {
             hooks.push_back(detour);
         } else {
-            util::panic(__func__, "Failed to hook function: {}", function_name);
+            const auto message = fmt::format("Failed to hook function: {}", function_name);
+
+            if (panic_on_fail) {
+                util::panic(__func__, message);
+            } else {
+                logger::error(message);
+            }
         }
     }
 

@@ -6,7 +6,7 @@
 
 namespace koalabox::dll_monitor {
 
-    static PVOID cookie = nullptr;
+    PVOID cookie = nullptr;
 
     [[maybe_unused]]
     void init(
@@ -54,6 +54,8 @@ namespace koalabox::dll_monitor {
             auto data = static_cast<CallbackData*>(context);
 
             if (util::strings_are_equal(data->target_library_name, base_dll_name)) {
+                logger::debug("Library {} has been loaded", data->target_library_name);
+
                 HMODULE loaded_module = win_util::get_module_handle(full_dll_name);
 
                 data->callback(loaded_module);
@@ -75,8 +77,7 @@ namespace koalabox::dll_monitor {
             )
         );
 
-        const auto status = LdrRegisterDllNotification(0, notification_listener, context,
-            &cookie);
+        const auto status = LdrRegisterDllNotification(0, notification_listener, context, &cookie);
         if (status != STATUS_SUCCESS) {
             util::panic("dll_monitor::init",
                 "Failed to register DLL listener. Status code: {}", status
