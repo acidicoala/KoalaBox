@@ -10,7 +10,23 @@ namespace koalabox::hook {
     extern Map<String, FunctionPointer> address_book;
 
     [[maybe_unused]]
-    void detour(
+    bool eat_hook(
+        HMODULE module,
+        const String& function_name,
+        FunctionPointer callback_function,
+        bool panic_on_fail = false
+    );
+
+    [[maybe_unused]]
+    bool detour(
+        HMODULE module,
+        const String& function_name,
+        FunctionPointer callback_function,
+        bool panic_on_fail = false
+    );
+
+    [[maybe_unused]]
+    void detour_with_fallback(
         HMODULE module,
         const String& function_name,
         FunctionPointer callback_function,

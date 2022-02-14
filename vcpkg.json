@@ -4,9 +4,6 @@
   "license": "0BSD",
   "dependencies": [
     "spdlog",
-    {
-      "name": "polyhook2",
-      "features": ["capstone", "detours"]
-    }
+    "polyhook2"
   ]
 }

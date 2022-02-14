@@ -40,16 +40,26 @@ namespace koalabox::loader {
      * Key is un-mangled name, value is mangled name
      */
     [[maybe_unused]]
-    Map<String, String> get_undecorated_function_map(HMODULE library) {
+    Map <String, String> get_undecorated_function_map(HMODULE library) {
         // Adapted from: https://github.com/mborne/dll2def/blob/master/dll2def.cpp
 
         auto exported_functions = Map<String, String>();
 
-        assert(((PIMAGE_DOS_HEADER) library)->e_magic == IMAGE_DOS_SIGNATURE);
-        auto header = (PIMAGE_NT_HEADERS) ((BYTE*) library +
-                                           ((PIMAGE_DOS_HEADER) library)->e_lfanew);
-        assert(header->Signature == IMAGE_NT_SIGNATURE);
-        assert(header->OptionalHeader.NumberOfRvaAndSizes > 0);
+        auto dos_header = reinterpret_cast<PIMAGE_DOS_HEADER>(library);
+
+        if (dos_header->e_magic != IMAGE_DOS_SIGNATURE) {
+            util::panic(__func__, "e_magic  != IMAGE_DOS_SIGNATURE");
+        }
+
+        auto header = reinterpret_cast<PIMAGE_NT_HEADERS>((BYTE*) library + dos_header->e_lfanew );
+
+        if (header->Signature != IMAGE_NT_SIGNATURE) {
+            util::panic(__func__, "header->Signature != IMAGE_NT_SIGNATURE");
+        }
+
+        if (header->OptionalHeader.NumberOfRvaAndSizes <= 0) {
+            util::panic(__func__, "header->OptionalHeader.NumberOfRvaAndSizes <= 0");
+        }
 
         auto virtual_address = header->OptionalHeader.DataDirectory[IMAGE_DIRECTORY_ENTRY_EXPORT].VirtualAddress;
         auto exports = reinterpret_cast<PIMAGE_EXPORT_DIRECTORY>((BYTE*) library +
@@ -58,20 +68,24 @@ namespace koalabox::loader {
 
         // Iterate over the names and add them to the vector
         for (unsigned int i = 0; i < exports->NumberOfNames; i++) {
-            auto exported_name = (char*) library + ((DWORD*) names)[i];
+            String exported_name = (char*) library + ((DWORD*) names)[i];
 
-            static std::regex expression{ R"~(?:^_)?(\w+)(?:@\d+$)?)~" };
-            std::cmatch match;
+            static const std::regex expression(R"((?:^_)?(\w+)(?:@\d+$)?)");
 
-            if (std::regex_match(exported_name, match, expression)) {
-                logger::trace("exported_name={}, match.length={}, match[0]={}",
-                    exported_name, match.length(), match[0].str()
-                );
-                exported_functions.insert({ match[0].str(), exported_name });
+            String undecorated_function = exported_name; // fallback value
+
+            std::smatch matches;
+            if (std::regex_match(exported_name, matches, expression)) {
+                if (matches.size() == 2) {
+                    undecorated_function = matches[1];
+                } else {
+                    logger::warn("Exported function regex size != 2: {}", exported_name);
+                }
             } else {
                 logger::warn("Exported function regex failed: {}", exported_name);
-                exported_functions.insert({ exported_name, exported_name });
             }
+
+            exported_functions.insert({ undecorated_function, exported_name });
         }
 
         return exported_functions;
