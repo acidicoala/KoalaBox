@@ -1,42 +1,25 @@
 #pragma once
 
-#include "koalabox/win_util/win_util.hpp"
 #include "koalabox/util/util.hpp"
+#include "koalabox/win_util/win_util.hpp"
 
 namespace koalabox::hook {
 
-    using FunctionPointer = char*;
-
     extern Map<String, FunctionPointer> address_book;
 
-    [[maybe_unused]]
-    bool eat_hook(
-        HMODULE module,
-        const String& function_name,
-        FunctionPointer callback_function,
-        bool panic_on_fail = false
-    );
+    void detour_or_throw(const HMODULE& module, const String& function_name, FunctionPointer callback_function);
 
-    [[maybe_unused]]
-    bool detour(
-        HMODULE module,
-        const String& function_name,
-        FunctionPointer callback_function,
-        bool panic_on_fail = false
-    );
+    void eat_hook_or_throw(const HMODULE& module, const String& function_name, FunctionPointer callback_function);
 
-    [[maybe_unused]]
-    void detour_with_fallback(
-        HMODULE module,
-        const String& function_name,
-        FunctionPointer callback_function,
-        bool panic_on_fail = false
-    );
+    FunctionPointer get_original_function(bool is_hook_mode, const HMODULE& library, const String& function_name);
 
-    [[maybe_unused]]
+    template<typename F>
+    F get_original_function(bool is_hook_mode, const HMODULE& library, const String& function_name, F) {
+        return reinterpret_cast<F>(get_original_function(is_hook_mode, library, function_name));
+    }
+
     void init(const std::function<void()>& callback);
 
-    [[maybe_unused]]
-    bool is_hook_mode(HMODULE self_module, const String& orig_library_name);
+    bool is_hook_mode(const HMODULE& self_module, const String& orig_library_name);
 
 }

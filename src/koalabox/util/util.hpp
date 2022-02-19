@@ -3,34 +3,31 @@
 #include "koalabox/koalabox.hpp"
 #include "koalabox/win_util/win_util.hpp"
 
-#include <build_config.h>
-
 namespace koalabox::util {
+    void error_box(const String& title, const String& message);
 
-    [[maybe_unused]]
-    void error_box(String title, String message);
+    bool is_x64();
 
-    [[maybe_unused]]
-    bool is_64_bit();
-
-    [[maybe_unused]]
-    void panic(String title, String message);
+    [[noreturn]] void panic(String message);
 
     template<typename... Args>
-    [[maybe_unused]]
-    void panic(String title, fmt::format_string<Args...> fmt, Args&& ...args) {
-        auto message = fmt::format(fmt, std::forward<Args>(args)...);
+    [[noreturn]] void panic(fmt::format_string<Args...> fmt, Args&& ... args) {
+        const auto message = fmt::format(fmt, std::forward<Args>(args)...);
 
-        panic(title, message);
+        panic(message);
     }
 
-    [[maybe_unused]]
     bool strings_are_equal(const String& string1, const String& string2);
 
-    [[maybe_unused]]
     String to_string(const WideString& wstr);
 
-    [[maybe_unused]]
     WideString to_wstring(const String& str);
+
+    template<typename... Args>
+    Exception exception(fmt::format_string<Args...> fmt, Args&& ...args) {
+        const auto message = fmt::format(fmt, std::forward<Args>(args)...);
+
+        return Exception(message.c_str());
+    }
 
 }

@@ -2,13 +2,15 @@ cmake_minimum_required(VERSION 3.21)
 
 include(KoalaBox.cmake)
 
-configure_globals(".")
+configure_globals(${CMAKE_SOURCE_DIR})
 
 project(KoalaBox VERSION 1.0.0)
 
 configure_build_config()
 
 configure_version_resource("A box of koality tools")
+
+configure_exports_generator()
 
 configure_library(
     SHARED
@@ -27,4 +29,9 @@ configure_output_name(KoalaBox)
 
 configure_include_directories()
 
-configure_dependencies(spdlog PolyHook_2)
+configure_dependencies(
+    KoalaBox
+    nlohmann_json
+    PolyHook_2
+    spdlog
+)

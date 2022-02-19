@@ -10,13 +10,13 @@ macro(configure_include_directories)
     )
 endmacro()
 
-macro(configure_dependencies)
+macro(configure_dependencies PROJECT)
     set(DEPENDENCIES "${ARGN}")
 
     foreach (DEP IN LISTS DEPENDENCIES)
         find_package(${DEP} CONFIG REQUIRED)
 
-        target_link_libraries(${CMAKE_PROJECT_NAME} PRIVATE ${DEP}::${DEP})
+        target_link_libraries(${PROJECT} PRIVATE ${DEP}::${DEP})
     endforeach ()
 endmacro()
 
@@ -66,11 +66,33 @@ macro(configure_globals KOALABOX_DIR)
 endmacro()
 
 macro(configure_exports_generator)
-    add_executable(exports_generator ${KOALABOX_SRC_DIR}/exports_generator/exports_generator.cpp)
+    add_executable(
+        exports_generator
+        ${KOALABOX_SRC_DIR}/exports_generator/exports_generator.cpp
+        ${KOALABOX_SRC_DIR}/koalabox/loader/loader.cpp
+        ${KOALABOX_SRC_DIR}/koalabox/logger/logger.cpp
+        ${KOALABOX_SRC_DIR}/koalabox/util/util.cpp
+        ${KOALABOX_SRC_DIR}/koalabox/win_util/win_util.cpp
+        ${KOALABOX_SRC_DIR}/koalabox/koalabox.cpp
+    )
+
+    configure_build_config()
+
+    target_include_directories(
+        exports_generator PRIVATE
+        ${KOALABOX_SRC_DIR}
+        ${GEN_DIR}
+    )
+
+    target_precompile_headers(
+        exports_generator PRIVATE
+        "$<$<COMPILE_LANGUAGE:CXX>:${KOALABOX_SRC_DIR}/exports_generator/pch.hpp>"
+    )
+
+    configure_dependencies(exports_generator spdlog)
 endmacro()
 
 macro(configure_linker_exports FORWARD_PREFIX INPUT_DLL_PATH INPUT_SOURCES_DIR)
-
     # Make the linker_exports header available before build
     file(TOUCH ${LINKER_EXPORTS})
 
@@ -116,6 +138,7 @@ macro(configure_library TYPE)
     add_library(
         ${CMAKE_PROJECT_NAME} ${TYPE}
         ${SOURCES}
+        ${KOALABOX_SRC_DIR}/koalabox/koalabox.cpp
 
         ## Resources
         ${GEN_DIR}/version.rc

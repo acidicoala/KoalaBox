@@ -1,30 +1,12 @@
 #include "logger.hpp"
+#include "koalabox/koalabox.hpp"
 
 namespace koalabox::logger {
     using namespace koalabox;
 
-    Logger _instance = spdlog::null_logger_mt("null"); // NOLINT(cert-err58-cpp)
-
-    class EmojiFormatterFlag;
-
-    [[maybe_unused]] void init(Path path) { // NOLINT(performance-unnecessary-value-param)
-        _instance = spdlog::basic_logger_mt("default", path.string(), true);
-
-        auto formatter = std::make_unique<spdlog::pattern_formatter>();
-        formatter->add_flag<EmojiFormatterFlag>('*').set_pattern("[%H:%M:%S.%e] %* ┃ %v");
-
-        _instance->set_formatter(std::move(formatter));
-        _instance->set_level(spdlog::level::trace);
-        _instance->flush_on(spdlog::level::trace);
-    }
-
     class EmojiFormatterFlag : public spdlog::custom_flag_formatter {
     public:
-        void format(
-            const spdlog::details::log_msg& log_msg,
-            const std::tm&,
-            spdlog::memory_buf_t& dest
-        ) override {
+        void format(const spdlog::details::log_msg& log_msg, const std::tm&, spdlog::memory_buf_t& dest) override {
             String emoji;
             switch (log_msg.level) {
                 case spdlog::level::critical:
@@ -59,4 +41,16 @@ namespace koalabox::logger {
         }
     };
 
+    std::shared_ptr<spdlog::logger> create(const Path& path) {
+        auto logger = spdlog::basic_logger_st("default", path.string(), true);
+
+        auto formatter = std::make_unique<spdlog::pattern_formatter>();
+        formatter->add_flag<EmojiFormatterFlag>('*').set_pattern("[%H:%M:%S.%e] %* ┃ %v");
+
+        logger->set_formatter(std::move(formatter));
+        logger->set_level(spdlog::level::trace);
+        logger->flush_on(spdlog::level::trace);
+
+        return logger;
+    }
 }

@@ -4,6 +4,7 @@
   "license": "0BSD",
   "dependencies": [
     "spdlog",
+    "nlohmann-json",
     "polyhook2"
   ]
 }

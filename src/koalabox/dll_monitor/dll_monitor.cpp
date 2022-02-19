@@ -8,24 +8,19 @@ namespace koalabox::dll_monitor {
 
     PVOID cookie = nullptr;
 
-    [[maybe_unused]]
-    void init(
-        const String& target_library_name,
-        const std::function<void(HMODULE module)>& callback
-    ) {
-        HMODULE original_library = ::GetModuleHandle(util::to_wstring(target_library_name).c_str());
+    void init(const String& target_library_name, const std::function<void(HMODULE module)>& callback) {
+        // First check if the target dll is already loaded
+        try {
+            const auto original_library = win_util::get_module_handle_or_throw(target_library_name.c_str());
 
-        if (original_library) {
-            // First check if the target dll is already loaded
-
-            logger::debug("Library {} is already loaded", target_library_name);
+            log->debug("Library is already loaded: '{}'", target_library_name);
 
             callback(original_library);
-        }
+        } catch (const std::exception& ex) {}
 
         // Then start listening for future DLLs
 
-        logger::debug("Initializing DLL monitor");
+        log->debug("Initializing DLL monitor");
 
         struct CallbackData {
             String target_library_name;
@@ -43,20 +38,15 @@ namespace koalabox::dll_monitor {
                 return;
             }
 
-            auto base_dll_name = util::to_string(NotificationData->Loaded.BaseDllName->Buffer);
-            auto full_dll_name = util::to_string(NotificationData->Loaded.FullDllName->Buffer);
+            const auto base_dll_name = util::to_string(NotificationData->Loaded.BaseDllName->Buffer);
+            const auto full_dll_name = util::to_string(NotificationData->Loaded.FullDllName->Buffer);
 
-//            logger::debug("DLL loaded - BaseDllName: '{}', FullDllName: '{}'",
-//                base_dll_name,
-//                full_dll_name
-//            );
-
-            auto data = static_cast<CallbackData*>(context);
+            const auto data = static_cast<CallbackData*>(context);
 
             if (util::strings_are_equal(data->target_library_name, base_dll_name)) {
-                logger::debug("Library {} has been loaded", data->target_library_name);
+                log->debug("Library {} has been loaded", data->target_library_name);
 
-                HMODULE loaded_module = win_util::get_module_handle(full_dll_name);
+                HMODULE loaded_module = win_util::get_module_handle(full_dll_name.c_str());
 
                 data->callback(loaded_module);
             }
@@ -65,41 +55,31 @@ namespace koalabox::dll_monitor {
             // delete data;
         };
 
-        auto context = new CallbackData{
-            .target_library_name=target_library_name + ".dll",
-            .callback=callback,
+        const auto context = new CallbackData{
+            .target_library_name = target_library_name + ".dll",
+            .callback = callback,
         };
 
         static const auto LdrRegisterDllNotification = reinterpret_cast<_LdrRegisterDllNotification>(
-            win_util::get_proc_address(
-                win_util::get_module_handle("ntdll"),
-                "LdrRegisterDllNotification"
-            )
+            win_util::get_proc_address(win_util::get_module_handle("ntdll"), "LdrRegisterDllNotification")
         );
 
         const auto status = LdrRegisterDllNotification(0, notification_listener, context, &cookie);
+
         if (status != STATUS_SUCCESS) {
-            util::panic("dll_monitor::init",
-                "Failed to register DLL listener. Status code: {}", status
-            );
+            util::panic("Failed to register DLL listener. Status code: {}", status);
         }
 
-        logger::debug("DLL monitor was successfully initialized");
-
-
+        log->debug("DLL monitor was successfully initialized");
     }
 
-    [[maybe_unused]]
     void shutdown() {
         static const auto LdrUnregisterDllNotification = reinterpret_cast<_LdrUnregisterDllNotification>(
-            win_util::get_proc_address(
-                win_util::get_module_handle("ntdll"),
-                "LdrUnregisterDllNotification"
-            )
+            win_util::get_proc_address(win_util::get_module_handle("ntdll"), "LdrUnregisterDllNotification")
         );
 
         LdrUnregisterDllNotification(cookie);
 
-        logger::debug("DLL monitor was successfully shut down");
+        log->debug("DLL monitor was successfully shut down");
     }
 }

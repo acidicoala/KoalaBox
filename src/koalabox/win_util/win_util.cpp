@@ -1,168 +1,150 @@
 #include "win_util.hpp"
 
-#include "koalabox/logger/logger.hpp"
 #include "koalabox/util/util.hpp"
 
 namespace koalabox::win_util {
 
-    [[maybe_unused]]
-    String format_message(const DWORD message_id) {
-        wchar_t buffer[1024];
+#define PANIC_ON_CATCH(FUNC, ...) \
+    try { \
+        return FUNC##_or_throw(__VA_ARGS__); \
+    } catch (const std::exception& ex) { \
+        util::panic(ex.what()); \
+    }
 
-        ::FormatMessage(
-            FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS,
+    String format_message(const DWORD message_id) {
+        TCHAR buffer[1024];
+
+        ::FormatMessage(FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS,
             nullptr,
             message_id,
             MAKELANGID(LANG_ENGLISH, SUBLANG_ENGLISH_US),
             buffer,
-            (sizeof(buffer) / sizeof(wchar_t)),
+            sizeof(buffer) / sizeof(TCHAR),
             nullptr
         );
 
         return util::to_string(buffer);
     }
 
-    [[maybe_unused]]
-    HMODULE get_current_process_handle() {
-        auto handle = ::GetModuleHandleW(nullptr);
-
-        if (handle == nullptr) {
-            util::panic(__func__, "Failed to get a handle of the current process");
-        }
-
-        return handle;
-    }
-
-    [[maybe_unused]]
-    HMODULE get_module_handle(const String& module_name) {
-        auto name = util::to_wstring(module_name);
-        return get_module_handle(name.c_str());
-    }
-
-    [[maybe_unused]]
-    HMODULE get_module_handle(LPCWSTR module_name) {
-        auto handle = ::GetModuleHandleW(module_name);
-
-        if (handle == nullptr) {
-            util::panic(__func__,
-                "Failed to get a handle of the '{}' module",
-                util::to_string(module_name)
-            );
-        }
-
-        return handle;
-    }
-
-    [[maybe_unused]]
-    String get_module_file_name(const HMODULE handle) {
+    String get_module_file_name_or_throw(const HMODULE& module) {
         constexpr auto buffer_size = 1024;
-        WCHAR buffer[buffer_size];
-        auto length = ::GetModuleFileNameW(handle, buffer, buffer_size);
+        TCHAR buffer[buffer_size];
+        const auto length = ::GetModuleFileName(module, buffer, buffer_size);
 
-        if (length == 0 or length == buffer_size) {
-            util::panic(__func__,
-                "Failed to get a file name of the given module handle: {}",
-                fmt::ptr(handle)
+        return (length > 0 and length < buffer_size)
+            ? util::to_string(buffer)
+            : throw util::exception(
+                "Failed to get a file name of the given module handle: {}. Length: {}",
+                fmt::ptr(module), length
             );
-        }
-
-        return util::to_string(WideString(buffer));
     }
 
-    [[maybe_unused]]
-    MODULEINFO get_module_info(const HMODULE module) {
+    String get_module_file_name(const HMODULE& module) {
+        PANIC_ON_CATCH(get_module_file_name, module)
+    }
+
+    HMODULE get_module_handle_or_throw(LPCSTR module_name) {
+        const auto handle = module_name
+            ? ::GetModuleHandle(util::to_wstring(module_name).c_str())
+            : ::GetModuleHandle(nullptr);
+
+        return handle
+            ? handle
+            : throw util::exception("Failed to get a handle of the module: '{}'", module_name);
+    }
+
+    HMODULE get_module_handle(LPCSTR module_name) {
+        PANIC_ON_CATCH(get_module_handle, module_name)
+    }
+
+    MODULEINFO get_module_info_or_throw(const HMODULE& module) {
         MODULEINFO module_info = { nullptr };
+        const auto success = ::GetModuleInformation(GetCurrentProcess(), module, &module_info, sizeof(module_info));
 
-        auto result = GetModuleInformation(
-            GetCurrentProcess(),
-            module,
-            &module_info,
-            sizeof(module_info)
-        );
-
-        if (result == 0) {
-            util::panic(__func__,
-                "Failed to get module info of the given module handle: {}",
-                fmt::ptr(module)
-            );
-        }
-
-        return module_info;
+        return success
+            ? module_info
+            : throw util::exception("Failed to get module info of the given module handle: {}", fmt::ptr(module));
     }
 
-    [[maybe_unused]]
-    FARPROC get_proc_address(const HMODULE handle, LPCSTR procedure_name) {
-        auto address = ::GetProcAddress(handle, procedure_name);
-
-        if (address == nullptr) {
-            util::panic(__func__,
-                "Failed to get the address of the '{}' procedure",
-                procedure_name
-            );
-        }
-
-        return address;
+    MODULEINFO get_module_info(const HMODULE& module) {
+        PANIC_ON_CATCH(get_module_info, module)
     }
 
-    [[maybe_unused]]
-    Path get_system_directory() {
+    FARPROC get_proc_address_or_throw(const HMODULE& handle, LPCSTR procedure_name) {
+        const auto address = ::GetProcAddress(handle, procedure_name);
+
+        return address
+            ? address
+            : throw util::exception("Failed to get the address of the procedure: '{}'", procedure_name);
+    }
+
+    FARPROC get_proc_address(const HMODULE& handle, LPCSTR procedure_name) {
+        PANIC_ON_CATCH(get_proc_address, handle, procedure_name)
+    }
+
+    Path get_system_directory_or_throw() {
         WCHAR path[MAX_PATH];
-        auto result = GetSystemDirectoryW(path, MAX_PATH);
+        const auto result = GetSystemDirectory(path, MAX_PATH);
 
         if (result > MAX_PATH) {
-            util::panic(__func__,
-                "GetSystemDirectoryW path length ({}) is greater than MAX_PATH ({})",
+            throw util::exception(
+                "GetSystemDirectory path length ({}) is greater than MAX_PATH ({})",
                 result, MAX_PATH
             );
         } else if (result == 0) {
-            util::panic(__func__, "Failed to get the path of the system directory");
+            throw std::exception("Failed to get the path of the system directory");
         }
 
         return std::filesystem::absolute(path);
     }
 
-    [[maybe_unused]]
-    bool free_library(const HMODULE handle) {
-        auto successful = ::FreeLibrary(handle);
-
-        if (not successful) {
-            logger::error("{} - Failed to free a library with the given module handle: {}",
-                __func__, fmt::ptr(handle)
-            );
-        }
-
-        return successful;
+    Path get_system_directory() {
+        PANIC_ON_CATCH(get_system_directory)
     }
 
-    [[maybe_unused]]
+    void free_library_or_throw(const HMODULE& handle) {
+        if (not::FreeLibrary(handle)) {
+            throw util::exception("Failed to free a library with the given module handle: {}", fmt::ptr(handle));
+        }
+    }
+
+    bool free_library(const HMODULE& handle, bool panic_on_fail) {
+        try {
+            free_library_or_throw(handle);
+            return true;
+        } catch (std::exception& ex) {
+            if (panic_on_fail) {
+                util::panic(ex.what());
+            }
+
+            return false;
+        }
+    }
+
+    HMODULE load_library_or_throw(const Path& module_path) {
+        const auto module = ::LoadLibrary(module_path.wstring().c_str());
+
+        return module
+            ? module
+            : throw util::exception("Failed to load the module at path: '{}'", module_path.string());
+    }
+
     HMODULE load_library(const Path& module_path) {
-        auto handle = ::LoadLibraryW(module_path.wstring().c_str());
-
-        if (handle == nullptr) {
-            util::panic(__func__,
-                "Failed to load the module at path: '{}'",
-                module_path.string()
-            );
-        }
-
-        return handle;
+        PANIC_ON_CATCH(load_library, module_path)
     }
 
-    [[maybe_unused]]
-    SIZE_T write_process_memory(HANDLE process, LPVOID address, LPCVOID buffer, SIZE_T size) {
-        SIZE_T bytes_written = -1;
+    SIZE_T write_process_memory_or_throw(const HANDLE& process, LPVOID address, LPCVOID buffer, SIZE_T size) {
+        SIZE_T bytes_written = 0;
 
-        auto result = WriteProcessMemory(process, address, buffer, size, &bytes_written);
-
-
-        if (result == 0) {
-            util::panic(__func__,
-                "Failed to write process memory at address: '{}'",
-                fmt::ptr(address)
+        return WriteProcessMemory(process, address, buffer, size, &bytes_written)
+            ? bytes_written
+            : throw util::exception(
+                "Failed to write process memory at address: '{}'", fmt::ptr(address)
             );
-        }
+    }
 
-        return bytes_written;
+    SIZE_T write_process_memory(const HANDLE& process, LPVOID address, LPCVOID buffer, SIZE_T size) {
+        PANIC_ON_CATCH(write_process_memory, process, address, buffer, size)
     }
 
 }
