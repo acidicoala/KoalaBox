@@ -29,6 +29,9 @@ macro(set_32_and_64 VAR val_for_32 val_for_64)
 endmacro()
 
 macro(configure_globals KOALABOX_DIR)
+    # Resolve KoalaBox directory
+    get_filename_component(KOALABOX_DIR "${KOALABOX_DIR}" ABSOLUTE BASE_DIR "${CMAKE_SOURCE_DIR}")
+
     # configure c++
     set(CMAKE_CXX_STANDARD 20)
 
@@ -70,7 +73,6 @@ macro(configure_exports_generator)
         exports_generator
         ${KOALABOX_SRC_DIR}/exports_generator/exports_generator.cpp
         ${KOALABOX_SRC_DIR}/koalabox/loader/loader.cpp
-        ${KOALABOX_SRC_DIR}/koalabox/logger/logger.cpp
         ${KOALABOX_SRC_DIR}/koalabox/util/util.cpp
         ${KOALABOX_SRC_DIR}/koalabox/win_util/win_util.cpp
         ${KOALABOX_SRC_DIR}/koalabox/koalabox.cpp
@@ -84,10 +86,7 @@ macro(configure_exports_generator)
         ${GEN_DIR}
     )
 
-    target_precompile_headers(
-        exports_generator PRIVATE
-        "$<$<COMPILE_LANGUAGE:CXX>:${KOALABOX_SRC_DIR}/exports_generator/pch.hpp>"
-    )
+    configure_precompile_headers(exports_generator koalabox/pch.hpp)
 
     configure_dependencies(exports_generator spdlog)
 endmacro()
@@ -154,9 +153,9 @@ macro(configure_output_name OUTPUT_NAME)
 endmacro()
 
 
-macro(configure_precompile_headers PCH_PATH)
+macro(configure_precompile_headers PROJECT PCH_PATH)
     target_precompile_headers(
-        ${CMAKE_PROJECT_NAME} PRIVATE
+        ${PROJECT} PRIVATE
         "$<$<COMPILE_LANGUAGE:CXX>:${PCH_PATH}>"
     )
 endmacro()

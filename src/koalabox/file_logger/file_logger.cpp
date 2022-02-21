@@ -1,8 +1,6 @@
-#include "logger.hpp"
-#include "koalabox/koalabox.hpp"
+#include "file_logger.hpp"
 
-namespace koalabox::logger {
-    using namespace koalabox;
+namespace koalabox::file_logger {
 
     class EmojiFormatterFlag : public spdlog::custom_flag_formatter {
     public:

@@ -25,7 +25,7 @@ Set<String> get_implemented_functions(const Path& path);
  * 4: header output path <br>
  */
 int wmain(const int argc, const wchar_t* argv[]) {
-    koalabox::log = spdlog::stdout_logger_st("stdout");
+    logger = spdlog::stdout_logger_st("stdout");
 
     assert(argc == 4 || argc == 5);
 
@@ -87,7 +87,7 @@ Set<String> get_implemented_functions(const Path& path) {
 
             if (not implemented_functions.contains(func_name)) {
                 implemented_functions.insert(func_name);
-                koalabox::log->debug("Implemented function: {}", func_name);
+                logger->debug("Implemented function: {}", func_name);
             }
 
             file_content = match.suffix();

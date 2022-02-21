@@ -1,7 +1,5 @@
 #include "util.hpp"
 
-#include "koalabox/logger/logger.hpp"
-
 #include <build_config.h>
 
 namespace koalabox::util {
@@ -22,13 +20,13 @@ namespace koalabox::util {
 
         const auto last_error = ::GetLastError();
         if (last_error != 0) {
-            message = fmt::format("{}\n———————— Windows Last Error ————————\nCode: {}\nMessage: {}",
-                message,
-                last_error,
-                win_util::format_message(last_error));
+            message = fmt::format(
+                "{}\n———————— Windows Last Error ————————\nCode: {}\nMessage: {}",
+                message, last_error, win_util::format_message(last_error)
+            );
         }
 
-        log->critical(message);
+        logger->critical(message);
 
         error_box(title, message);
 

@@ -4,7 +4,10 @@
 
 namespace koalabox::dll_monitor {
 
-    void init(const String& target_library_name, const std::function<void(HMODULE module)>& callback);
+    void init(
+        const String& target_library_name,
+        const std::function<void(const HMODULE& module)>& callback
+    );
 
     void shutdown();
 

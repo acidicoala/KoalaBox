@@ -2,7 +2,7 @@
 
 #include "koalabox/koalabox.hpp"
 
-namespace koalabox::logger {
+namespace koalabox::file_logger {
 
     std::shared_ptr<spdlog::logger> create(const Path& path);
 

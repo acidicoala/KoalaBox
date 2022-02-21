@@ -1,26 +1,28 @@
 #include "dll_monitor.hpp"
 #include "ntapi.hpp"
 
-#include "koalabox/logger/logger.hpp"
 #include "koalabox/util/util.hpp"
 
 namespace koalabox::dll_monitor {
 
     PVOID cookie = nullptr;
 
-    void init(const String& target_library_name, const std::function<void(HMODULE module)>& callback) {
+    void init(
+        const String& target_library_name,
+        const std::function<void(const HMODULE& module)>& callback
+    ) {
         // First check if the target dll is already loaded
         try {
             const auto original_library = win_util::get_module_handle_or_throw(target_library_name.c_str());
 
-            log->debug("Library is already loaded: '{}'", target_library_name);
+            logger->debug("Library is already loaded: '{}'", target_library_name);
 
             callback(original_library);
         } catch (const std::exception& ex) {}
 
         // Then start listening for future DLLs
 
-        log->debug("Initializing DLL monitor");
+        logger->debug("Initializing DLL monitor");
 
         struct CallbackData {
             String target_library_name;
@@ -44,7 +46,7 @@ namespace koalabox::dll_monitor {
             const auto data = static_cast<CallbackData*>(context);
 
             if (util::strings_are_equal(data->target_library_name, base_dll_name)) {
-                log->debug("Library {} has been loaded", data->target_library_name);
+                logger->debug("Library {} has been loaded", data->target_library_name);
 
                 HMODULE loaded_module = win_util::get_module_handle(full_dll_name.c_str());
 
@@ -70,7 +72,7 @@ namespace koalabox::dll_monitor {
             util::panic("Failed to register DLL listener. Status code: {}", status);
         }
 
-        log->debug("DLL monitor was successfully initialized");
+        logger->debug("DLL monitor was successfully initialized");
     }
 
     void shutdown() {
@@ -80,6 +82,6 @@ namespace koalabox::dll_monitor {
 
         LdrUnregisterDllNotification(cookie);
 
-        log->debug("DLL monitor was successfully shut down");
+        logger->debug("DLL monitor was successfully shut down");
     }
 }

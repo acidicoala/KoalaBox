@@ -1,6 +1,4 @@
 #include "hook.hpp"
-#include "koalabox/koalabox.hpp"
-#include "koalabox/util/util.hpp"
 
 #include "3rd_party/polyhook2.hpp"
 
@@ -10,9 +8,9 @@ namespace koalabox::hook {
     class PolyhookLogger : public PLH::Logger {
         void log(String msg, PLH::ErrorLevel level) override {
             if (level == PLH::ErrorLevel::WARN) {
-                koalabox::log->warn("[Polyhook] {}", msg);
+                koalabox::logger->warn("[Polyhook] {}", msg);
             } else if (level == PLH::ErrorLevel::SEV) {
-                koalabox::log->error("[Polyhook] {}", msg);
+                koalabox::logger->error("[Polyhook] {}", msg);
             }
         }
     };
@@ -23,12 +21,12 @@ namespace koalabox::hook {
     typedef PLH::x86Detour Detour;
 #endif
 
-    Map<String, FunctionPointer> address_book; // NOLINT(cert-err58-cpp)
+    Map <String, FunctionPointer> address_book; // NOLINT(cert-err58-cpp)
 
     Vector<PLH::IHook*> hooks; // NOLINT(cert-err58-cpp)
 
     void detour_or_throw(const HMODULE& module, const String& function_name, FunctionPointer callback_function) {
-        log->debug("Hooking '{}' via Detour", function_name);
+        logger->debug("Hooking '{}' via Detour", function_name);
 
         static PLH::CapstoneDisassembler disassembler(util::is_x64() ? PLH::Mode::x64 : PLH::Mode::x86);
 
@@ -45,7 +43,7 @@ namespace koalabox::hook {
 #endif
 
         if (detour->hook()) {
-            address_book[function_name] = address;
+            address_book[function_name] = reinterpret_cast<FunctionPointer>(trampoline);
 
             hooks.push_back(detour);
         } else {
@@ -54,7 +52,7 @@ namespace koalabox::hook {
     }
 
     void eat_hook_or_throw(const HMODULE& module, const String& function_name, FunctionPointer callback_function) {
-        log->debug("Hooking '{}' via EAT", function_name);
+        logger->debug("Hooking '{}' via EAT", function_name);
 
         // TODO: Add support for absolute paths / module handles
         const auto module_path = Path(win_util::get_module_file_name(module));
@@ -79,21 +77,24 @@ namespace koalabox::hook {
     }
 
     FunctionPointer get_original_function(bool is_hook_mode, const HMODULE& library, const String& function_name) {
+        const auto decorated_name = loader::get_undecorated_function(library, function_name);
+
         if (is_hook_mode) {
-            if (not hook::address_book.contains(function_name)) {
-                util::panic("Address book does not contain function: {}", function_name);
+            if (not hook::address_book.contains(decorated_name)) {
+                util::panic("Address book does not contain function: {}", decorated_name);
             }
 
-            return hook::address_book[function_name];
+            return hook::address_book[decorated_name];
         } else {
+
             return reinterpret_cast<FunctionPointer>(
-                win_util::get_proc_address(library, function_name.c_str())
+                win_util::get_proc_address(library, decorated_name.c_str())
             );
         }
     }
 
     void init(const std::function<void()>& callback) {
-        log->debug("Hooker initialization");
+        logger->debug("Hooker initialization");
 
         // Initialize polyhook logger
         auto polyhook_logger = std::make_shared<PolyhookLogger>();

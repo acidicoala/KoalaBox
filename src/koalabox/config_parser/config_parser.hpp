@@ -5,17 +5,17 @@
 
 #include "3rd_party/json.hpp"
 
-namespace koalabox::config {
+namespace koalabox::config_parser {
 
     template<typename C>
-    C parse(const Path& path) {
+    C parse(Path path, const bool enable_comments = false) {
         if (not exists(path)) {
             return {};
         }
 
         try {
-            const std::ifstream ifs(path);
-            const auto json = nlohmann::json::parse(ifs, nullptr, true, true);
+            std::ifstream ifs(std::move(path)); // Cannot be const
+            const auto json = nlohmann::json::parse(ifs, nullptr, true, enable_comments);
 
             return json.get<C>();
         } catch (const std::exception& ex) {

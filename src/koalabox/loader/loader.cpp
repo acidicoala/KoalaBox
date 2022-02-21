@@ -56,10 +56,10 @@ namespace koalabox::loader {
                 if (matches.size() == 2) {
                     undecorated_function = matches[1];
                 } else {
-                    log->warn("Exported function regex size != 2: {}", exported_name);
+                    logger->warn("Exported function regex size != 2: {}", exported_name);
                 }
             } else {
-                log->warn("Exported function regex failed: {}", exported_name);
+                logger->warn("Exported function regex failed: {}", exported_name);
             }
 
             exported_functions.insert({ undecorated_function, exported_name });
@@ -83,7 +83,7 @@ namespace koalabox::loader {
 
         const auto original_module = win_util::load_library(original_module_path);
 
-        log->info("📚 Loaded original library from: '{}'", original_module_path.string());
+        logger->info("📚 Loaded original library from: '{}'", original_module_path.string());
 
         return original_module;
     }
