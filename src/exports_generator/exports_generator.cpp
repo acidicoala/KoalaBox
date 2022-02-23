@@ -1,5 +1,6 @@
 #include "koalabox/koalabox.hpp"
 #include "koalabox/util/util.hpp"
+#include "koalabox/win_util/win_util.hpp"
 #include "koalabox/loader/loader.hpp"
 
 // Ensure that assert macros work
