@@ -85,8 +85,6 @@ jobs:
     needs: build-project
     permissions:
       contents: write
-    env:
-      ZIP_NAME: ${{ env.PROJECT_NAME }}-${{ env.VERSION_TAG }}.zip
     steps:
       - name: Setup version tag
         run: echo "VERSION_TAG=${GITHUB_REF#refs/tags/}" >> $GITHUB_ENV
