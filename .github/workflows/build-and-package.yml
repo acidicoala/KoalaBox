@@ -89,8 +89,10 @@ jobs:
       ZIP_NAME: ${{ env.PROJECT_NAME }}-${{ env.VERSION_TAG }}.zip
     steps:
       - name: Setup version tag
-        id: env_setup
         run: echo "VERSION_TAG=${GITHUB_REF#refs/tags/}" >> $GITHUB_ENV
+
+      - name: Setup zip name
+        run: echo "ZIP_NAME=$PROJECT_NAME-$VERSION_TAG.zip" >> $GITHUB_ENV
 
       - name: Install required tools
         run: |
