@@ -40,7 +40,6 @@ jobs:
       BUILD_DIR: ${{ github.workspace }}\build\${{ matrix.arch }}
       VCPKG_ROOT: ${{ github.workspace }}\vcpkg
       VCPKG_DISABLE_METRICS: true
-      DLL_FILE: EOSSDK-Win${{ matrix.arch }}-Shipping
 
     steps:
       - name: Check out repository code
@@ -70,7 +69,7 @@ jobs:
           ${{ inputs.cmake_options}}
 
       - name: Build the project
-        run: cmake --build ${{ env.BUILD_DIR }} --config ${{ matrix.config }}
+        run: cmake --build ${{ env.BUILD_DIR }} --config Release
 
       - name: Upload the binary file and debug info
         uses: actions/upload-artifact@v2
