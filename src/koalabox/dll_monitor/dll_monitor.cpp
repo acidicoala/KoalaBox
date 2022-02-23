@@ -1,6 +1,7 @@
 #include "dll_monitor.hpp"
 #include "ntapi.hpp"
 
+#include "koalabox/win_util/win_util.hpp"
 #include "koalabox/util/util.hpp"
 
 namespace koalabox::dll_monitor {

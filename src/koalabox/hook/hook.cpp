@@ -1,4 +1,5 @@
 #include "hook.hpp"
+#include "koalabox/loader/loader.hpp"
 
 #include "3rd_party/polyhook2.hpp"
 
@@ -54,13 +55,10 @@ namespace koalabox::hook {
     void eat_hook_or_throw(const HMODULE& module, const String& function_name, FunctionPointer callback_function) {
         logger->debug("Hooking '{}' via EAT", function_name);
 
-        // TODO: Add support for absolute paths / module handles
-        const auto module_path = Path(win_util::get_module_file_name(module));
-
         uint64_t orig_function_address = 0;
         const auto eat_hook = new PLH::EatHook(
             function_name,
-            util::to_wstring(module_path.filename().string()),
+            module,
             reinterpret_cast<FunctionPointer>(callback_function),
             &orig_function_address
         );
@@ -86,7 +84,6 @@ namespace koalabox::hook {
 
             return hook::address_book[decorated_name];
         } else {
-
             return reinterpret_cast<FunctionPointer>(
                 win_util::get_proc_address(library, decorated_name.c_str())
             );

@@ -2,6 +2,8 @@
 
 #include <build_config.h>
 
+#include "koalabox/win_util/win_util.hpp"
+
 namespace koalabox::util {
 
     void error_box(const String& title, const String& message) {
