@@ -15,11 +15,14 @@ if ($config -notmatch '^(Debug|Release|RelWithDebInfo)$') {
     throw "Invalid architecute. Expected: 'Debug' or 'Release' or 'RelWithDebInfo'. Got: '$config'"
 }
 
-$Env:BUILD_DIR = "build\$arch"
 if ($config -eq 'Debug') {
     $Env:VERSION_SUFFIX = "-debug"
 }
 
-cmake -G "Visual Studio 17 2022" -A $platform -B "$Env:BUILD_DIR" "$Env:CMAKE_OPTIONS"
+$Env:BUILD_DIR = "build\$arch"
 
-cmake --build "$Env:BUILD_DIR" --config $config
+function Build-Project {
+    cmake -G "Visual Studio 17 2022" -A $platform -B "$Env:BUILD_DIR" "$Env:CMAKE_OPTIONS"
+
+    cmake --build "$Env:BUILD_DIR" --config $config  "$Env:CMAKE_BUILD_OPTIONS"
+}

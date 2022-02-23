@@ -71,7 +71,7 @@ jobs:
       - name: Build the project
         run: cmake --build ${{ env.BUILD_DIR }} --config Release
 
-      - name: Upload the binary file and debug info
+      - name: Upload binaries
         uses: actions/upload-artifact@v2
         with:
           name: ${{ matrix.module }}-${{ matrix.arch }}
