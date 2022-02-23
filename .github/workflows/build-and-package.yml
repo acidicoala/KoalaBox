@@ -7,17 +7,9 @@ on:
         required: true
         type: string
 
-      cmake_options:
-        required: false
-        type: string
-
       zip_command:
         required: true
         type: string
-
-env:
-  PROJECT_NAME: ${{ github.event.repository.name }}
-  GENERATOR: "Visual Studio 17 2022"
 
 jobs:
   build-project:
@@ -62,12 +54,11 @@ jobs:
           path: ${{ env.BUILD_DIR }}
           key: ${{ hashFiles( 'CMakeLists.txt' ) }}-${{ matrix.arch }}
 
+      - name: Execute pre-build script
+        run: if (Test-Path -Path ./pre_build.ps1) { . ./pre_build.ps1 }
+
       - name: Generate build files
-        run: >
-          cmake -G "${{ env.GENERATOR }}"
-          -A "${{ matrix.platform }}"
-          -B "${{ env.BUILD_DIR }}"
-          ${{ inputs.cmake_options}}
+        run: cmake -G "Visual Studio 17 2022" -A "${{ matrix.platform }}" -B "${{ env.BUILD_DIR }}"
 
       - name: Build the project
         run: cmake --build ${{ env.BUILD_DIR }} --config Release
@@ -90,6 +81,8 @@ jobs:
         run: echo "VERSION_TAG=${GITHUB_REF#refs/tags/}" >> $GITHUB_ENV
 
       - name: Setup zip name
+        env:
+          PROJECT_NAME: ${{ github.event.repository.name }}
         run: echo "ZIP_NAME=$PROJECT_NAME-$VERSION_TAG.zip" >> $GITHUB_ENV
 
       - name: Install required tools
