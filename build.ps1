@@ -4,8 +4,6 @@
 #   build.ps1 64 Debug
 #   build.ps1 64 Release
 
-Set-Location (Get-Item $PSScriptRoot).Parent
-
 $arch = $args[0]
 if ($arch -notmatch '^(32|64)$') {
     throw "Invalid architecute. Expected: '32' or '64'. Got: '$arch'"
