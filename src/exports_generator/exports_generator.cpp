@@ -41,7 +41,7 @@ int wmain(const int argc, const wchar_t* argv[]) {
         ? Set<String>()
         : get_implemented_functions(sources_input_path);
 
-    const auto library = win_util::load_library(dll_input_path);
+    const auto library = win_util::load_library_or_throw(dll_input_path);
 
     auto exported_functions = loader::get_undecorated_function_map(library);
 
