@@ -64,9 +64,9 @@ jobs:
 
       - name: Generate build files
         run: >
-          cmake -G ${{ env.GENERATOR }}
-                -A ${{ matrix.platform }}
-                -B ${{ env.BUILD_DIR }}
+          cmake -G "${{ env.GENERATOR }}"
+                -A "${{ matrix.platform }}"
+                -B "${{ env.BUILD_DIR }}"
                 ${{ inputs.cmake_options}}
 
       - name: Build the project
