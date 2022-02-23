@@ -40,6 +40,7 @@ jobs:
       BUILD_DIR: ${{ github.workspace }}\build\${{ matrix.arch }}
       VCPKG_ROOT: ${{ github.workspace }}\vcpkg
       VCPKG_DISABLE_METRICS: true
+      MODULE: ${{ matrix.module }}
 
     steps:
       - name: Check out repository code
