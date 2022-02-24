@@ -59,7 +59,7 @@ jobs:
         env:
           GITHUB_REF: ${{ github.ref }}
         run: >
-          echo ("VERSION_SUFFIX=" + $env:GITHUB_REF.replace('refs/heads/', ''))
+          echo ("VERSION_SUFFIX=-" + $env:GITHUB_REF.replace('refs/heads/', ''))
           | Out-File -FilePath $Env:GITHUB_ENV -Encoding utf8 -Append
 
       - name: Generate build files
