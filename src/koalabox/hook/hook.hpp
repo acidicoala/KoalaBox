@@ -18,7 +18,7 @@ namespace koalabox::hook {
         return reinterpret_cast<F>(get_original_function(is_hook_mode, library, function_name));
     }
 
-    void init(const std::function<void()>& callback);
+    void init();
 
     bool is_hook_mode(const HMODULE& self_module, const String& orig_library_name);
 

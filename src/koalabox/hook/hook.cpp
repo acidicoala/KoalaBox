@@ -22,7 +22,7 @@ namespace koalabox::hook {
     typedef PLH::x86Detour Detour;
 #endif
 
-    Map <String, FunctionPointer> address_book; // NOLINT(cert-err58-cpp)
+    Map<String, FunctionPointer> address_book; // NOLINT(cert-err58-cpp)
 
     Vector<PLH::IHook*> hooks; // NOLINT(cert-err58-cpp)
 
@@ -90,14 +90,12 @@ namespace koalabox::hook {
         }
     }
 
-    void init(const std::function<void()>& callback) {
+    void init() {
         logger->debug("Hooker initialization");
 
         // Initialize polyhook logger
         auto polyhook_logger = std::make_shared<PolyhookLogger>();
         PLH::Log::registerLogger(polyhook_logger);
-
-        callback();
     }
 
     bool is_hook_mode(const HMODULE& self_module, const String& orig_library_name) {
