@@ -1,8 +1,8 @@
 #include "dll_monitor.hpp"
 #include "ntapi.hpp"
 
-#include "koalabox/win_util/win_util.hpp"
 #include "koalabox/util/util.hpp"
+#include "koalabox/win_util/win_util.hpp"
 
 namespace koalabox::dll_monitor {
 
@@ -12,22 +12,41 @@ namespace koalabox::dll_monitor {
         const String& target_library_name,
         const std::function<void(const HMODULE& module)>& callback
     ) {
+        init(
+            Vector<String>{ target_library_name },
+            [&](const HMODULE& module, const String& library_name) {
+                callback(module);
+            }
+        );
+    }
+
+    void init(
+        const Vector<String>& target_library_names,
+        const std::function<void(const HMODULE& module, const String& library_name)>& callback
+    ) {
+        if (cookie) {
+            logger->error("[dll_monitor::init] Already initialized");
+            return;
+        }
+
         // First check if the target dll is already loaded
-        try {
-            const auto original_library = win_util::get_module_handle_or_throw(target_library_name.c_str());
+        for (const auto& library_name: target_library_names) {
+            try {
+                const auto original_library = win_util::get_module_handle_or_throw(library_name.c_str());
 
-            logger->debug("Library is already loaded: '{}'", target_library_name);
+                logger->debug("Library is already loaded: '{}'", library_name);
 
-            callback(original_library);
-        } catch (const std::exception& ex) {}
+                callback(original_library, library_name);
+            } catch (const std::exception& ex) {}
+        }
 
         // Then start listening for future DLLs
 
         logger->debug("Initializing DLL monitor");
 
         struct CallbackData {
-            String target_library_name;
-            std::function<void(HMODULE module)> callback;
+            Vector<String> target_library_names;
+            std::function<void(const HMODULE& module, const String& library_name)> callback;
         };
 
         // Pre-process the notification
@@ -46,12 +65,14 @@ namespace koalabox::dll_monitor {
 
             const auto data = static_cast<CallbackData*>(context);
 
-            if (util::strings_are_equal(data->target_library_name, base_dll_name)) {
-                logger->debug("Library {} has been loaded", data->target_library_name);
+            for (const auto& library_name: data->target_library_names) {
+                if (util::strings_are_equal(library_name + ".dll", base_dll_name)) {
+                    logger->debug("Library {} has been loaded", library_name);
 
-                HMODULE loaded_module = win_util::get_module_handle(full_dll_name.c_str());
+                    const auto loaded_module = win_util::get_module_handle(full_dll_name.c_str());
 
-                data->callback(loaded_module);
+                    data->callback(loaded_module, library_name);
+                }
             }
 
             // Do not delete data since it is re-used
@@ -59,7 +80,7 @@ namespace koalabox::dll_monitor {
         };
 
         const auto context = new CallbackData{
-            .target_library_name = target_library_name + ".dll",
+            .target_library_names = target_library_names,
             .callback = callback,
         };
 
@@ -82,6 +103,7 @@ namespace koalabox::dll_monitor {
         );
 
         LdrUnregisterDllNotification(cookie);
+        cookie = nullptr;
 
         logger->debug("DLL monitor was successfully shut down");
     }
