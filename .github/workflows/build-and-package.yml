@@ -54,6 +54,10 @@ jobs:
           path: ${{ env.BUILD_DIR }}
           key: ${{ hashFiles( 'CMakeLists.txt' ) }}-${{ matrix.arch }}
 
+      - name: Setup version suffix
+        if: github.ref != 'refs/heads/master'
+        run: echo "VERSION_SUFFIX=-${GITHUB_REF##*/}" >> $GITHUB_ENV
+
       - name: Generate build files
         run: cmake -G "Visual Studio 17 2022" -A "${{ matrix.platform }}" -B "${{ env.BUILD_DIR }}"
 
