@@ -29,7 +29,7 @@ jobs:
             term: amd64
 
     env:
-      BUILD_DIR: ${{ github.workspace }}\build\${{ matrix.arch }}
+      BUILD_DIR: ${{ github.workspace }}\build\${{ matrix.arch }}\${{ matrix.module }}
       VCPKG_ROOT: ${{ github.workspace }}\vcpkg
       VCPKG_DISABLE_METRICS: true
       MODULE: ${{ matrix.module }}
@@ -52,7 +52,7 @@ jobs:
         uses: actions/cache@v2
         with:
           path: ${{ env.BUILD_DIR }}
-          key: ${{ hashFiles( 'CMakeLists.txt' ) }}-${{ matrix.arch }}
+          key: ${{ hashFiles( 'CMakeLists.txt' ) }}-${{ matrix.arch }}-${{ matrix.module }}
 
       - name: Setup version suffix
         if: github.ref != 'refs/heads/master'
