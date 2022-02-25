@@ -72,9 +72,15 @@ namespace koalabox::loader {
         if (util::is_x64()) {
             return function_name;
         } else {
+            static Map <HMODULE, Map<String, String>> undecorated_function_maps;
+
+            if (not undecorated_function_maps.contains(library)) {
+                undecorated_function_maps[library] = get_undecorated_function_map(library);
+            }
+
             static auto undecorated_function_map = get_undecorated_function_map(library);
 
-            return undecorated_function_map[function_name];
+            return undecorated_function_maps[library][function_name];
         }
     }
 
