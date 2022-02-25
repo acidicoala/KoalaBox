@@ -91,7 +91,7 @@ namespace koalabox::hook {
     }
 
     void init() {
-        logger->debug("Hooker initialization");
+        logger->debug("Hooking initialization");
 
         // Initialize polyhook logger
         auto polyhook_logger = std::make_shared<PolyhookLogger>();

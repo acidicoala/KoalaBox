@@ -29,18 +29,7 @@ namespace koalabox::dll_monitor {
             return;
         }
 
-        // First check if the target dll is already loaded
-        for (const auto& library_name: target_library_names) {
-            try {
-                const auto original_library = win_util::get_module_handle_or_throw(library_name.c_str());
-
-                logger->debug("Library is already loaded: '{}'", library_name);
-
-                callback(original_library, library_name);
-            } catch (const std::exception& ex) {}
-        }
-
-        // Then start listening for future DLLs
+        // First start listening for future DLLs
 
         logger->debug("Initializing DLL monitor");
 
@@ -95,6 +84,17 @@ namespace koalabox::dll_monitor {
         }
 
         logger->debug("DLL monitor was successfully initialized");
+
+        // Then check if the target dll is already loaded
+        for (const auto& library_name: target_library_names) {
+            try {
+                const auto original_library = win_util::get_module_handle_or_throw(library_name.c_str());
+
+                logger->debug("Library is already loaded: '{}'", library_name);
+
+                callback(original_library, library_name);
+            } catch (const std::exception& ex) {}
+        }
     }
 
     void shutdown() {
