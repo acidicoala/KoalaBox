@@ -7,8 +7,14 @@ namespace koalabox::hook {
     using namespace koalabox;
 
     class PolyhookLogger : public PLH::Logger {
+        bool print_info;
+    public:
+        explicit PolyhookLogger(bool print_info = false) : print_info(print_info) {};
+
         void log(String msg, PLH::ErrorLevel level) override {
-            if (level == PLH::ErrorLevel::WARN) {
+            if (level == PLH::ErrorLevel::INFO && print_info) {
+                koalabox::logger->debug("[Polyhook] {}", msg);
+            } else if (level == PLH::ErrorLevel::WARN) {
                 koalabox::logger->warn("[Polyhook] {}", msg);
             } else if (level == PLH::ErrorLevel::SEV) {
                 koalabox::logger->error("[Polyhook] {}", msg);
@@ -22,7 +28,7 @@ namespace koalabox::hook {
     typedef PLH::x86Detour Detour;
 #endif
 
-    Map<String, FunctionPointer> address_book; // NOLINT(cert-err58-cpp)
+    Map <String, FunctionPointer> address_book; // NOLINT(cert-err58-cpp)
 
     Vector<PLH::IHook*> hooks; // NOLINT(cert-err58-cpp)
 
@@ -32,7 +38,7 @@ namespace koalabox::hook {
         static PLH::CapstoneDisassembler disassembler(util::is_x64() ? PLH::Mode::x64 : PLH::Mode::x86);
 
         const auto address = reinterpret_cast<FunctionPointer>(
-            win_util::get_proc_address_or_throw(module, function_name.c_str())
+            win_util::get_proc_address(module, function_name.c_str())
         );
 
         uint64_t trampoline = 0;
@@ -42,13 +48,20 @@ namespace koalabox::hook {
 #ifdef _WIN64
         detour->setDetourScheme(Detour::ALL);
 #endif
-
         if (detour->hook()) {
             address_book[function_name] = reinterpret_cast<FunctionPointer>(trampoline);
 
             hooks.push_back(detour);
         } else {
             throw util::exception("Failed to hook function: {}", function_name);
+        }
+    }
+
+    void detour(const HMODULE& module, const String& function_name, FunctionPointer callback_function) {
+        try {
+            detour_or_throw(module, function_name, callback_function);
+        } catch (const std::exception& ex) {
+            util::panic("Failed to hook function {} via Detour: {}", function_name, ex.what());
         }
     }
 
@@ -90,11 +103,11 @@ namespace koalabox::hook {
         }
     }
 
-    void init() {
+    void init(bool print_info) {
         logger->debug("Hooking initialization");
 
         // Initialize polyhook logger
-        auto polyhook_logger = std::make_shared<PolyhookLogger>();
+        auto polyhook_logger = std::make_shared<PolyhookLogger>(print_info);
         PLH::Log::registerLogger(polyhook_logger);
     }
 

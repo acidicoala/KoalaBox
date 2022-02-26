@@ -14,14 +14,14 @@ namespace koalabox::dll_monitor {
     ) {
         init(
             Vector<String>{ target_library_name },
-            [&](const HMODULE& module, const String& library_name) {
+            [=](const HMODULE& module, const String& library_name) {
                 callback(module);
             }
         );
     }
 
     void init(
-        const Vector<String>& target_library_names,
+        const Vector <String>& target_library_names,
         const std::function<void(const HMODULE& module, const String& library_name)>& callback
     ) {
         if (cookie) {
@@ -34,7 +34,7 @@ namespace koalabox::dll_monitor {
         logger->debug("Initializing DLL monitor");
 
         struct CallbackData {
-            Vector<String> target_library_names;
+            Vector <String> target_library_names;
             std::function<void(const HMODULE& module, const String& library_name)> callback;
         };
 
@@ -56,7 +56,7 @@ namespace koalabox::dll_monitor {
 
             for (const auto& library_name: data->target_library_names) {
                 if (util::strings_are_equal(library_name + ".dll", base_dll_name)) {
-                    logger->debug("Library {} has been loaded", library_name);
+                    logger->debug("Library '{}' has been loaded", library_name);
 
                     const auto loaded_module = win_util::get_module_handle(full_dll_name.c_str());
 
