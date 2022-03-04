@@ -55,7 +55,8 @@ jobs:
           key: ${{ hashFiles( 'CMakeLists.txt' ) }}-${{ matrix.arch }}-${{ matrix.module }}
 
       - name: Setup version suffix
-        if: github.ref != 'refs/heads/master'
+        # Skip a suffix for master & release events
+        if: (github.ref != 'refs/heads/master') && startsWith(github.ref, 'refs/tags/')
         env:
           GITHUB_REF: ${{ github.ref }}
         run: >
