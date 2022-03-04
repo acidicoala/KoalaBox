@@ -91,13 +91,14 @@ macro(configure_exports_generator)
     configure_dependencies(exports_generator spdlog)
 endmacro()
 
-macro(configure_linker_exports FORWARD_PREFIX INPUT_DLL_PATH INPUT_SOURCES_DIR)
+macro(configure_linker_exports UNDECORATE FORWARD_PREFIX INPUT_DLL_PATH INPUT_SOURCES_DIR)
     # Make the linker_exports header available before build
     file(TOUCH ${LINKER_EXPORTS})
 
     add_custom_command(
         OUTPUT ${LINKER_EXPORTS}
         COMMAND exports_generator # Executable path
+        ${UNDECORATE} # Undecorate boolean
         ${FORWARD_PREFIX} # Forwarded DLL path
         ${INPUT_DLL_PATH} # Input DLL
         ${LINKER_EXPORTS} # Output header

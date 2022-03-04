@@ -6,7 +6,7 @@ namespace koalabox::loader {
 
     Path get_module_dir(const HMODULE& handle);
 
-    Map<String, String> get_undecorated_function_map(const HMODULE& library);
+    Map<String, String> get_export_map(const HMODULE& library, bool undecorate = false);
 
     String get_undecorated_function(const HMODULE& library, const String& function_name);
 

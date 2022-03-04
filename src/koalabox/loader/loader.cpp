@@ -14,9 +14,9 @@ namespace koalabox::loader {
     }
 
     /**
-     * Key is un-mangled name, value is mangled name
+     * Key is undecorated name, value is decorated name, if `undecorate` is set
      */
-    Map<String, String> get_undecorated_function_map(const HMODULE& library) {
+    Map<String, String> get_export_map(const HMODULE& library, bool undecorate) {
         // Adapted from: https://github.com/mborne/dll2def/blob/master/dll2def.cpp
 
         auto exported_functions = Map<String, String>();
@@ -46,23 +46,27 @@ namespace koalabox::loader {
         for (unsigned int i = 0; i < exports->NumberOfNames; i++) {
             String exported_name = (char*) library + ((DWORD*) names)[i];
 
-            // Extract function name from decorated name
-            static const std::regex expression(R"((?:^_)?(\w+)(?:@\d+$)?)");
+            if (undecorate) {
+                String undecorated_function = exported_name; // fallback value
 
-            String undecorated_function = exported_name; // fallback value
+                // Extract function name from decorated name
+                static const std::regex expression(R"((?:^_)?(\w+)(?:@\d+$)?)");
 
-            std::smatch matches;
-            if (std::regex_match(exported_name, matches, expression)) {
-                if (matches.size() == 2) {
-                    undecorated_function = matches[1];
+                std::smatch matches;
+                if (std::regex_match(exported_name, matches, expression)) {
+                    if (matches.size() == 2) {
+                        undecorated_function = matches[1];
+                    } else {
+                        logger->warn("Exported function regex size != 2: {}", exported_name);
+                    }
                 } else {
-                    logger->warn("Exported function regex size != 2: {}", exported_name);
+                    logger->warn("Exported function regex failed: {}", exported_name);
                 }
-            } else {
-                logger->warn("Exported function regex failed: {}", exported_name);
-            }
 
-            exported_functions.insert({ undecorated_function, exported_name });
+                exported_functions.insert({ undecorated_function, exported_name });
+            } else {
+                exported_functions.insert({ exported_name, exported_name });
+            }
         }
 
         return exported_functions;
@@ -72,13 +76,13 @@ namespace koalabox::loader {
         if (util::is_x64()) {
             return function_name;
         } else {
-            static Map <HMODULE, Map<String, String>> undecorated_function_maps;
+            static Map<HMODULE, Map<String, String>> undecorated_function_maps;
 
             if (not undecorated_function_maps.contains(library)) {
-                undecorated_function_maps[library] = get_undecorated_function_map(library);
+                undecorated_function_maps[library] = get_export_map(library);
             }
 
-            static auto undecorated_function_map = get_undecorated_function_map(library);
+            static auto undecorated_function_map = get_export_map(library);
 
             return undecorated_function_maps[library][function_name];
         }

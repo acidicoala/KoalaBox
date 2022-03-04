@@ -3,11 +3,6 @@
 #include "koalabox/win_util/win_util.hpp"
 #include "koalabox/loader/loader.hpp"
 
-// Ensure that assert macros work
-#include <cassert>
-
-#undef NDEBUG
-
 #include "spdlog/sinks/stdout_sinks.h"
 
 using namespace koalabox;
@@ -15,27 +10,38 @@ using namespace std::filesystem;
 using std::ofstream;
 using std::endl;
 
+bool parseBoolean(const String& string);
+
 Set<String> get_implemented_functions(const Path& path);
 
 /**
  * Args <br>
  * 0: program name <br>
- * 1: forwarded dll name <br>
- * 2: dll input path <br>
- * 3: sources input path <br>
- * 4: header output path <br>
+ * 1: undecorate? <br>
+ * 2: forwarded dll name <br>
+ * 3: dll input path <br>
+ * 4: sources input path <br>
+ * 5: header output path <br>
  */
 int wmain(const int argc, const wchar_t* argv[]) {
     logger = spdlog::stdout_logger_st("stdout");
+    logger->flush_on(spdlog::level::trace);
 
-    assert(argc == 4 || argc == 5);
+    if (argc < 5 || argc > 6) {
+        logger->error("Invalid number of arguments. Expected 5 or 6. Got: {}", argc);
+        exit(1);
+    }
 
-    String forwarded_dll_name(util::to_string(argv[1]));
-    Path dll_input_path(argv[2]);
-    Path header_output_path(argv[3]);
-    Path sources_input_path(argc == 5 ? argv[4] : L"");
+    auto undecorate = parseBoolean(util::to_string(argv[1]));
+    auto forwarded_dll_name = util::to_string(argv[2]);
+    auto dll_input_path = Path(argv[3]);
+    auto header_output_path = Path(argv[4]);
+    auto sources_input_path = Path(argc == 6 ? argv[5] : L""); // Optional for Koaloader
 
-    assert(exists(dll_input_path));
+    if (not exists(dll_input_path)) {
+        logger->error("Non-existent DLL path: {}", dll_input_path.string());
+        exit(2);
+    }
 
     auto implemented_functions = sources_input_path.empty()
         ? Set<String>()
@@ -43,27 +49,34 @@ int wmain(const int argc, const wchar_t* argv[]) {
 
     const auto library = win_util::load_library_or_throw(dll_input_path);
 
-    auto exported_functions = loader::get_undecorated_function_map(library);
+    auto exported_functions = loader::get_export_map(library, undecorate);
 
     // Create directories for export header, if necessary
     create_directories(header_output_path.parent_path());
 
     // Open the export header file for writing
     ofstream export_file(header_output_path, ofstream::out | ofstream::trunc);
-    assert(export_file.is_open());
+    if (not export_file.is_open()) {
+        logger->error("Filed to open header file for writing");
+        exit(3);
+    }
 
     // Add header guard
     export_file << "#pragma once" << endl << endl;
 
     // Iterate over exported functions to exclude implemented ones
-    for (const auto&[function_name, mangled_name]: exported_functions) {
-        // On x64 architecture, mangled_name is equal to function_name
-        if (implemented_functions.contains(function_name)) {
-            export_file << "// ";
-        }
+    for (const auto&[function_name, decorated_function_name]: exported_functions) {
+        auto comment = implemented_functions.contains(function_name);
 
-        export_file << "#pragma comment(linker, " << '"' << "/export:" << mangled_name << '='
-                    << forwarded_dll_name << '.' << mangled_name << '"' << ')' << endl;
+        String line = fmt::format(
+            R"({}#pragma comment(linker, "/export:{}={}.{}"))",
+            comment ? "// " : "",
+            decorated_function_name,
+            forwarded_dll_name,
+            decorated_function_name
+        );
+
+        export_file << line << endl;
     }
 }
 
@@ -88,7 +101,7 @@ Set<String> get_implemented_functions(const Path& path) {
 
             if (not implemented_functions.contains(func_name)) {
                 implemented_functions.insert(func_name);
-                logger->debug("Implemented function: {}", func_name);
+                logger->info("Implemented function: \"{}\"", func_name);
             }
 
             file_content = match.suffix();
@@ -96,4 +109,15 @@ Set<String> get_implemented_functions(const Path& path) {
     }
 
     return implemented_functions;
+}
+
+bool parseBoolean(const String& string) {
+    if (util::strings_are_equal(string, "true")) {
+        return true;
+    } else if (util::strings_are_equal(string, "false")) {
+        return false;
+    } else {
+        logger->error("Invalid boolean value: {}", string);
+        exit(10);
+    }
 }
