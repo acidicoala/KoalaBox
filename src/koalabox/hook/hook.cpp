@@ -88,17 +88,15 @@ namespace koalabox::hook {
     }
 
     FunctionPointer get_original_function(bool is_hook_mode, const HMODULE& library, const String& function_name) {
-        const auto decorated_name = loader::get_undecorated_function(library, function_name);
-
         if (is_hook_mode) {
-            if (not hook::address_book.contains(decorated_name)) {
-                util::panic("Address book does not contain function: {}", decorated_name);
+            if (not hook::address_book.contains(function_name)) {
+                util::panic("Address book does not contain function: {}", function_name);
             }
 
-            return hook::address_book[decorated_name];
+            return hook::address_book[function_name];
         } else {
             return reinterpret_cast<FunctionPointer>(
-                win_util::get_proc_address(library, decorated_name.c_str())
+                win_util::get_proc_address(library, function_name.c_str())
             );
         }
     }

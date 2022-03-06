@@ -8,7 +8,7 @@ namespace koalabox::loader {
 
     Map<String, String> get_export_map(const HMODULE& library, bool undecorate = false);
 
-    String get_undecorated_function(const HMODULE& library, const String& function_name);
+    String get_decorated_function(const HMODULE& library, const String& function_name);
 
     HMODULE load_original_library(const Path& self_directory, const String& orig_library_name);
 

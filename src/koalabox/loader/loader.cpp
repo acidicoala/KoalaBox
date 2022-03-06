@@ -16,7 +16,7 @@ namespace koalabox::loader {
     /**
      * Key is undecorated name, value is decorated name, if `undecorate` is set
      */
-    Map<String, String> get_export_map(const HMODULE& library, bool undecorate) {
+    Map <String, String> get_export_map(const HMODULE& library, bool undecorate) {
         // Adapted from: https://github.com/mborne/dll2def/blob/master/dll2def.cpp
 
         auto exported_functions = Map<String, String>();
@@ -72,17 +72,15 @@ namespace koalabox::loader {
         return exported_functions;
     }
 
-    String get_undecorated_function(const HMODULE& library, const String& function_name) {
+    String get_decorated_function(const HMODULE& library, const String& function_name) {
         if (util::is_x64()) {
             return function_name;
         } else {
-            static Map<HMODULE, Map<String, String>> undecorated_function_maps;
+            static Map <HMODULE, Map<String, String>> undecorated_function_maps;
 
             if (not undecorated_function_maps.contains(library)) {
-                undecorated_function_maps[library] = get_export_map(library);
+                undecorated_function_maps[library] = get_export_map(library, true);
             }
-
-            static auto undecorated_function_map = get_export_map(library);
 
             return undecorated_function_maps[library][function_name];
         }
