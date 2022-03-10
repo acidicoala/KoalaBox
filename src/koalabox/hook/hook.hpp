@@ -7,9 +7,19 @@ namespace koalabox::hook {
 
     extern Map<String, FunctionPointer> address_book;
 
-    void detour_or_throw(const HMODULE& module, const String& function_name, FunctionPointer callback_function);
+    void detour_or_throw(
+        const HMODULE& module,
+        const String& function_name,
+        FunctionPointer callback_function,
+        PLH::x64Detour::detour_scheme_t scheme = PLH::x64Detour::RECOMMENDED
+    );
 
-    void detour(const HMODULE& module, const String& function_name, FunctionPointer callback_function);
+    void detour(
+        const HMODULE& module,
+        const String& function_name,
+        FunctionPointer callback_function,
+        PLH::x64Detour::detour_scheme_t scheme = PLH::x64Detour::RECOMMENDED
+    );
 
     void eat_hook_or_throw(const HMODULE& module, const String& function_name, FunctionPointer callback_function);
 

@@ -32,7 +32,12 @@ namespace koalabox::hook {
 
     Vector<PLH::IHook*> hooks; // NOLINT(cert-err58-cpp)
 
-    void detour_or_throw(const HMODULE& module, const String& function_name, FunctionPointer callback_function) {
+    void detour_or_throw(
+        const HMODULE& module,
+        const String& function_name,
+        FunctionPointer callback_function,
+        const PLH::x64Detour::detour_scheme_t scheme
+    ) {
         logger->debug("Hooking '{}' via Detour", function_name);
 
         static PLH::CapstoneDisassembler disassembler(util::is_x64() ? PLH::Mode::x64 : PLH::Mode::x86);
@@ -46,7 +51,7 @@ namespace koalabox::hook {
         const auto detour = new Detour(address, callback_function, &trampoline, disassembler);
 
 #ifdef _WIN64
-        detour->setDetourScheme(Detour::ALL);
+        detour->setDetourScheme(scheme);
 #endif
         if (detour->hook()) {
             address_book[function_name] = reinterpret_cast<FunctionPointer>(trampoline);
@@ -57,9 +62,14 @@ namespace koalabox::hook {
         }
     }
 
-    void detour(const HMODULE& module, const String& function_name, FunctionPointer callback_function) {
+    void detour(
+        const HMODULE& module,
+        const String& function_name,
+        FunctionPointer callback_function,
+        const PLH::x64Detour::detour_scheme_t scheme
+    ) {
         try {
-            detour_or_throw(module, function_name, callback_function);
+            detour_or_throw(module, function_name, callback_function, scheme);
         } catch (const std::exception& ex) {
             util::panic("Failed to hook function {} via Detour: {}", function_name, ex.what());
         }
