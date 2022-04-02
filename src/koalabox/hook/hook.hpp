@@ -14,6 +14,13 @@ namespace koalabox::hook {
         PLH::x64Detour::detour_scheme_t scheme = PLH::x64Detour::RECOMMENDED
     );
 
+    void detour_or_warn(
+        const HMODULE& module,
+        const String& function_name,
+        FunctionPointer callback_function,
+        PLH::x64Detour::detour_scheme_t scheme = PLH::x64Detour::RECOMMENDED
+    );
+
     void detour(
         const HMODULE& module,
         const String& function_name,
@@ -22,6 +29,12 @@ namespace koalabox::hook {
     );
 
     void eat_hook_or_throw(
+        const HMODULE& module,
+        const String& function_name,
+        FunctionPointer callback_function
+    );
+
+    void eat_hook_or_warn(
         const HMODULE& module,
         const String& function_name,
         FunctionPointer callback_function

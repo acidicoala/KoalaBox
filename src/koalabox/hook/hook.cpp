@@ -62,6 +62,19 @@ namespace koalabox::hook {
         }
     }
 
+    void detour_or_warn(
+        const HMODULE& module,
+        const String& function_name,
+        FunctionPointer callback_function,
+        const PLH::x64Detour::detour_scheme_t scheme
+    ) {
+        try {
+            hook::detour_or_throw(module, function_name, callback_function, scheme);
+        } catch (const Exception& ex) {
+            logger->warn(ex.what());
+        }
+    }
+
     void detour(
         const HMODULE& module,
         const String& function_name,
@@ -75,7 +88,11 @@ namespace koalabox::hook {
         }
     }
 
-    void eat_hook_or_throw(const HMODULE& module, const String& function_name, FunctionPointer callback_function) {
+    void eat_hook_or_throw(
+        const HMODULE& module,
+        const String& function_name,
+        FunctionPointer callback_function
+    ) {
         logger->debug("Hooking '{}' via EAT", function_name);
 
         uint64_t orig_function_address = 0;
@@ -94,6 +111,18 @@ namespace koalabox::hook {
             delete eat_hook;
 
             throw util::exception("Failed to hook function: '{}'", function_name);
+        }
+    }
+
+    void eat_hook_or_warn(
+        const HMODULE& module,
+        const String& function_name,
+        FunctionPointer callback_function
+    ) {
+        try {
+            hook::eat_hook_or_throw(module, function_name, callback_function);
+        } catch (const Exception& ex) {
+            logger->warn(ex.what());
         }
     }
 
