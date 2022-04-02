@@ -43,7 +43,7 @@ namespace koalabox::hook {
         static PLH::CapstoneDisassembler disassembler(util::is_x64() ? PLH::Mode::x64 : PLH::Mode::x86);
 
         const auto address = reinterpret_cast<FunctionPointer>(
-            win_util::get_proc_address(module, function_name.c_str())
+            win_util::get_proc_address_or_throw(module, function_name.c_str())
         );
 
         uint64_t trampoline = 0;
@@ -70,7 +70,7 @@ namespace koalabox::hook {
     ) {
         try {
             detour_or_throw(module, function_name, callback_function, scheme);
-        } catch (const std::exception& ex) {
+        } catch (const Exception& ex) {
             util::panic("Failed to hook function {} via Detour: {}", function_name, ex.what());
         }
     }
@@ -94,6 +94,43 @@ namespace koalabox::hook {
             delete eat_hook;
 
             throw util::exception("Failed to hook function: '{}'", function_name);
+        }
+    }
+
+    void swap_virtual_func_or_throw(
+        const void* instance,
+        const String& function_name,
+        const int ordinal,
+        FunctionPointer callback_function
+    ) {
+        logger->debug("Hooking '{}' via virtual function swap", function_name);
+
+        PLH::VFuncMap redirect = {
+            { ordinal, reinterpret_cast<uint64_t>(callback_function) },
+        };
+
+        PLH::VFuncMap original_functions;
+        const auto swap = new PLH::VFuncSwapHook((char*) instance, redirect, &original_functions);
+
+        if (swap->hook()) {
+            address_book[function_name] = reinterpret_cast<FunctionPointer>(original_functions[ordinal]);
+
+            hooks.push_back(swap);
+        } else {
+            throw util::exception("Failed to hook function: {}", function_name);
+        }
+    }
+
+    void swap_virtual_func(
+        const void* instance,
+        const String& function_name,
+        const int ordinal,
+        FunctionPointer callback_function
+    ) {
+        try {
+            swap_virtual_func_or_throw(instance, function_name, ordinal, callback_function);
+        } catch (const Exception& ex) {
+            util::panic("Failed to hook function {} via virtual function swap: {}", function_name, ex.what());
         }
     }
 

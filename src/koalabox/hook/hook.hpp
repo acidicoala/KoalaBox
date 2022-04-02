@@ -21,7 +21,25 @@ namespace koalabox::hook {
         PLH::x64Detour::detour_scheme_t scheme = PLH::x64Detour::RECOMMENDED
     );
 
-    void eat_hook_or_throw(const HMODULE& module, const String& function_name, FunctionPointer callback_function);
+    void eat_hook_or_throw(
+        const HMODULE& module,
+        const String& function_name,
+        FunctionPointer callback_function
+    );
+
+    void swap_virtual_func_or_throw(
+        const void* instance,
+        const String& function_name,
+        int ordinal,
+        FunctionPointer callback_function
+    );
+
+    void swap_virtual_func(
+        const void* instance,
+        const String& function_name,
+        int ordinal,
+        FunctionPointer callback_function
+    );
 
     FunctionPointer get_original_function(bool is_hook_mode, const HMODULE& library, const String& function_name);
 
