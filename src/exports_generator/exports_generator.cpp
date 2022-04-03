@@ -14,69 +14,92 @@ bool parseBoolean(const String& string);
 
 Set<String> get_implemented_functions(const Path& path);
 
+Vector<String> split_string(const String& s, const String& delimiter);
+
 /**
  * Args <br>
  * 0: program name <br>
  * 1: undecorate? <br>
  * 2: forwarded dll name <br>
- * 3: dll input path <br>
- * 4: sources input path <br>
- * 5: header output path <br>
+ * 3: dll input paths delimited by pipe (|) <br>
+ * 4: header output path <br>
+ * 5: sources input path <br> (optional)
  */
 int wmain(const int argc, const wchar_t* argv[]) {
-    logger = spdlog::stdout_logger_st("stdout");
-    logger->flush_on(spdlog::level::trace);
+    try {
+        logger = spdlog::stdout_logger_st("stdout");
+        logger->flush_on(spdlog::level::trace);
+        logger->set_level(spdlog::level::trace);
 
-    if (argc < 5 || argc > 6) {
-        logger->error("Invalid number of arguments. Expected 5 or 6. Got: {}", argc);
-        exit(1);
-    }
+        if (argc < 5 || argc > 6) {
+            logger->error("Invalid number of arguments. Expected 5 or 6. Got: {}", argc);
+            exit(1);
+        }
 
-    auto undecorate = parseBoolean(util::to_string(argv[1]));
-    auto forwarded_dll_name = util::to_string(argv[2]);
-    auto dll_input_path = Path(argv[3]);
-    auto header_output_path = Path(argv[4]);
-    auto sources_input_path = Path(argc == 6 ? argv[5] : L""); // Optional for Koaloader
+        for (int i = 0; i < argc; i++) {
+            logger->debug("Arg #{} = '{}'", i, util::to_string(argv[i]));
+        }
 
-    if (not exists(dll_input_path)) {
-        logger->error("Non-existent DLL path: {}", dll_input_path.string());
-        exit(2);
-    }
+        const auto undecorate = parseBoolean(util::to_string(argv[1]));
+        const auto forwarded_dll_name = util::to_string(argv[2]);
+        const auto path_strings = split_string(util::to_string(argv[3]), "|");
+        const auto header_output_path = Path(argv[4]);
+        const auto sources_input_path = Path(argc == 6 ? argv[5] : L""); // Optional for Koaloader
 
-    auto implemented_functions = sources_input_path.empty()
-        ? Set<String>()
-        : get_implemented_functions(sources_input_path);
+        const auto implemented_functions = sources_input_path.empty()
+            ? Set<String>()
+            : get_implemented_functions(sources_input_path);
 
-    const auto library = win_util::load_library_or_throw(dll_input_path);
+        if (path_strings.empty()) {
+            logger->error("Failed to parse any dll input paths");
+            exit(2);
+        }
 
-    auto exported_functions = loader::get_export_map(library, undecorate);
+        Map<String, String> exported_functions;
+        for (const auto& path_string: path_strings) {
+            const auto path = Path(path_string);
 
-    // Create directories for export header, if necessary
-    create_directories(header_output_path.parent_path());
+            if (not exists(path)) {
+                logger->error("Non-existent DLL path: {}", path.string());
+                exit(3);
+            }
 
-    // Open the export header file for writing
-    ofstream export_file(header_output_path, ofstream::out | ofstream::trunc);
-    if (not export_file.is_open()) {
-        logger->error("Filed to open header file for writing");
-        exit(3);
-    }
+            const auto library = win_util::load_library_or_throw(path);
+            const auto lib_exports = loader::get_export_map(library, undecorate);
 
-    // Add header guard
-    export_file << "#pragma once" << endl << endl;
+            exported_functions.insert(lib_exports.begin(), lib_exports.end());
+        }
 
-    // Iterate over exported functions to exclude implemented ones
-    for (const auto&[function_name, decorated_function_name]: exported_functions) {
-        auto comment = implemented_functions.contains(function_name);
+        // Create directories for export header, if necessary
+        create_directories(header_output_path.parent_path());
 
-        String line = fmt::format(
-            R"({}#pragma comment(linker, "/export:{}={}.{}"))",
-            comment ? "// " : "",
-            decorated_function_name,
-            forwarded_dll_name,
-            decorated_function_name
-        );
+        // Open the export header file for writing
+        ofstream export_file(header_output_path, ofstream::out | ofstream::trunc);
+        if (not export_file.is_open()) {
+            logger->error("Filed to open header file for writing");
+            exit(4);
+        }
 
-        export_file << line << endl;
+        // Add header guard
+        export_file << "#pragma once" << endl << endl;
+
+        // Iterate over exported functions to exclude implemented ones
+        for (const auto&[function_name, decorated_function_name]: exported_functions) {
+            auto comment = implemented_functions.contains(function_name);
+
+            String line = fmt::format(
+                R"({}#pragma comment(linker, "/export:{}={}.{}"))",
+                comment ? "// " : "",
+                decorated_function_name,
+                forwarded_dll_name,
+                decorated_function_name
+            );
+
+            export_file << line << endl;
+        }
+    } catch (const Exception& ex) {
+        logger->error(ex.what());
+        exit(-1);
     }
 }
 
@@ -120,4 +143,19 @@ bool parseBoolean(const String& string) {
         logger->error("Invalid boolean value: {}", string);
         exit(10);
     }
+}
+
+Vector<String> split_string(const String& s, const String& delimiter) {
+    size_t pos_start = 0, pos_end, delimiter_len = delimiter.length();
+    String token;
+    Vector<String> res;
+
+    while ((pos_end = s.find(delimiter, pos_start)) != String::npos) {
+        token = s.substr(pos_start, pos_end - pos_start);
+        pos_start = pos_end + delimiter_len;
+        res.push_back(token);
+    }
+
+    res.push_back(s.substr(pos_start));
+    return res;
 }

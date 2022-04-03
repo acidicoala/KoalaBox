@@ -91,7 +91,9 @@ macro(configure_exports_generator)
     configure_dependencies(exports_generator spdlog)
 endmacro()
 
-macro(configure_linker_exports UNDECORATE FORWARD_PREFIX INPUT_DLL_PATH INPUT_SOURCES_DIR)
+macro(configure_linker_exports UNDECORATE FORWARDED_DLL INPUT_SOURCES_DIR INPUT_DLLS DEP_SOURCES)
+    string(JOIN "|" JOINED_INPUT_DLLS ${INPUT_DLLS})
+
     # Make the linker_exports header available before build
     file(TOUCH ${LINKER_EXPORTS})
 
@@ -99,13 +101,13 @@ macro(configure_linker_exports UNDECORATE FORWARD_PREFIX INPUT_DLL_PATH INPUT_SO
         OUTPUT ${LINKER_EXPORTS}
         COMMAND exports_generator # Executable path
         ${UNDECORATE} # Undecorate boolean
-        ${FORWARD_PREFIX} # Forwarded DLL path
-        ${INPUT_DLL_PATH} # Input DLL
-        ${LINKER_EXPORTS} # Output header
+        ${FORWARDED_DLL} # Forwarded DLL path
+        "\"${JOINED_INPUT_DLLS}\"" # Input DLLs
+        "${LINKER_EXPORTS}" # Output header
         "${INPUT_SOURCES_DIR}" # Input sources
         DEPENDS exports_generator
-        ${INPUT_DLL_PATH}
-        ${ARGN} # Extra source dependencies
+        ${INPUT_DLLS}
+        ${DEP_SOURCES}
     )
 endmacro()
 
