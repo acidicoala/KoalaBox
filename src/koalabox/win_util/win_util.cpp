@@ -2,6 +2,8 @@
 
 #include "koalabox/util/util.hpp"
 
+#pragma comment(lib, "Version.lib")
+
 namespace koalabox::win_util {
 
 #define PANIC_ON_CATCH(FUNC, ...) \
@@ -24,6 +26,11 @@ namespace koalabox::win_util {
         );
 
         return util::to_string(buffer);
+    }
+
+    String get_last_error() {
+        const auto error = ::GetLastError();
+        return fmt::format("0x{0:x}", error);
     }
 
     String get_module_file_name_or_throw(const HMODULE& module) {
@@ -68,6 +75,76 @@ namespace koalabox::win_util {
 
     MODULEINFO get_module_info(const HMODULE& module) {
         PANIC_ON_CATCH(get_module_info, module)
+    }
+
+    String get_module_version_or_throw(const HMODULE& module) {
+        const auto file_name = util::to_wstring(get_module_file_name_or_throw(module));
+
+        DWORD version_handle = 0;
+        DWORD version_size = GetFileVersionInfoSize(file_name.c_str(), &version_handle);
+
+        if (not version_size) {
+            throw util::exception("Failed to GetFileVersionInfoSize. Error: {}", get_last_error());
+        }
+
+        Vector <uint8_t> version_data(version_size);
+
+        if (not GetFileVersionInfo(file_name.c_str(), version_handle, version_size, version_data.data())) {
+            throw util::exception("Failed to GetFileVersionInfo. Error: {}", get_last_error());
+        }
+
+        UINT size = 0;
+        VS_FIXEDFILEINFO* version_info = nullptr;
+        if (not VerQueryValue(version_data.data(), TEXT("\\"), (VOID FAR* FAR*) &version_info, &size)) {
+            throw util::exception("Failed to VerQueryValue. Error: {}", get_last_error());
+        }
+
+        if (not size) {
+            throw util::exception("Failed to VerQueryValue. Error: {}", get_last_error());
+        }
+
+        if (version_info->dwSignature != 0xfeef04bd) {
+            throw util::exception("VerQueryValue signature mismatch. Signature: 0x{0:x}", version_info->dwSignature);
+        }
+
+        return fmt::format("{}.{}.{}.{}",
+            (version_info->dwFileVersionMS >> 16) & 0xffff,
+            (version_info->dwFileVersionMS >> 0) & 0xffff,
+            (version_info->dwFileVersionLS >> 16) & 0xffff,
+            (version_info->dwFileVersionLS >> 0) & 0xffff
+        );
+    }
+
+    String get_pe_section_data_or_throw(const HMODULE& module, const String& section_name) {
+        const auto dos_header = reinterpret_cast<PIMAGE_DOS_HEADER>(module);
+
+        if (dos_header->e_magic != IMAGE_DOS_SIGNATURE) {
+            throw util::exception("Invalid DOS file");
+        }
+
+        const auto nt_header = (PIMAGE_NT_HEADERS) ((uint8_t*) (module) + (dos_header->e_lfanew));
+
+        if (nt_header->Signature != IMAGE_NT_SIGNATURE) {
+            throw util::exception("Invalid NT signature");
+        }
+
+        auto section = IMAGE_FIRST_SECTION(nt_header);
+        for (int i = 0; i < nt_header->FileHeader.NumberOfSections; i++, section++) {
+            auto name = String((char*) section->Name, 8);
+            name = name.substr(0, name.find('\0')); // strip null padding
+
+            if (name != section_name) {
+                continue;
+            }
+
+            return { (char*) module + section->PointerToRawData, section->SizeOfRawData };
+        }
+
+        throw util::exception("Section '{}' not found", section_name);
+    }
+
+    String get_pe_section_data(const HMODULE& module, const String& section_name) {
+        PANIC_ON_CATCH(get_pe_section_data, module, section_name)
     }
 
     FARPROC get_proc_address_or_throw(const HMODULE& handle, LPCSTR procedure_name) {
@@ -146,5 +223,4 @@ namespace koalabox::win_util {
     SIZE_T write_process_memory(const HANDLE& process, LPVOID address, LPCVOID buffer, SIZE_T size) {
         PANIC_ON_CATCH(write_process_memory, process, address, buffer, size)
     }
-
 }

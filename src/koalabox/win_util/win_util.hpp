@@ -18,6 +18,12 @@ namespace koalabox::win_util {
 
     MODULEINFO get_module_info(const HMODULE& module);
 
+    String get_module_version_or_throw(const HMODULE& module);
+
+    String get_pe_section_data_or_throw(const HMODULE& module, const String& section_name);
+
+    String get_pe_section_data(const HMODULE& module, const String& section_name);
+
     FARPROC get_proc_address_or_throw(const HMODULE& handle, LPCSTR procedure_name);
 
     FARPROC get_proc_address(const HMODULE& handle, LPCSTR procedure_name);
