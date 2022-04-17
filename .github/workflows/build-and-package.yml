@@ -48,8 +48,8 @@ jobs:
         with:
           submodules: true
 
-      - name: Fetch vcpkg git history
-        run: cd vcpkg && git fetch
+      - name: Fetch full vcpkg repository
+        run: cd vcpkg && git checkout $(git rev-parse HEAD)
 
       - name: Install and cache the latest CMake
         uses: lukka/get-cmake@latest
