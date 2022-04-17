@@ -11,21 +11,21 @@ namespace koalabox::hook {
         const HMODULE& module,
         const String& function_name,
         FunctionPointer callback_function,
-        PLH::x64Detour::detour_scheme_t scheme = PLH::x64Detour::RECOMMENDED
+        PLH::x64Detour::detour_scheme_t scheme = PLH::x64Detour::ALL
     );
 
     void detour_or_warn(
         const HMODULE& module,
         const String& function_name,
         FunctionPointer callback_function,
-        PLH::x64Detour::detour_scheme_t scheme = PLH::x64Detour::RECOMMENDED
+        PLH::x64Detour::detour_scheme_t scheme = PLH::x64Detour::ALL
     );
 
     void detour(
         const HMODULE& module,
         const String& function_name,
         FunctionPointer callback_function,
-        PLH::x64Detour::detour_scheme_t scheme = PLH::x64Detour::RECOMMENDED
+        PLH::x64Detour::detour_scheme_t scheme = PLH::x64Detour::ALL
     );
 
     void eat_hook_or_throw(
