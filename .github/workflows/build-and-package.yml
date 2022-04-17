@@ -39,6 +39,7 @@ jobs:
       BUILD_DIR: ${{ github.workspace }}\build\${{ matrix.arch }}\${{ matrix.module }}
       VCPKG_ROOT: ${{ github.workspace }}\vcpkg
       VCPKG_DISABLE_METRICS: true
+      VCPKG_FEATURE_FLAGS: versions
       MODULE: ${{ matrix.module }}
 
     steps:
