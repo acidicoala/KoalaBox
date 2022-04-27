@@ -43,8 +43,7 @@ jobs:
       - name: Check out repository code
         uses: actions/checkout@v3
         with:
-          fetch-depth: 0
-          submodules: true
+          submodules: recursive
 
       - name: Install and cache the latest CMake
         uses: lukka/get-cmake@latest
