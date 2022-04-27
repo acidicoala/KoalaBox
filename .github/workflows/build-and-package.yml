@@ -61,7 +61,7 @@ jobs:
           restore-keys: ${{ matrix.module }}-${{ matrix.arch }}
 
       - name: Print build directory tree
-        run: tree /f ${{BUILD_DIR}}
+        run: tree /f ${{ env.BUILD_DIR }}
 
       - name: Setup version suffix
         # Skip a suffix for master & release events
