@@ -54,10 +54,14 @@ jobs:
           arch: ${{ matrix.term }}
 
       - name: Restore build files
-        uses: actions/cache@v2
+        uses: actions/cache@v3
         with:
           path: ${{ env.BUILD_DIR }}
-          key: ${{ hashFiles( 'CMakeLists.txt' ) }}-${{ matrix.arch }}-${{ matrix.module }}
+          key: ${{ matrix.module }}-${{ matrix.arch }}-${{ hashFiles( 'CMakeLists.txt' ) }}
+          restore-keys: ${{ matrix.module }}-${{ matrix.arch }}
+
+      - name: Print build directory tree
+        run: tree /f ${{BUILD_DIR}}
 
       - name: Setup version suffix
         # Skip a suffix for master & release events
