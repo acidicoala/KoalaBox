@@ -53,7 +53,7 @@ set(KOALABOX_SOURCES
     src/koalabox/win_util.cpp
     src/koalabox/koalabox.cpp)
 
-add_library(KoalaBox STATIC ${KOALABOX_HEADERS} ${KOALABOX_SOURCES})
+add_library(KoalaBox OBJECT ${KOALABOX_HEADERS} ${KOALABOX_SOURCES})
 
 target_link_libraries(KoalaBox PUBLIC cpr::cpr)
 target_link_libraries(KoalaBox PUBLIC nlohmann_json::nlohmann_json)
