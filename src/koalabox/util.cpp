@@ -1,8 +1,5 @@
-#include "util.hpp"
-
-#include <build_config.h>
-
-#include "koalabox/win_util/win_util.hpp"
+#include <koalabox/util.hpp>
+#include <koalabox/win_util.hpp>
 
 namespace koalabox::util {
 
@@ -18,7 +15,7 @@ namespace koalabox::util {
     }
 
     [[noreturn]] void panic(String message) {
-        const auto title = fmt::format("[{}] Panic!", PROJECT_NAME);
+        const auto title = fmt::format("[{}] Panic!", project_name);
 
         const auto last_error = ::GetLastError();
         if (last_error != 0) {

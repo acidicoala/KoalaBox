@@ -1,6 +1,6 @@
 #pragma once
 
-#include "koalabox/koalabox.hpp"
+#include <koalabox/koalabox.hpp>
 
 namespace koalabox::util {
     void error_box(const String& title, const String& message);

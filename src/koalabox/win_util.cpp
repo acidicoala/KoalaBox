@@ -1,6 +1,5 @@
-#include "win_util.hpp"
-
-#include "koalabox/util/util.hpp"
+#include <koalabox/win_util.hpp>
+#include <koalabox/util.hpp>
 
 #pragma comment(lib, "Version.lib")
 
@@ -87,7 +86,7 @@ namespace koalabox::win_util {
             throw util::exception("Failed to GetFileVersionInfoSize. Error: {}", get_last_error());
         }
 
-        Vector <uint8_t> version_data(version_size);
+        Vector<uint8_t> version_data(version_size);
 
         if (not GetFileVersionInfo(file_name.c_str(), version_handle, version_size, version_data.data())) {
             throw util::exception("Failed to GetFileVersionInfo. Error: {}", get_last_error());

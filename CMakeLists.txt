@@ -1,38 +1,79 @@
-cmake_minimum_required(VERSION 3.21)
+cmake_minimum_required(VERSION 3.22)
 
-include(KoalaBox.cmake)
+project(KoalaBox
+    LANGUAGES CXX
+    DESCRIPTION "A box of koality tools")
 
-configure_globals(${CMAKE_SOURCE_DIR})
+# Configure variables
 
-project(KoalaBox VERSION 1.0.0)
+include(GNUInstallDirs)
 
-configure_build_config()
+# Configure dependencies
 
-configure_version_resource("A box of koality tools")
+set(CMAKE_CXX_STANDARD 20 CACHE STRING "The C++ standard to use")
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>" CACHE STRING "MSVC Runtime Library")
+set(BUILD_SHARED_LIBS OFF CACHE BOOL "Build DLL instead of static library")
 
-configure_exports_generator()
+## Cpr - https://github.com/libcpr/cpr/
+add_subdirectory(dependencies/cpr EXCLUDE_FROM_ALL)
 
-configure_library(
-    STATIC
+## Json - https://github.com/nlohmann/json
+add_subdirectory(dependencies/json EXCLUDE_FROM_ALL)
 
-    ${KOALABOX_SRC_DIR}/koalabox/dll_monitor/dll_monitor.cpp
-    ${KOALABOX_SRC_DIR}/koalabox/hook/hook.cpp
-    ${KOALABOX_SRC_DIR}/koalabox/loader/loader.cpp
-    ${KOALABOX_SRC_DIR}/koalabox/file_logger/file_logger.cpp
-    ${KOALABOX_SRC_DIR}/koalabox/util/util.cpp
-    ${KOALABOX_SRC_DIR}/koalabox/win_util/win_util.cpp
+## Polyhook2 - https://github.com/stevemk14ebr/PolyHook_2_0
+set(POLYHOOK_FEATURE_DETOURS ON)
+set(POLYHOOK_FEATURE_INLINENTD OFF)
+set(POLYHOOK_FEATURE_EXCEPTION OFF)
+set(POLYHOOK_BUILD_DLL ON)
+add_subdirectory(dependencies/PolyHook_2_0 EXCLUDE_FROM_ALL)
+
+## Spdlog - https://github.com/gabime/spdlog
+add_subdirectory(dependencies/spdlog EXCLUDE_FROM_ALL)
+
+set(KOALABOX_HEADERS
+    include/koalabox/config_parser.hpp
+    include/koalabox/dll_monitor.hpp
+    include/koalabox/file_logger.hpp
+    include/koalabox/hook.hpp
+    include/koalabox/io.hpp
+    include/koalabox/loader.hpp
+    include/koalabox/util.hpp
+    include/koalabox/win_util.hpp
+    include/koalabox/koalabox.hpp)
+
+set(KOALABOX_SOURCES
+    src/koalabox/dll_monitor.cpp
+    src/koalabox/file_logger.cpp
+    src/koalabox/hook.cpp
+    src/koalabox/io.cpp
+    src/koalabox/loader.cpp
+    src/koalabox/ntapi.hpp
+    src/koalabox/util.cpp
+    src/koalabox/win_util.cpp
+    src/koalabox/koalabox.cpp)
+
+add_library(KoalaBox STATIC ${KOALABOX_HEADERS} ${KOALABOX_SOURCES})
+
+target_link_libraries(KoalaBox PUBLIC cpr::cpr)
+target_link_libraries(KoalaBox PUBLIC nlohmann_json::nlohmann_json)
+target_link_libraries(KoalaBox PUBLIC PolyHook_2)
+target_link_libraries(KoalaBox PUBLIC spdlog::spdlog)
+
+target_include_directories(KoalaBox PUBLIC
+    "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include;${CMAKE_CURRENT_SOURCE_DIR}/src>"
+    "$<INSTALL_INTERFACE:include>")
+
+set(PCH_PATH ${CMAKE_CURRENT_SOURCE_DIR}/include/koalabox/pch.hpp)
+target_precompile_headers(KoalaBox PUBLIC "$<$<COMPILE_LANGUAGE:CXX>:${PCH_PATH}>")
+
+install(
+    TARGETS KoalaBox DESTINATION lib
+    INCLUDES ${KOALABOX_HEADERS} DESTINATION include
 )
 
-configure_precompile_headers(KoalaBox ${KOALABOX_SRC_DIR}/koalabox/pch.hpp)
+# Exports Generator
 
-configure_output_name(KoalaBox)
+add_executable(exports_generator src/exports_generator/exports_generator.cpp)
 
-configure_include_directories()
-
-configure_dependencies(
-    KoalaBox
-    cpr
-    nlohmann_json
-    PolyHook_2
-    spdlog
-)
+target_link_libraries(exports_generator PUBLIC KoalaBox)

@@ -138,7 +138,7 @@ macro(configure_library TYPE)
     set(SOURCES "${ARGN}")
 
     add_library(
-        ${CMAKE_PROJECT_NAME} ${TYPE}
+        ${CMAKE_PRJECT_NAME} ${TYPE}
         ${SOURCES}
         ${KOALABOX_SRC_DIR}/koalabox/koalabox.cpp
 

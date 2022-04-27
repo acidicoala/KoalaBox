@@ -1,12 +1,18 @@
 #pragma once
 
+#include <filesystem>
+#include <set>
+#include <map>
+
+#include <spdlog/logger.h>
+
 namespace koalabox {
 
     using Path = std::filesystem::path;
     using String = std::string;
     using WideString = std::wstring;
     using Exception = std::exception;
-    using FunctionPointer = char*;
+    using FunctionAddress = uint64_t;
 
     template<typename T>
     using Vector = std::vector<T>;
@@ -18,5 +24,7 @@ namespace koalabox {
     using Map = std::map<K, V>;
 
     extern std::shared_ptr<spdlog::logger> logger;
+
+    extern String project_name;
 
 }

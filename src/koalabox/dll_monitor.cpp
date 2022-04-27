@@ -1,8 +1,9 @@
-#include "dll_monitor.hpp"
-#include "ntapi.hpp"
+#include <koalabox/dll_monitor.hpp>
+#include <koalabox/ntapi.hpp>
+#include <koalabox/util.hpp>
+#include <koalabox/win_util.hpp>
 
-#include "koalabox/util/util.hpp"
-#include "koalabox/win_util/win_util.hpp"
+#include <Windows.h>
 
 namespace koalabox::dll_monitor {
 
@@ -21,7 +22,7 @@ namespace koalabox::dll_monitor {
     }
 
     void init(
-        const Vector <String>& target_library_names,
+        const Vector<String>& target_library_names,
         const std::function<void(const HMODULE& module, const String& library_name)>& callback
     ) {
         if (cookie) {
@@ -34,7 +35,7 @@ namespace koalabox::dll_monitor {
         logger->debug("Initializing DLL monitor");
 
         struct CallbackData {
-            Vector <String> target_library_names;
+            Vector<String> target_library_names;
             std::function<void(const HMODULE& module, const String& library_name)> callback;
         };
 

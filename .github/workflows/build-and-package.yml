@@ -37,9 +37,6 @@ jobs:
 
     env:
       BUILD_DIR: ${{ github.workspace }}\build\${{ matrix.arch }}\${{ matrix.module }}
-      VCPKG_ROOT: ${{ github.workspace }}\vcpkg
-      VCPKG_DISABLE_METRICS: true
-      VCPKG_FEATURE_FLAGS: versions
       MODULE: ${{ matrix.module }}
 
     steps:
@@ -56,17 +53,6 @@ jobs:
         uses: ilammy/msvc-dev-cmd@v1
         with:
           arch: ${{ matrix.term }}
-
-      - name: Restore vcpkg and its artifacts.
-        uses: actions/cache@v2
-        with:
-          path: |
-            ${{ env.BUILD_DIR }}\vcpkg_installed
-            ${{ env.VCPKG_ROOT }}
-            !${{ env.VCPKG_ROOT }}\buildtrees
-            !${{ env.VCPKG_ROOT }}\packages
-            !${{ env.VCPKG_ROOT }}\downloads
-          key: ${{ hashFiles( '.git/modules/vcpkg/HEAD', 'vcpkg.json' ) }}-${{ matrix.arch }}-${{ matrix.module }}
 
       - name: Restore build files
         uses: actions/cache@v2

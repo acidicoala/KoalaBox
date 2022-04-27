@@ -1,3 +1,12 @@
-[submodule "vcpkg"]
-	path = vcpkg
-	url = https://github.com/microsoft/vcpkg.git
+[submodule "dependencies/PolyHook_2_0"]
+	path = dependencies/PolyHook_2_0
+	url = https://github.com/stevemk14ebr/PolyHook_2_0.git
+[submodule "dependencies/json"]
+	path = dependencies/json
+	url = https://github.com/nlohmann/json.git
+[submodule "dependencies/cpr"]
+	path = dependencies/cpr
+	url = https://github.com/libcpr/cpr.git
+[submodule "dependencies/spdlog"]
+	path = dependencies/spdlog
+	url = https://github.com/gabime/spdlog.git

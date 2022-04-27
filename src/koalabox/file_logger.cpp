@@ -1,4 +1,7 @@
-#include "file_logger.hpp"
+#include <koalabox/file_logger.hpp>
+
+#include <spdlog/pattern_formatter.h>
+#include <spdlog/sinks/basic_file_sink.h>
 
 namespace koalabox::file_logger {
 

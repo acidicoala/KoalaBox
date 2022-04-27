@@ -1,7 +1,11 @@
-#include "hook.hpp"
-#include "koalabox/loader/loader.hpp"
+#include <koalabox/hook.hpp>
+#include <koalabox/loader.hpp>
+#include <koalabox/win_util.hpp>
 
-#include "3rd_party/polyhook2.hpp"
+#include <polyhook2/Detour/x64Detour.hpp>
+#include <polyhook2/Detour/x86Detour.hpp>
+#include <polyhook2/Virtuals/VFuncSwapHook.hpp>
+#include <polyhook2/PE/EatHook.hpp>
 
 namespace koalabox::hook {
     using namespace koalabox;
@@ -9,7 +13,7 @@ namespace koalabox::hook {
     class PolyhookLogger : public PLH::Logger {
         bool print_info;
     public:
-        explicit PolyhookLogger(bool print_info = false) : print_info(print_info) {};
+        explicit PolyhookLogger(bool print_info) : print_info(print_info) {};
 
         void log(String msg, PLH::ErrorLevel level) override {
             if (level == PLH::ErrorLevel::INFO && print_info) {
@@ -28,33 +32,26 @@ namespace koalabox::hook {
     typedef PLH::x86Detour Detour;
 #endif
 
-    Map <String, FunctionPointer> address_book; // NOLINT(cert-err58-cpp)
+    Map<String, FunctionAddress> address_book; // NOLINT(cert-err58-cpp)
 
     Vector<PLH::IHook*> hooks; // NOLINT(cert-err58-cpp)
 
-    void detour_or_throw(
-        const HMODULE& module,
-        const String& function_name,
-        FunctionPointer callback_function,
-        const PLH::x64Detour::detour_scheme_t scheme
-    ) {
+    void detour_or_throw(const HMODULE& module, const String& function_name, const FunctionAddress callback_function) {
         logger->debug("Hooking '{}' via Detour", function_name);
 
-        static PLH::CapstoneDisassembler disassembler(util::is_x64() ? PLH::Mode::x64 : PLH::Mode::x86);
-
-        const auto address = reinterpret_cast<FunctionPointer>(
+        const auto address = reinterpret_cast<FunctionAddress>(
             win_util::get_proc_address_or_throw(module, function_name.c_str())
         );
 
         uint64_t trampoline = 0;
 
-        const auto detour = new Detour(address, callback_function, &trampoline, disassembler);
+        auto* const detour = new Detour(address, callback_function, &trampoline);
 
 #ifdef _WIN64
-        detour->setDetourScheme(scheme);
+        detour->setDetourScheme(Detour::ALL);
 #endif
         if (detour->hook()) {
-            address_book[function_name] = reinterpret_cast<FunctionPointer>(trampoline);
+            address_book[function_name] = trampoline;
 
             hooks.push_back(detour);
         } else {
@@ -62,27 +59,17 @@ namespace koalabox::hook {
         }
     }
 
-    void detour_or_warn(
-        const HMODULE& module,
-        const String& function_name,
-        FunctionPointer callback_function,
-        const PLH::x64Detour::detour_scheme_t scheme
-    ) {
+    void detour_or_warn(const HMODULE& module, const String& function_name, const FunctionAddress callback_function) {
         try {
-            hook::detour_or_throw(module, function_name, callback_function, scheme);
+            hook::detour_or_throw(module, function_name, callback_function);
         } catch (const Exception& ex) {
             logger->warn(ex.what());
         }
     }
 
-    void detour(
-        const HMODULE& module,
-        const String& function_name,
-        FunctionPointer callback_function,
-        const PLH::x64Detour::detour_scheme_t scheme
-    ) {
+    void detour(const HMODULE& module, const String& function_name, const FunctionAddress callback_function) {
         try {
-            detour_or_throw(module, function_name, callback_function, scheme);
+            detour_or_throw(module, function_name, callback_function);
         } catch (const Exception& ex) {
             util::panic("Failed to hook function {} via Detour: {}", function_name, ex.what());
         }
@@ -91,20 +78,20 @@ namespace koalabox::hook {
     void eat_hook_or_throw(
         const HMODULE& module,
         const String& function_name,
-        FunctionPointer callback_function
+        FunctionAddress callback_function
     ) {
         logger->debug("Hooking '{}' via EAT", function_name);
 
         uint64_t orig_function_address = 0;
-        const auto eat_hook = new PLH::EatHook(
+        auto* const eat_hook = new PLH::EatHook(
             function_name,
             module,
-            reinterpret_cast<FunctionPointer>(callback_function),
+            callback_function,
             &orig_function_address
         );
 
         if (eat_hook->hook()) {
-            address_book[function_name] = reinterpret_cast<FunctionPointer>(orig_function_address);
+            address_book[function_name] = orig_function_address;
 
             hooks.push_back(eat_hook);
         } else {
@@ -117,7 +104,7 @@ namespace koalabox::hook {
     void eat_hook_or_warn(
         const HMODULE& module,
         const String& function_name,
-        FunctionPointer callback_function
+        FunctionAddress callback_function
     ) {
         try {
             hook::eat_hook_or_throw(module, function_name, callback_function);
@@ -130,19 +117,19 @@ namespace koalabox::hook {
         const void* instance,
         const String& function_name,
         const int ordinal,
-        FunctionPointer callback_function
+        FunctionAddress callback_function
     ) {
         logger->debug("Hooking '{}' via virtual function swap", function_name);
 
         PLH::VFuncMap redirect = {
-            { ordinal, reinterpret_cast<uint64_t>(callback_function) },
+            { ordinal, callback_function },
         };
 
         PLH::VFuncMap original_functions;
-        const auto swap = new PLH::VFuncSwapHook((char*) instance, redirect, &original_functions);
+        auto* const swap = new PLH::VFuncSwapHook((char*) instance, redirect, &original_functions);
 
         if (swap->hook()) {
-            address_book[function_name] = reinterpret_cast<FunctionPointer>(original_functions[ordinal]);
+            address_book[function_name] = original_functions[ordinal];
 
             hooks.push_back(swap);
         } else {
@@ -154,7 +141,7 @@ namespace koalabox::hook {
         const void* instance,
         const String& function_name,
         const int ordinal,
-        FunctionPointer callback_function
+        FunctionAddress callback_function
     ) {
         try {
             swap_virtual_func_or_throw(instance, function_name, ordinal, callback_function);
@@ -163,18 +150,18 @@ namespace koalabox::hook {
         }
     }
 
-    FunctionPointer get_original_function(bool is_hook_mode, const HMODULE& library, const String& function_name) {
+    FunctionAddress get_original_function(bool is_hook_mode, const HMODULE& library, const String& function_name) {
         if (is_hook_mode) {
             if (not hook::address_book.contains(function_name)) {
                 util::panic("Address book does not contain function: {}", function_name);
             }
 
             return hook::address_book[function_name];
-        } else {
-            return reinterpret_cast<FunctionPointer>(
-                win_util::get_proc_address(library, function_name.c_str())
-            );
         }
+
+        return reinterpret_cast<FunctionAddress>(
+            win_util::get_proc_address(library, function_name.c_str())
+        );
     }
 
     void init(bool print_info) {

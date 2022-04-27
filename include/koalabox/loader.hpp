@@ -1,6 +1,6 @@
 #pragma once
 
-#include "koalabox/koalabox.hpp"
+#include <koalabox/koalabox.hpp>
 
 namespace koalabox::loader {
 

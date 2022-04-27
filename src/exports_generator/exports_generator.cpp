@@ -1,9 +1,12 @@
-#include "koalabox/koalabox.hpp"
-#include "koalabox/util/util.hpp"
-#include "koalabox/win_util/win_util.hpp"
-#include "koalabox/loader/loader.hpp"
+#include <koalabox/koalabox.hpp>
+#include <koalabox/util.hpp>
+#include <koalabox/win_util.hpp>
+#include <koalabox/loader.hpp>
 
-#include "spdlog/sinks/stdout_sinks.h"
+#include <spdlog/sinks/stdout_sinks.h>
+
+#include <fstream>
+#include <regex>
 
 using namespace koalabox;
 using namespace std::filesystem;
@@ -31,13 +34,14 @@ int wmain(const int argc, const wchar_t* argv[]) {
         logger->flush_on(spdlog::level::trace);
         logger->set_level(spdlog::level::trace);
 
-        if (argc < 5 || argc > 6) {
-            logger->error("Invalid number of arguments. Expected 5 or 6. Got: {}", argc);
-            exit(1);
-        }
-
         for (int i = 0; i < argc; i++) {
             logger->debug("Arg #{} = '{}'", i, util::to_string(argv[i]));
+        }
+
+        if (argc < 5 || argc > 6) {
+            logger->error("Invalid number of arguments. Expected 5 or 6. Got: {}", argc);
+
+            exit(1);
         }
 
         const auto undecorate = parseBoolean(util::to_string(argv[1]));
@@ -64,7 +68,7 @@ int wmain(const int argc, const wchar_t* argv[]) {
                 exit(3);
             }
 
-            const auto library = win_util::load_library_or_throw(path);
+            auto* const library = win_util::load_library_or_throw(path);
             const auto lib_exports = loader::get_export_map(library, undecorate);
 
             exported_functions.insert(lib_exports.begin(), lib_exports.end());
@@ -84,7 +88,7 @@ int wmain(const int argc, const wchar_t* argv[]) {
         export_file << "#pragma once" << endl << endl;
 
         // Iterate over exported functions to exclude implemented ones
-        for (const auto&[function_name, decorated_function_name]: exported_functions) {
+        for (const auto& [function_name, decorated_function_name]: exported_functions) {
             auto comment = implemented_functions.contains(function_name);
 
             String line = fmt::format(
@@ -110,8 +114,8 @@ int wmain(const int argc, const wchar_t* argv[]) {
 Set<String> get_implemented_functions(const Path& path) {
     Set<String> implemented_functions;
 
-    for (auto& p: recursive_directory_iterator(path)) {
-        const auto file_path = p.path();
+    for (const auto& p: recursive_directory_iterator(path)) {
+        const auto& file_path = p.path();
 
         std::ifstream ifs(file_path);
         std::string file_content(std::istreambuf_iterator<char>{ ifs }, {});
@@ -137,16 +141,20 @@ Set<String> get_implemented_functions(const Path& path) {
 bool parseBoolean(const String& string) {
     if (util::strings_are_equal(string, "true")) {
         return true;
-    } else if (util::strings_are_equal(string, "false")) {
-        return false;
-    } else {
-        logger->error("Invalid boolean value: {}", string);
-        exit(10);
     }
+
+    if (util::strings_are_equal(string, "false")) {
+        return false;
+    }
+
+    logger->error("Invalid boolean value: {}", string);
+    exit(10);
 }
 
 Vector<String> split_string(const String& s, const String& delimiter) {
-    size_t pos_start = 0, pos_end, delimiter_len = delimiter.length();
+    size_t pos_start = 0;
+    size_t pos_end;
+    size_t delimiter_len = delimiter.length();
     String token;
     Vector<String> res;
 
