@@ -6,11 +6,15 @@ namespace koalabox::hook {
 
     extern Map<String, FunctionAddress> address_book;
 
+    void detour_or_throw(FunctionAddress address, const String& function_name, FunctionAddress callback_function);
+
     void detour_or_throw(const HMODULE& module, const String& function_name, FunctionAddress callback_function);
 
     void detour_or_warn(const HMODULE& module, const String& function_name, FunctionAddress callback_function);
 
     void detour(const HMODULE& module, const String& function_name, FunctionAddress callback_function);
+
+    void detour(FunctionAddress address, const String& function_name, FunctionAddress callback_function);
 
     void eat_hook_or_throw(const HMODULE& module, const String& function_name, FunctionAddress callback_function);
 

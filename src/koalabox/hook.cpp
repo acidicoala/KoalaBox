@@ -1,11 +1,14 @@
 #include <koalabox/hook.hpp>
 #include <koalabox/loader.hpp>
 #include <koalabox/win_util.hpp>
-
-#include <polyhook2/Detour/x64Detour.hpp>
-#include <polyhook2/Detour/x86Detour.hpp>
 #include <polyhook2/Virtuals/VFuncSwapHook.hpp>
 #include <polyhook2/PE/EatHook.hpp>
+
+#ifdef _WIN64
+#include <polyhook2/Detour/x64Detour.hpp>
+#else
+#include <polyhook2/Detour/x86Detour.hpp>
+#endif
 
 namespace koalabox::hook {
     using namespace koalabox;
@@ -34,18 +37,18 @@ namespace koalabox::hook {
 
     Map<String, FunctionAddress> address_book; // NOLINT(cert-err58-cpp)
 
-    Vector<PLH::IHook*> hooks; // NOLINT(cert-err58-cpp)
+    Vector<PLH::IHook *> hooks; // NOLINT(cert-err58-cpp)
 
-    void detour_or_throw(const HMODULE& module, const String& function_name, const FunctionAddress callback_function) {
+    void detour_or_throw(
+        const FunctionAddress address,
+        const String &function_name,
+        const FunctionAddress callback_function
+    ) {
         logger->debug("Hooking '{}' via Detour", function_name);
-
-        const auto address = reinterpret_cast<FunctionAddress>(
-            win_util::get_proc_address_or_throw(module, function_name.c_str())
-        );
 
         uint64_t trampoline = 0;
 
-        auto* const detour = new Detour(address, callback_function, &trampoline);
+        auto *const detour = new Detour(address, callback_function, &trampoline);
 
 #ifdef _WIN64
         detour->setDetourScheme(Detour::ALL);
@@ -59,31 +62,51 @@ namespace koalabox::hook {
         }
     }
 
-    void detour_or_warn(const HMODULE& module, const String& function_name, const FunctionAddress callback_function) {
+    void detour_or_throw(const HMODULE &module, const String &function_name, const FunctionAddress callback_function) {
+        const auto address = reinterpret_cast<FunctionAddress>(
+            win_util::get_proc_address_or_throw(module, function_name.c_str())
+        );
+
+        detour_or_throw(address, function_name, callback_function);
+    }
+
+    void detour_or_warn(const HMODULE &module, const String &function_name, const FunctionAddress callback_function) {
         try {
             hook::detour_or_throw(module, function_name, callback_function);
-        } catch (const Exception& ex) {
+        } catch (const Exception &ex) {
             logger->warn(ex.what());
         }
     }
 
-    void detour(const HMODULE& module, const String& function_name, const FunctionAddress callback_function) {
+    void detour(const HMODULE &module, const String &function_name, const FunctionAddress callback_function) {
         try {
             detour_or_throw(module, function_name, callback_function);
-        } catch (const Exception& ex) {
+        } catch (const Exception &ex) {
+            util::panic("Failed to hook function {} via Detour: {}", function_name, ex.what());
+        }
+    }
+
+    void detour(
+        const FunctionAddress address,
+        const String &function_name,
+        const FunctionAddress callback_function
+    ) {
+        try {
+            detour_or_throw(address, function_name, callback_function);
+        } catch (const Exception &ex) {
             util::panic("Failed to hook function {} via Detour: {}", function_name, ex.what());
         }
     }
 
     void eat_hook_or_throw(
-        const HMODULE& module,
-        const String& function_name,
+        const HMODULE &module,
+        const String &function_name,
         FunctionAddress callback_function
     ) {
         logger->debug("Hooking '{}' via EAT", function_name);
 
         uint64_t orig_function_address = 0;
-        auto* const eat_hook = new PLH::EatHook(
+        auto *const eat_hook = new PLH::EatHook(
             function_name,
             module,
             callback_function,
@@ -102,31 +125,31 @@ namespace koalabox::hook {
     }
 
     void eat_hook_or_warn(
-        const HMODULE& module,
-        const String& function_name,
+        const HMODULE &module,
+        const String &function_name,
         FunctionAddress callback_function
     ) {
         try {
             hook::eat_hook_or_throw(module, function_name, callback_function);
-        } catch (const Exception& ex) {
+        } catch (const Exception &ex) {
             logger->warn(ex.what());
         }
     }
 
     void swap_virtual_func_or_throw(
-        const void* instance,
-        const String& function_name,
+        const void *instance,
+        const String &function_name,
         const int ordinal,
         FunctionAddress callback_function
     ) {
         logger->debug("Hooking '{}' via virtual function swap", function_name);
 
         PLH::VFuncMap redirect = {
-            { ordinal, callback_function },
+            {ordinal, callback_function},
         };
 
         PLH::VFuncMap original_functions;
-        auto* const swap = new PLH::VFuncSwapHook((char*) instance, redirect, &original_functions);
+        auto *const swap = new PLH::VFuncSwapHook((char *) instance, redirect, &original_functions);
 
         if (swap->hook()) {
             address_book[function_name] = original_functions[ordinal];
@@ -138,19 +161,19 @@ namespace koalabox::hook {
     }
 
     void swap_virtual_func(
-        const void* instance,
-        const String& function_name,
+        const void *instance,
+        const String &function_name,
         const int ordinal,
         FunctionAddress callback_function
     ) {
         try {
             swap_virtual_func_or_throw(instance, function_name, ordinal, callback_function);
-        } catch (const Exception& ex) {
+        } catch (const Exception &ex) {
             util::panic("Failed to hook function {} via virtual function swap: {}", function_name, ex.what());
         }
     }
 
-    FunctionAddress get_original_function(bool is_hook_mode, const HMODULE& library, const String& function_name) {
+    FunctionAddress get_original_function(bool is_hook_mode, const HMODULE &library, const String &function_name) {
         if (is_hook_mode) {
             if (not hook::address_book.contains(function_name)) {
                 util::panic("Address book does not contain function: {}", function_name);
@@ -172,7 +195,7 @@ namespace koalabox::hook {
         PLH::Log::registerLogger(polyhook_logger);
     }
 
-    bool is_hook_mode(const HMODULE& self_module, const String& orig_library_name) {
+    bool is_hook_mode(const HMODULE &self_module, const String &orig_library_name) {
         const auto module_path = win_util::get_module_file_name(self_module);
 
         const auto self_name = Path(module_path).filename().string();
