@@ -37,18 +37,18 @@ namespace koalabox::hook {
 
     Map<String, FunctionAddress> address_book; // NOLINT(cert-err58-cpp)
 
-    Vector<PLH::IHook *> hooks; // NOLINT(cert-err58-cpp)
+    Vector<PLH::IHook*> hooks; // NOLINT(cert-err58-cpp)
 
     void detour_or_throw(
         const FunctionAddress address,
         const String &function_name,
         const FunctionAddress callback_function
     ) {
-        logger->debug("Hooking '{}' via Detour", function_name);
+        logger->debug("Hooking '{}' at {} via Detour", function_name, (void*) address);
 
         uint64_t trampoline = 0;
 
-        auto *const detour = new Detour(address, callback_function, &trampoline);
+        auto* const detour = new Detour(address, callback_function, &trampoline);
 
 #ifdef _WIN64
         detour->setDetourScheme(Detour::ALL);
@@ -106,7 +106,7 @@ namespace koalabox::hook {
         logger->debug("Hooking '{}' via EAT", function_name);
 
         uint64_t orig_function_address = 0;
-        auto *const eat_hook = new PLH::EatHook(
+        auto* const eat_hook = new PLH::EatHook(
             function_name,
             module,
             callback_function,
@@ -137,19 +137,19 @@ namespace koalabox::hook {
     }
 
     void swap_virtual_func_or_throw(
-        const void *instance,
+        const void* instance,
         const String &function_name,
         const int ordinal,
         FunctionAddress callback_function
     ) {
-        logger->debug("Hooking '{}' via virtual function swap", function_name);
+        logger->debug("Hooking '{}' at {} via virtual function swap", function_name, instance);
 
         PLH::VFuncMap redirect = {
             {ordinal, callback_function},
         };
 
         PLH::VFuncMap original_functions;
-        auto *const swap = new PLH::VFuncSwapHook((char *) instance, redirect, &original_functions);
+        auto* const swap = new PLH::VFuncSwapHook((char*) instance, redirect, &original_functions);
 
         if (swap->hook()) {
             address_book[function_name] = original_functions[ordinal];
@@ -161,7 +161,7 @@ namespace koalabox::hook {
     }
 
     void swap_virtual_func(
-        const void *instance,
+        const void* instance,
         const String &function_name,
         const int ordinal,
         FunctionAddress callback_function
