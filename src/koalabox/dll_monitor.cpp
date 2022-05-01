@@ -53,13 +53,13 @@ namespace koalabox::dll_monitor {
             const auto base_dll_name = util::to_string(NotificationData->Loaded.BaseDllName->Buffer);
             const auto full_dll_name = util::to_string(NotificationData->Loaded.FullDllName->Buffer);
 
-            const auto data = static_cast<CallbackData*>(context);
+            auto *const data = static_cast<CallbackData*>(context);
 
             for (const auto& library_name: data->target_library_names) {
                 if (util::strings_are_equal(library_name + ".dll", base_dll_name)) {
                     logger->debug("Library '{}' has been loaded", library_name);
 
-                    const auto loaded_module = win_util::get_module_handle(full_dll_name.c_str());
+                    auto *const loaded_module = win_util::get_module_handle(full_dll_name.c_str());
 
                     data->callback(loaded_module, library_name);
                 }
@@ -69,7 +69,7 @@ namespace koalabox::dll_monitor {
             // delete data;
         };
 
-        const auto context = new CallbackData{
+        auto *const context = new CallbackData{
             .target_library_names = target_library_names,
             .callback = callback,
         };
@@ -89,7 +89,7 @@ namespace koalabox::dll_monitor {
         // Then check if the target dll is already loaded
         for (const auto& library_name: target_library_names) {
             try {
-                const auto original_library = win_util::get_module_handle_or_throw(library_name.c_str());
+                auto *const original_library = win_util::get_module_handle_or_throw(library_name.c_str());
 
                 logger->debug("Library is already loaded: '{}'", library_name);
 
