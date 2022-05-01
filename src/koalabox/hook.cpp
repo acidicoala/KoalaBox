@@ -51,7 +51,7 @@ namespace koalabox::hook {
         auto* const detour = new Detour(address, callback_function, &trampoline);
 
 #ifdef _WIN64
-        detour->setDetourScheme(Detour::ALL);
+        detour->setDetourScheme(static_cast<Detour::detour_scheme_t>(Detour::VALLOC2 | Detour::CODE_CAVE));
 #endif
         if (detour->hook()) {
             address_book[function_name] = trampoline;
