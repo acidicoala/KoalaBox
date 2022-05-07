@@ -18,7 +18,7 @@ namespace koalabox::hook {
 
     void eat_hook_or_throw(const HMODULE& module, const String& function_name, FunctionAddress callback_function);
 
-    void eat_hook_or_warn(const HMODULE& module, const String& function_name, FunctionAddress callback_function);
+    [[maybe_unused]] void eat_hook_or_warn(const HMODULE& module, const String& function_name, FunctionAddress callback_function);
 
     void swap_virtual_func_or_throw(
         const void* instance,

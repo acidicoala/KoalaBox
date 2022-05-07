@@ -51,7 +51,7 @@ namespace koalabox::hook {
         auto* const detour = new Detour(address, callback_function, &trampoline);
 
 #ifdef _WIN64
-        detour->setDetourScheme(static_cast<Detour::detour_scheme_t>(Detour::VALLOC2 | Detour::CODE_CAVE));
+        detour->setDetourScheme(static_cast<PLH::x64Detour::detour_scheme_t>(Detour::ALL));
 #endif
         if (detour->hook()) {
             address_book[function_name] = trampoline;
@@ -124,7 +124,7 @@ namespace koalabox::hook {
         }
     }
 
-    void eat_hook_or_warn(
+    [[maybe_unused]] void eat_hook_or_warn(
         const HMODULE& module,
         const String& function_name,
         FunctionAddress callback_function
