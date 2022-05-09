@@ -37,7 +37,6 @@ jobs:
 
     env:
       BUILD_DIR: ${{ github.workspace }}\build\${{ matrix.arch }}\${{ matrix.module }}
-      MODULE: ${{ matrix.module }}
 
     steps:
       - name: Check out repository code
@@ -64,7 +63,7 @@ jobs:
         run: tree /f ${{ env.BUILD_DIR }}
 
       - name: Generate build files
-        run: cmake -G "Visual Studio 17 2022" -A "${{ matrix.platform }}" -B "${{ env.BUILD_DIR }}"
+        run: cmake -G "Visual Studio 17 2022" -A "${{ matrix.platform }}" -DMODULE=${{ matrix.module }} -B "${{ env.BUILD_DIR }}"
 
       - name: Build the project
         run: cmake --build ${{ env.BUILD_DIR }} --target ${{ matrix.module }} --config ${{ inputs.config }}
