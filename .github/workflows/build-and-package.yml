@@ -57,7 +57,6 @@ jobs:
         with:
           path: ${{ env.BUILD_DIR }}
           key: ${{ matrix.module }}-${{ matrix.arch }}-${{ hashFiles( 'CMakeLists.txt' ) }}
-          restore-keys: ${{ matrix.module }}-${{ matrix.arch }}
 
       - name: Print build directory tree
         run: tree /f ${{ env.BUILD_DIR }}
