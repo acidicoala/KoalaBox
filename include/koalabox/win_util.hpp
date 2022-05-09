@@ -14,7 +14,7 @@ namespace koalabox::win_util {
 
     HMODULE get_module_handle(LPCSTR module_name);
 
-    MODULEINFO get_module_info_or_throw(const HMODULE& module);
+    [[maybe_unused]] MODULEINFO get_module_info_or_throw(const HMODULE& module);
 
     MODULEINFO get_module_info(const HMODULE& module);
 
@@ -28,7 +28,7 @@ namespace koalabox::win_util {
 
     FARPROC get_proc_address(const HMODULE& handle, LPCSTR procedure_name);
 
-    Path get_system_directory_or_throw();
+    [[maybe_unused]] Path get_system_directory_or_throw();
 
     Path get_system_directory();
 

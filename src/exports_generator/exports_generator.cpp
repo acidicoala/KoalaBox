@@ -61,7 +61,7 @@ int wmain(const int argc, const wchar_t* argv[]) {
 
         Map<String, String> exported_functions;
         for (const auto& path_string: path_strings) {
-            const auto path = Path(path_string);
+            const auto path = Path(util::to_wstring(path_string));
 
             if (not exists(path)) {
                 logger->error("Non-existent DLL path: {}", path.string());

@@ -10,7 +10,7 @@ namespace koalabox::loader {
     Path get_module_dir(const HMODULE& handle) {
         const auto file_name = win_util::get_module_file_name(handle);
 
-        const auto module_path = Path(file_name);
+        const auto module_path = Path(util::to_wstring(file_name));
 
         return module_path.parent_path();
     }
@@ -65,16 +65,16 @@ namespace koalabox::loader {
                     logger->warn("Exported function regex failed: {}", exported_name);
                 }
 
-                exported_functions.insert({ undecorated_function, exported_name });
+                exported_functions.insert({undecorated_function, exported_name});
             } else {
-                exported_functions.insert({ exported_name, exported_name });
+                exported_functions.insert({exported_name, exported_name});
             }
         }
 
         return exported_functions;
     }
 
-    String get_decorated_function(const HMODULE& library, const String& function_name) {
+    [[maybe_unused]] String get_decorated_function(const HMODULE& library, const String& function_name) {
         if (util::is_x64()) {
             return function_name;
         }
@@ -92,7 +92,7 @@ namespace koalabox::loader {
     HMODULE load_original_library(const Path& self_directory, const String& orig_library_name) {
         const auto original_module_path = self_directory / (orig_library_name + "_o.dll");
 
-        auto *const original_module = win_util::load_library(original_module_path);
+        auto* const original_module = win_util::load_library(original_module_path);
 
         logger->info("📚 Loaded original library from: '{}'", original_module_path.string());
 
