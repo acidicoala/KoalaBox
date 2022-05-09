@@ -15,10 +15,6 @@ if ($config -notmatch '^(Debug|Release|RelWithDebInfo)$') {
     throw "Invalid architecute. Expected: 'Debug' or 'Release' or 'RelWithDebInfo'. Got: '$config'"
 }
 
-if ($config -eq 'Debug') {
-    $Env:VERSION_SUFFIX = "-debug"
-}
-
 $Env:BUILD_DIR = "build\$arch"
 
 function Build-Project {
