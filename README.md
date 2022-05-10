@@ -2,12 +2,11 @@
 
 A collection of C++ utilities that comes in handy when developing koality projects.
 
-
-> This project is not ready to be directly included as a library. Rather, it is meant to be included as git submodule or subdirectory. The CMake configuration exists to merely validate that the project builds successfully.
-
-## Dependencies
-
-
+To use this library, add it as a submodule, and add following to the CMake file:
+```cmake
+add_subdirectory(KoalaBox EXCLUDE_FROM_ALL)
+target_link_libraries(MyProject PRIVATE KoalaBox)
+```
 
 ## 📄 License
 
