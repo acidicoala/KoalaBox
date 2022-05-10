@@ -1,6 +1,6 @@
 [submodule "dependencies/PolyHook_2_0"]
 	path = dependencies/PolyHook_2_0
-	url = ../../acidicoala/PolyHook_2_0.git
+	url = ../../stevemk14ebr/PolyHook_2_0.git
 [submodule "dependencies/json"]
 	path = dependencies/json
 	url = ../../nlohmann/json.git
