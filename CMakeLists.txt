@@ -38,6 +38,7 @@ set(KOALABOX_HEADERS
     include/koalabox/hook.hpp
     include/koalabox/io.hpp
     include/koalabox/loader.hpp
+    include/koalabox/patcher.hpp
     include/koalabox/util.hpp
     include/koalabox/win_util.hpp
     include/koalabox/koalabox.hpp)
@@ -49,6 +50,7 @@ set(KOALABOX_SOURCES
     src/koalabox/io.cpp
     src/koalabox/loader.cpp
     src/koalabox/ntapi.hpp
+    src/koalabox/patcher.cpp
     src/koalabox/util.cpp
     src/koalabox/win_util.cpp
     src/koalabox/koalabox.cpp)
