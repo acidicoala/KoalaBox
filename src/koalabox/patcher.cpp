@@ -73,7 +73,7 @@ namespace koalabox::patcher {
 
         auto [binaryPattern, mask] = get_pattern_and_mask(std::move(pattern));
 
-        auto current_region = pMemory;
+        const auto *current_region = pMemory;
         do {
             // Skip irrelevant code regions
             auto result = VirtualQuery((LPCVOID) current_region, &mbi, sizeof(mbi));
@@ -108,7 +108,7 @@ namespace koalabox::patcher {
 
     void* find_pattern_address(const MODULEINFO& process_info, const String& name, const String& pattern) {
         const auto t1 = std::chrono::high_resolution_clock::now();
-        const auto address = scan_internal(
+        auto *const address = scan_internal(
             static_cast<PCSTR>(process_info.lpBaseOfDll),
             process_info.SizeOfImage,
             pattern

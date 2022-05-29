@@ -18,7 +18,7 @@ namespace koalabox::hook {
     public:
         explicit PolyhookLogger(bool print_info) : print_info(print_info) {};
 
-        void log(String msg, PLH::ErrorLevel level) override {
+        void log_impl(const String& msg, PLH::ErrorLevel level) const {
             if (level == PLH::ErrorLevel::INFO && print_info) {
                 koalabox::logger->debug("[Polyhook] {}", msg);
             } else if (level == PLH::ErrorLevel::WARN) {
@@ -26,6 +26,14 @@ namespace koalabox::hook {
             } else if (level == PLH::ErrorLevel::SEV) {
                 koalabox::logger->error("[Polyhook] {}", msg);
             }
+        }
+
+        void log(std::string&& msg, PLH::ErrorLevel level) override {
+            log_impl(msg, level);
+        }
+
+        void log(const String& msg, PLH::ErrorLevel level) override {
+            log_impl(msg, level);
         }
     };
 
@@ -68,6 +76,18 @@ namespace koalabox::hook {
         );
 
         detour_or_throw(address, function_name, callback_function);
+    }
+
+    void detour_or_warn(
+        const FunctionAddress address,
+        const String& function_name,
+        const FunctionAddress callback_function
+    ) {
+        try {
+            hook::detour_or_throw(address, function_name, callback_function);
+        } catch (const Exception& ex) {
+            logger->warn(ex.what());
+        }
     }
 
     void detour_or_warn(const HMODULE& module, const String& function_name, const FunctionAddress callback_function) {
