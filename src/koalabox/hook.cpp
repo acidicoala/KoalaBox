@@ -162,7 +162,10 @@ namespace koalabox::hook {
         const int ordinal,
         FunctionAddress callback_function
     ) {
-        logger->debug("Hooking '{}' at [{}]+{} via virtual function swap", function_name, instance, ordinal);
+        logger->debug(
+            "Hooking '{}' at [[{}]+0x{:X}] via virtual function swap",
+            function_name, instance, ordinal * sizeof(void*)
+        );
 
         PLH::VFuncMap redirect = {
             {ordinal, callback_function},
