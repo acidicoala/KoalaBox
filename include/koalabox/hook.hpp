@@ -37,10 +37,10 @@ namespace koalabox::hook {
         FunctionAddress callback_function
     );
 
-    FunctionAddress get_original_function(bool is_hook_mode, const HMODULE& library, const String& function_name);
+    FunctionAddress get_original_function(bool is_hook_mode, const HMODULE& library, const char* function_name);
 
     template<typename F>
-    F get_original_function(bool is_hook_mode, const HMODULE& library, const String& function_name, F) {
+    F get_original_function(bool is_hook_mode, const HMODULE& library, const char* function_name, F) {
         return reinterpret_cast<F>(get_original_function(is_hook_mode, library, function_name));
     }
 

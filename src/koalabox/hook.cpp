@@ -196,7 +196,7 @@ namespace koalabox::hook {
         }
     }
 
-    FunctionAddress get_original_function(bool is_hook_mode, const HMODULE& library, const String& function_name) {
+    FunctionAddress get_original_function(bool is_hook_mode, const HMODULE& library, const char* function_name) {
         if (is_hook_mode) {
             if (not hook::address_book.contains(function_name)) {
                 util::panic("Address book does not contain function: {}", function_name);
@@ -206,7 +206,7 @@ namespace koalabox::hook {
         }
 
         return reinterpret_cast<FunctionAddress>(
-            win_util::get_proc_address(library, function_name.c_str())
+            win_util::get_proc_address(library, function_name)
         );
     }
 
