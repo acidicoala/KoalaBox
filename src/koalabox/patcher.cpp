@@ -1,5 +1,4 @@
 #include <koalabox/patcher.hpp>
-#include <koalabox/util.hpp>
 
 #include <chrono>
 #include <cstring>
@@ -24,7 +23,7 @@ namespace koalabox::patcher {
         std::stringstream patternStream;
         std::stringstream maskStream;
         for (size_t i = 0; i < pattern.length(); i += 2) {
-            std::string byteString = pattern.substr(i, 2);
+            const std::string byteString = pattern.substr(i, 2);
 
             maskStream << (byteString == "??" ? '?' : 'x');
 
@@ -34,16 +33,23 @@ namespace koalabox::patcher {
             );
         }
 
-        return { patternStream.str(), maskStream.str() };
+        return {patternStream.str(), maskStream.str()};
     }
 
     // Credit: superdoc1234
     // Source: https://www.unknowncheats.me/forum/1364641-post150.html
-    char* find(PCSTR base_address, size_t mem_length, PCSTR pattern, PCSTR mask) {
+    char* find(char* base_address, size_t mem_length, const char* pattern, const char* mask) {
         auto DataCompare = [](
-            const auto* data, const auto* mask, const auto* ch_mask, auto ch_last, size_t i_end
+            const char* data,
+            const char* mask,
+            const char* ch_mask,
+            char ch_last,
+            size_t i_end
         ) -> bool {
-            if (data[i_end] != ch_last) return false;
+            if (data[i_end] != ch_last) {
+                return false;
+            }
+
             for (size_t i = 0; i <= i_end; ++i) {
                 if (ch_mask[i] == 'x' && data[i] != mask[i]) {
                     return false;
@@ -58,7 +64,7 @@ namespace koalabox::patcher {
 
         for (size_t i = 0; i < mem_length - strlen(mask); ++i) {
             if (DataCompare(base_address + i, pattern, mask, chLast, iEnd)) {
-                return const_cast<char*>(base_address + i);
+                return base_address + i;
             }
         }
 
@@ -67,13 +73,13 @@ namespace koalabox::patcher {
 
     // Credit: Rake
     // Source: https://guidedhacking.com/threads/external-internal-pattern-scanning-guide.14112/
-    char* scan_internal(PCSTR pMemory, size_t length, String pattern) {
+    char* scan_internal(char* pMemory, size_t length, String pattern) {
         char* match = nullptr;
         MEMORY_BASIC_INFORMATION mbi{};
 
         auto [binaryPattern, mask] = get_pattern_and_mask(std::move(pattern));
 
-        const auto *current_region = pMemory;
+        auto* current_region = pMemory;
         do {
             // Skip irrelevant code regions
             auto result = VirtualQuery((LPCVOID) current_region, &mbi, sizeof(mbi));
@@ -91,39 +97,38 @@ namespace koalabox::patcher {
         return match;
     }
 
-    // Source: https://gist.github.com/xsleonard/7341172
-    unsigned char* hex_str_to_bytes(const char* hex_str) {
-        size_t len = strlen(hex_str);
-        if (len % 2 != 0) {
-            util::panic(__func__, "Hex string must have even number of characters");
-        }
-        size_t final_len = len / 2;
-        auto* data = (unsigned char*) malloc((final_len + 1) * sizeof(char));
-        for (size_t i = 0, j = 0; j < final_len; i += 2, j++) {
-            data[j] = (hex_str[i] % 32 + 9) % 25 * 16 + (hex_str[i + 1] % 32 + 9) % 25;
-        }
-        data[final_len] = '\0';
-        return data;
-    }
-
-    void* find_pattern_address(const MODULEINFO& process_info, const String& name, const String& pattern) {
+    void* find_pattern_address(
+        const uint8_t* base_address,
+        size_t scan_size,
+        const String& name,
+        const String& pattern,
+        bool log_results
+    ) {
         const auto t1 = std::chrono::high_resolution_clock::now();
-        auto *const address = scan_internal(
-            static_cast<PCSTR>(process_info.lpBaseOfDll),
-            process_info.SizeOfImage,
-            pattern
-        );
+        auto* address = scan_internal((char*) base_address, scan_size, pattern);
         const auto t2 = std::chrono::high_resolution_clock::now();
 
         const double elapsedTime = std::chrono::duration<double, std::milli>(t2 - t1).count();
 
-        if (address == nullptr) {
-            logger->error("Failed to find address of '{}'. Search time: {:.2f} ms", name, elapsedTime);
-        } else {
-            logger->debug("'{}' address: {}. Search time: {:.2f} ms", name, fmt::ptr(address), elapsedTime);
+        if (log_results) {
+            if (address == nullptr) {
+                logger->error("Failed to find address of '{}'. Search time: {:.2f} ms", name, elapsedTime);
+            } else {
+                logger->debug("'{}' address: {}. Search time: {:.2f} ms", name, fmt::ptr(address), elapsedTime);
+            }
         }
 
-        return reinterpret_cast<void*>(address);
+        return address;
+    }
+
+    void* find_pattern_address(const MODULEINFO& process_info, const String& name, const String& pattern) {
+        return find_pattern_address(
+            reinterpret_cast<uint8_t*>(process_info.lpBaseOfDll),
+            process_info.SizeOfImage,
+            name,
+            pattern,
+            true
+        );
     }
 
 }

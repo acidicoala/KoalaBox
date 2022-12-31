@@ -12,7 +12,11 @@ namespace koalabox {
     using String = std::string;
     using WideString = std::wstring;
     using Exception = std::exception;
+#ifdef _WIN64
     using FunctionAddress = uint64_t;
+#else
+    using FunctionAddress = uint32_t;
+#endif
 
     template<typename T>
     using Vector = std::vector<T>;
