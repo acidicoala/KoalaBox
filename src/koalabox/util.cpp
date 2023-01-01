@@ -42,12 +42,12 @@ namespace koalabox::util {
         }
 
         const auto required_size = WideCharToMultiByte(
-            CP_UTF8, 0, &wstr[0], static_cast<int>(wstr.size()), nullptr, 0, nullptr, nullptr
+            CP_UTF8, 0, wstr.data(), static_cast<int>(wstr.size()), nullptr, 0, nullptr, nullptr
         );
 
         String string(required_size, 0);
         WideCharToMultiByte(
-            CP_UTF8, 0, &wstr[0], static_cast<int>(wstr.size()), &string[0], required_size, nullptr, nullptr
+            CP_UTF8, 0, wstr.data(), static_cast<int>(wstr.size()), string.data(), required_size, nullptr, nullptr
         );
 
         return string;
@@ -58,12 +58,35 @@ namespace koalabox::util {
             return {};
         }
 
-        const auto required_size = MultiByteToWideChar(CP_UTF8, 0, &str[0], static_cast<int>(str.size()), nullptr, 0);
+        const auto required_size = MultiByteToWideChar(
+            CP_UTF8, 0, str.data(), static_cast<int>(str.size()), nullptr, 0
+        );
 
         WideString wstring(required_size, 0);
-        MultiByteToWideChar(CP_UTF8, 0, &str[0], static_cast<int>(str.size()), &wstring[0], required_size);
+        MultiByteToWideChar(CP_UTF8, 0, str.data(), static_cast<int>(str.size()), wstring.data(), required_size);
 
         return wstring;
     }
 
+    bool is_valid_pointer(const void* p) {
+        MEMORY_BASIC_INFORMATION mbi = {nullptr};
+        if (::VirtualQuery(p, &mbi, sizeof(mbi))) {
+            const auto is_rwe = mbi.Protect & (
+                PAGE_READONLY |
+                PAGE_READWRITE |
+                PAGE_WRITECOPY |
+                PAGE_EXECUTE_READ |
+                PAGE_EXECUTE_READWRITE |
+                PAGE_EXECUTE_WRITECOPY
+            );
+
+            const auto is_guarded = mbi.Protect & (
+                PAGE_GUARD |
+                PAGE_NOACCESS
+            );
+
+            return is_rwe && !is_guarded;
+        }
+        return false;
+    }
 }

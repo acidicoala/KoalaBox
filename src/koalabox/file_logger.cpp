@@ -17,10 +17,10 @@ namespace koalabox::file_logger {
                     emoji = "❌";
                     break;
                 case spdlog::level::warn:
-                    emoji = "⚠";
+                    emoji = "🟨";
                     break;
                 case spdlog::level::info:
-                    emoji = "ℹ";
+                    emoji = "🟦";
                     break;
                 case spdlog::level::debug:
                     emoji = "⬛";

@@ -29,4 +29,6 @@ namespace koalabox::util {
         return Exception(message.c_str());
     }
 
+    bool is_valid_pointer(const void* p);
+
 }

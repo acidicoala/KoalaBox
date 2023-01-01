@@ -74,6 +74,8 @@ namespace koalabox::patcher {
     // Credit: Rake
     // Source: https://guidedhacking.com/threads/external-internal-pattern-scanning-guide.14112/
     char* scan_internal(char* pMemory, size_t length, String pattern) {
+        auto* const terminal_address = pMemory + length;
+
         char* match = nullptr;
         MEMORY_BASIC_INFORMATION mbi{};
 
@@ -82,9 +84,15 @@ namespace koalabox::patcher {
         auto* current_region = pMemory;
         do {
             // Skip irrelevant code regions
-            auto result = VirtualQuery((LPCVOID) current_region, &mbi, sizeof(mbi));
-            if (result && mbi.State == MEM_COMMIT && mbi.Protect != PAGE_NOACCESS) {
-                match = find(current_region, mbi.RegionSize, binaryPattern.c_str(), mask.c_str());
+            auto query_success = VirtualQuery((LPCVOID) current_region, &mbi, sizeof(mbi));
+            if (query_success && mbi.State == MEM_COMMIT && mbi.Protect != PAGE_NOACCESS) {
+                // logger->trace(
+                //     "current_region: {}, mbi.BaseAddress: {}, mbi.RegionSize: {}",
+                //     fmt::ptr(current_region), mbi.BaseAddress, (void*) mbi.RegionSize
+                // );
+                const auto max_address = (size_t) min(current_region + mbi.RegionSize, terminal_address);
+                const auto mem_length = max_address - (size_t) current_region;
+                match = find(current_region, mem_length, binaryPattern.c_str(), mask.c_str());
 
                 if (match) {
                     break;
