@@ -78,7 +78,7 @@ namespace koalabox::win_util {
         PANIC_ON_CATCH(get_module_info, module_handle)
     }
 
-    String get_module_version_or_throw(const HMODULE& module_handle) {
+    Vector<uint8_t> get_file_version_info_or_throw(const HMODULE& module_handle) {
         const auto file_name = util::to_wstring(get_module_file_name_or_throw(module_handle));
 
         DWORD version_handle = 0;
@@ -94,6 +94,12 @@ namespace koalabox::win_util {
             throw util::exception("Failed to GetFileVersionInfo. Error: {}", get_last_error());
         }
 
+        return version_data;
+    }
+
+    String get_module_version_or_throw(const HMODULE& module_handle) {
+        const auto version_data = get_file_version_info_or_throw(module_handle);
+
         UINT size = 0;
         VS_FIXEDFILEINFO* version_info = nullptr;
         if (not VerQueryValue(version_data.data(), TEXT("\\"), (VOID FAR* FAR*) &version_info, &size)) {
@@ -108,12 +114,60 @@ namespace koalabox::win_util {
             throw util::exception("VerQueryValue signature mismatch. Signature: 0x{0:x}", version_info->dwSignature);
         }
 
-        return fmt::format("{}.{}.{}.{}",
-                           (version_info->dwFileVersionMS >> 16) & 0xffff,
-                           (version_info->dwFileVersionMS >> 0) & 0xffff,
-                           (version_info->dwFileVersionLS >> 16) & 0xffff,
-                           (version_info->dwFileVersionLS >> 0) & 0xffff
+        return fmt::format(
+            "{}.{}.{}.{}",
+            (version_info->dwFileVersionMS >> 16) & 0xffff,
+            (version_info->dwFileVersionMS >> 0) & 0xffff,
+            (version_info->dwFileVersionLS >> 16) & 0xffff,
+            (version_info->dwFileVersionLS >> 0) & 0xffff
         );
+    }
+
+    std::optional<String> get_module_manifest(const HMODULE& module_handle) {
+        // Returns TRUE to continue enumeration or FALSE to stop enumeration.
+        const auto callback = [](HMODULE hModule, LPCTSTR lpType, LPTSTR lpName, LONG_PTR lParam) -> BOOL {
+            HRSRC resource_handle = FindResource(hModule, lpName, lpType);
+            if (resource_handle == nullptr) {
+                logger->error("get_module_manifest -> FindResource returned null. Last error: {}", get_last_error());
+                return TRUE;
+            }
+
+            const auto resource_size = SizeofResource(hModule, resource_handle);
+            if (resource_size == 0) {
+                logger->error("get_module_manifest -> SizeofResource returned 0. Last error: {}", get_last_error());
+                return TRUE;
+            }
+
+            HGLOBAL resource_data_handle = LoadResource(hModule, resource_handle);
+            if (resource_data_handle == nullptr) {
+                logger->error("get_module_manifest -> LoadResource returned null. Last error: {}", get_last_error());
+                return TRUE;
+            }
+
+            const auto* resource_data = LockResource(resource_data_handle);
+            if (resource_data == nullptr) {
+                logger->error("get_module_manifest -> LockResource returned null. Last error: {}", get_last_error());
+                return TRUE;
+            }
+
+            logger->trace("Resource data: {}", (char*) resource_data);
+            *((char**) lParam) = (char*) resource_data;
+            return FALSE;
+        };
+
+        char* manifest = nullptr;
+        if (not EnumResourceNames(module_handle, RT_MANIFEST, callback, (LONG_PTR) &manifest)) {
+            logger->error("{} -> EnumResourceNames call error. Last error: {}", __func__, get_last_error());
+
+            return std::nullopt;
+        }
+
+        if (manifest == nullptr) {
+            return std::nullopt;
+        }
+
+        logger->trace("{} -> Resource data: {}", __func__, manifest);
+        return std::optional{String(manifest)};
     }
 
     String get_pe_section_data_or_throw(const HMODULE& module_handle, const String& section_name) {
