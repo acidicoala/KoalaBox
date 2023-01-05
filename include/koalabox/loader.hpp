@@ -10,6 +10,6 @@ namespace koalabox::loader {
 
     [[maybe_unused]] String get_decorated_function(const HMODULE& library, const String& function_name);
 
-    HMODULE load_original_library(const Path& self_directory, const String& orig_library_name);
+    HMODULE load_original_library(const Path& self_path, const String& orig_library_name);
 
 }

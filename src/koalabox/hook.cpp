@@ -70,9 +70,13 @@ namespace koalabox::hook {
         }
     }
 
-    void detour_or_throw(const HMODULE& module, const String& function_name, const FunctionAddress callback_function) {
+    void detour_or_throw(
+        const HMODULE& module_handle,
+        const String& function_name,
+        const FunctionAddress callback_function
+    ) {
         const auto address = reinterpret_cast<FunctionAddress>(
-            win_util::get_proc_address_or_throw(module, function_name.c_str())
+            win_util::get_proc_address_or_throw(module_handle, function_name.c_str())
         );
 
         detour_or_throw(address, function_name, callback_function);
@@ -90,17 +94,18 @@ namespace koalabox::hook {
         }
     }
 
-    void detour_or_warn(const HMODULE& module, const String& function_name, const FunctionAddress callback_function) {
+    void
+    detour_or_warn(const HMODULE& module_handle, const String& function_name, const FunctionAddress callback_function) {
         try {
-            hook::detour_or_throw(module, function_name, callback_function);
+            hook::detour_or_throw(module_handle, function_name, callback_function);
         } catch (const Exception& ex) {
             logger->warn(ex.what());
         }
     }
 
-    void detour(const HMODULE& module, const String& function_name, const FunctionAddress callback_function) {
+    void detour(const HMODULE& module_handle, const String& function_name, const FunctionAddress callback_function) {
         try {
-            detour_or_throw(module, function_name, callback_function);
+            detour_or_throw(module_handle, function_name, callback_function);
         } catch (const Exception& ex) {
             util::panic("Failed to hook function {} via Detour: {}", function_name, ex.what());
         }
@@ -119,7 +124,7 @@ namespace koalabox::hook {
     }
 
     void eat_hook_or_throw(
-        const HMODULE& module,
+        const HMODULE& module_handle,
         const String& function_name,
         FunctionAddress callback_function
     ) {
@@ -128,7 +133,7 @@ namespace koalabox::hook {
         uint64_t orig_function_address = 0;
         auto* const eat_hook = new PLH::EatHook(
             function_name,
-            module,
+            module_handle,
             callback_function,
             &orig_function_address
         );
@@ -145,12 +150,12 @@ namespace koalabox::hook {
     }
 
     [[maybe_unused]] void eat_hook_or_warn(
-        const HMODULE& module,
+        const HMODULE& module_handle,
         const String& function_name,
         FunctionAddress callback_function
     ) {
         try {
-            hook::eat_hook_or_throw(module, function_name, callback_function);
+            hook::eat_hook_or_throw(module_handle, function_name, callback_function);
         } catch (const Exception& ex) {
             logger->warn(ex.what());
         }
@@ -167,7 +172,7 @@ namespace koalabox::hook {
             function_name, instance, ordinal * sizeof(void*)
         );
 
-        PLH::VFuncMap redirect = {
+        const PLH::VFuncMap redirect = {
             {ordinal, callback_function},
         };
 

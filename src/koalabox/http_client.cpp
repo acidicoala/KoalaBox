@@ -5,6 +5,8 @@
 
 namespace koalabox::http_client {
     nlohmann::json fetch_json(const String& url) {
+        logger->debug("{} -> GET {}", __func__, url);
+
         const auto res = cpr::Get(cpr::Url{url});
 
         if (res.status_code != cpr::status::HTTP_OK) {

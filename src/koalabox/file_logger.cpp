@@ -54,4 +54,6 @@ namespace koalabox::file_logger {
 
         return logger;
     }
+
+    // TODO: Write wrapper functions that sanitize the message
 }

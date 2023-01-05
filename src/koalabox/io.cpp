@@ -8,8 +8,8 @@ namespace koalabox::io {
         std::ifstream input_stream(file_path);
 
         return input_stream.good()
-            ? String(std::istreambuf_iterator<char>{ input_stream }, {})
-            : "";
+               ? String(std::istreambuf_iterator<char>{input_stream}, {})
+               : "";
     }
 
     bool write_file(const Path& file_path, const String& contents) {
@@ -20,10 +20,13 @@ namespace koalabox::io {
         std::ofstream output_stream(file_path);
         if (output_stream.good()) {
             output_stream << contents;
+
+            logger->debug("{} -> Saved file to disk: '{}'", __func__, file_path.string());
+
             return true;
         }
 
-        logger->error("Error saving file: '{}'", file_path.string());
+        logger->debug("{} -> Error saving file: '{}'", __func__, file_path.string());
         return false;
     }
 

@@ -32,21 +32,21 @@ namespace koalabox::win_util {
         return fmt::format("0x{0:x}", error);
     }
 
-    String get_module_file_name_or_throw(const HMODULE& module) {
+    String get_module_file_name_or_throw(const HMODULE& module_handle) {
         constexpr auto buffer_size = 1024;
         TCHAR buffer[buffer_size];
-        const auto length = ::GetModuleFileName(module, buffer, buffer_size);
+        const auto length = ::GetModuleFileName(module_handle, buffer, buffer_size);
 
         return (length > 0 and length < buffer_size)
                ? util::to_string(buffer)
                : throw util::exception(
                 "Failed to get a file name of the given module handle: {}. Length: {}",
-                fmt::ptr(module), length
+                fmt::ptr(module_handle), length
             );
     }
 
-    String get_module_file_name(const HMODULE& module) {
-        PANIC_ON_CATCH(get_module_file_name, module)
+    String get_module_file_name(const HMODULE& module_handle) {
+        PANIC_ON_CATCH(get_module_file_name, module_handle)
     }
 
     HMODULE get_module_handle_or_throw(LPCSTR module_name) {
@@ -54,33 +54,35 @@ namespace koalabox::win_util {
                              ? ::GetModuleHandle(util::to_wstring(module_name).c_str())
                              : ::GetModuleHandle(nullptr);
 
-        return handle
-               ? handle
-               : throw util::exception("Failed to get a handle of the module: '{}'", module_name);
+        return handle ? handle : throw util::exception(
+            "Failed to get a handle of the module: '{}'", module_name
+        );
     }
 
     HMODULE get_module_handle(LPCSTR module_name) {
         PANIC_ON_CATCH(get_module_handle, module_name)
     }
 
-    [[maybe_unused]] MODULEINFO get_module_info_or_throw(const HMODULE& module) {
+    [[maybe_unused]] MODULEINFO get_module_info_or_throw(const HMODULE& module_handle) {
         MODULEINFO module_info = {nullptr};
-        const auto success = ::GetModuleInformation(GetCurrentProcess(), module, &module_info, sizeof(module_info));
+        const auto success = ::GetModuleInformation(
+            GetCurrentProcess(), module_handle, &module_info, sizeof(module_info)
+        );
 
-        return success
-               ? module_info
-               : throw util::exception("Failed to get module info of the given module handle: {}", fmt::ptr(module));
+        return success ? module_info : throw util::exception(
+            "Failed to get module info of the given module handle: {}", fmt::ptr(module_handle)
+        );
     }
 
-    MODULEINFO get_module_info(const HMODULE& module) {
-        PANIC_ON_CATCH(get_module_info, module)
+    MODULEINFO get_module_info(const HMODULE& module_handle) {
+        PANIC_ON_CATCH(get_module_info, module_handle)
     }
 
-    String get_module_version_or_throw(const HMODULE& module) {
-        const auto file_name = util::to_wstring(get_module_file_name_or_throw(module));
+    String get_module_version_or_throw(const HMODULE& module_handle) {
+        const auto file_name = util::to_wstring(get_module_file_name_or_throw(module_handle));
 
         DWORD version_handle = 0;
-        DWORD version_size = GetFileVersionInfoSize(file_name.c_str(), &version_handle);
+        const DWORD version_size = GetFileVersionInfoSize(file_name.c_str(), &version_handle);
 
         if (not version_size) {
             throw util::exception("Failed to GetFileVersionInfoSize. Error: {}", get_last_error());
@@ -114,14 +116,14 @@ namespace koalabox::win_util {
         );
     }
 
-    String get_pe_section_data_or_throw(const HMODULE& module, const String& section_name) {
-        auto* const dos_header = reinterpret_cast<PIMAGE_DOS_HEADER>(module);
+    String get_pe_section_data_or_throw(const HMODULE& module_handle, const String& section_name) {
+        auto* const dos_header = reinterpret_cast<PIMAGE_DOS_HEADER>(module_handle);
 
         if (dos_header->e_magic != IMAGE_DOS_SIGNATURE) {
             throw util::exception("Invalid DOS file");
         }
 
-        auto* const nt_header = (PIMAGE_NT_HEADERS) ((uint8_t*) (module) + (dos_header->e_lfanew));
+        auto* const nt_header = (PIMAGE_NT_HEADERS) ((uint8_t*) module_handle + (dos_header->e_lfanew));
 
         if (nt_header->Signature != IMAGE_NT_SIGNATURE) {
             throw util::exception("Invalid NT signature");
@@ -136,14 +138,14 @@ namespace koalabox::win_util {
                 continue;
             }
 
-            return {(char*) module + section->PointerToRawData, section->SizeOfRawData};
+            return {(char*) module_handle + section->PointerToRawData, section->SizeOfRawData};
         }
 
         throw util::exception("Section '{}' not found", section_name);
     }
 
-    String get_pe_section_data(const HMODULE& module, const String& section_name) {
-        PANIC_ON_CATCH(get_pe_section_data, module, section_name)
+    String get_pe_section_data(const HMODULE& module_handle, const String& section_name) {
+        PANIC_ON_CATCH(get_pe_section_data, module_handle, section_name)
     }
 
     FARPROC get_proc_address_or_throw(const HMODULE& handle, LPCSTR procedure_name) {
@@ -200,10 +202,10 @@ namespace koalabox::win_util {
     }
 
     HMODULE load_library_or_throw(const Path& module_path) {
-        auto* const module = ::LoadLibrary(module_path.wstring().c_str());
+        auto* const module_handle = ::LoadLibrary(module_path.wstring().c_str());
 
-        return module
-               ? module
+        return module_handle
+               ? module_handle
                : throw util::exception("Failed to load the module at path: '{}'", module_path.string());
     }
 

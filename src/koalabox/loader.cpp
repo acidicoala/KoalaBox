@@ -89,8 +89,8 @@ namespace koalabox::loader {
 
     }
 
-    HMODULE load_original_library(const Path& self_directory, const String& orig_library_name) {
-        const auto original_module_path = self_directory / (orig_library_name + "_o.dll");
+    HMODULE load_original_library(const Path& self_path, const String& orig_library_name) {
+        const auto original_module_path = self_path / (orig_library_name + "_o.dll");
 
         auto* const original_module = win_util::load_library(original_module_path);
 
