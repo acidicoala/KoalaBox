@@ -14,19 +14,19 @@ namespace koalabox::file_logger {
                     emoji = "💥";
                     break;
                 case spdlog::level::err:
-                    emoji = "❌";
+                    emoji = "🟥";
                     break;
                 case spdlog::level::warn:
                     emoji = "🟨";
                     break;
                 case spdlog::level::info:
-                    emoji = "🟦";
+                    emoji = "🟩";
                     break;
                 case spdlog::level::debug:
                     emoji = "⬛";
                     break;
                 case spdlog::level::trace:
-                    emoji = "🔍";
+                    emoji = "🟦";
                     break;
                 default:
                     emoji = " ";

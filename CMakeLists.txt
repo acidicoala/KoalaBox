@@ -36,6 +36,7 @@ set(KOALABOX_HEADERS
     include/koalabox/dll_monitor.hpp
     include/koalabox/file_logger.hpp
     include/koalabox/hook.hpp
+    include/koalabox/http_client.hpp
     include/koalabox/io.hpp
     include/koalabox/loader.hpp
     include/koalabox/patcher.hpp
@@ -47,6 +48,7 @@ set(KOALABOX_SOURCES
     src/koalabox/dll_monitor.cpp
     src/koalabox/file_logger.cpp
     src/koalabox/hook.cpp
+    src/koalabox/http_client.cpp
     src/koalabox/io.cpp
     src/koalabox/loader.cpp
     src/koalabox/ntapi.hpp
