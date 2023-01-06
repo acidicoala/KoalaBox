@@ -12,6 +12,7 @@ namespace koalabox::hook {
     );
 
     void detour_or_throw(
+        Map<String, FunctionAddress>& address_map,
         const HMODULE& module_handle,
         const String& function_name,
         FunctionAddress callback_function
@@ -25,6 +26,7 @@ namespace koalabox::hook {
     );
 
     void detour_or_warn(
+        Map<String, FunctionAddress>& address_map,
         const HMODULE& module_handle,
         const String& function_name,
         FunctionAddress callback_function
@@ -38,6 +40,7 @@ namespace koalabox::hook {
     );
 
     void detour(
+        Map<String, FunctionAddress>& address_map,
         const HMODULE& module_handle,
         const String& function_name,
         FunctionAddress callback_function
@@ -73,8 +76,15 @@ namespace koalabox::hook {
         FunctionAddress callback_function
     );
 
-    FunctionAddress get_original_function(const HMODULE& library, const char* function_name);
-    FunctionAddress get_original_function(const Map<String, FunctionAddress>& address_map, const char* function_name);
+    FunctionAddress get_original_function(
+        const HMODULE& library,
+        const char* function_name
+    );
+
+    FunctionAddress get_original_hooked_function(
+        const Map<String, FunctionAddress>& address_map,
+        const char* function_name
+    );
 
     template<typename F>
     F get_original_function(const HMODULE& library, const char* function_name, F) {
@@ -82,8 +92,8 @@ namespace koalabox::hook {
     }
 
     template<typename F>
-    F get_original_function(const Map<String, FunctionAddress>& address_map, const char* function_name, F) {
-        return reinterpret_cast<F>(get_original_function(address_map, function_name));
+    F get_original_hooked_function(const Map<String, FunctionAddress>& address_map, const char* function_name, F) {
+        return reinterpret_cast<F>(get_original_hooked_function(address_map, function_name));
     }
 
     void init(bool print_info = false);

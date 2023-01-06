@@ -45,11 +45,8 @@ namespace koalabox::hook {
 
     Vector<PLH::IHook*> hooks; // NOLINT(cert-err58-cpp)
 
-
-    /**
-     * @return trampoline address
-     */
-    uint64_t detour_or_throw(
+    void detour_or_throw(
+        Map<String, FunctionAddress>& address_map,
         const FunctionAddress address,
         const String& function_name,
         const FunctionAddress callback_function
@@ -65,23 +62,14 @@ namespace koalabox::hook {
 #endif
         if (detour->hook() || trampoline == 0) {
             hooks.push_back(detour);
+            address_map[function_name] = trampoline;
         } else {
             throw util::exception("Failed to hook function: {}", function_name);
         }
-
-        return trampoline;
     }
 
     void detour_or_throw(
         Map<String, FunctionAddress>& address_map,
-        const FunctionAddress address,
-        const String& function_name,
-        const FunctionAddress callback_function
-    ) {
-        address_map[function_name] = detour_or_throw(address, function_name, callback_function);
-    }
-
-    void detour_or_throw(
         const HMODULE& module_handle,
         const String& function_name,
         const FunctionAddress callback_function
@@ -90,7 +78,7 @@ namespace koalabox::hook {
             win_util::get_proc_address_or_throw(module_handle, function_name.c_str())
         );
 
-        detour_or_throw(address, function_name, callback_function);
+        detour_or_throw(address_map, address, function_name, callback_function);
     }
 
     void detour_or_warn(
@@ -107,12 +95,13 @@ namespace koalabox::hook {
     }
 
     void detour_or_warn(
+        Map<String, FunctionAddress>& address_map,
         const HMODULE& module_handle,
         const String& function_name,
         const FunctionAddress callback_function
     ) {
         try {
-            hook::detour_or_throw(module_handle, function_name, callback_function);
+            hook::detour_or_throw(address_map, module_handle, function_name, callback_function);
         } catch (const Exception& ex) {
             logger->warn(ex.what());
         }
@@ -132,12 +121,13 @@ namespace koalabox::hook {
     }
 
     void detour(
+        Map<String, FunctionAddress>& address_map,
         const HMODULE& module_handle,
         const String& function_name,
         const FunctionAddress callback_function
     ) {
         try {
-            detour_or_throw(module_handle, function_name, callback_function);
+            detour_or_throw(address_map, module_handle, function_name, callback_function);
         } catch (const Exception& ex) {
             util::panic("Failed to hook function {} via Detour: {}", function_name, ex.what());
         }
@@ -231,7 +221,11 @@ namespace koalabox::hook {
         );
     }
 
-    FunctionAddress get_original_function(const Map<String, FunctionAddress>& address_map, const char* function_name) {
+    FunctionAddress get_original_hooked_function(
+        const Map<String,
+            FunctionAddress>& address_map,
+        const char* function_name
+    ) {
         if (not address_map.contains(function_name)) {
             util::panic("Address map does not contain function: {}", function_name);
         }
