@@ -150,9 +150,8 @@ namespace koalabox::win_util {
                 return TRUE;
             }
 
-            logger->trace("Resource data: {}", (char*) resource_data);
             *((char**) lParam) = (char*) resource_data;
-            return FALSE;
+            return TRUE;
         };
 
         char* manifest = nullptr;
@@ -166,7 +165,6 @@ namespace koalabox::win_util {
             return std::nullopt;
         }
 
-        logger->trace("{} -> Resource data: {}", __func__, manifest);
         return std::optional{String(manifest)};
     }
 
