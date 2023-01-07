@@ -1,5 +1,6 @@
 #include <koalabox/util.hpp>
 #include <koalabox/win_util.hpp>
+#include <koalabox/logger.hpp>
 
 namespace koalabox::util {
 
@@ -7,16 +8,15 @@ namespace koalabox::util {
         ::MessageBoxW(nullptr, to_wstring(message).c_str(), to_wstring(title).c_str(), MB_OK | MB_ICONERROR);
     }
 
+    // TODO: Replace with macro
     bool is_x64() {
         // This is implemented as a memoized lazy function to avoid
         // "expression always true/false" warnings
-        static const auto result = sizeof(void*) == 8;
+        static const auto result = sizeof(uintptr_t) == 8;
         return result;
     }
 
     [[noreturn]] void panic(String message) {
-        const auto title = fmt::format("[{}] Panic!", project_name);
-
         const auto last_error = ::GetLastError();
         if (last_error != 0) {
             message = fmt::format(
@@ -25,9 +25,9 @@ namespace koalabox::util {
             );
         }
 
-        logger->critical(message);
+        LOG_CRITICAL(message)
 
-        error_box(title, message);
+        error_box("Panic!", message);
 
         exit(static_cast<int>(last_error));
     }
@@ -68,9 +68,9 @@ namespace koalabox::util {
         return wstring;
     }
 
-    bool is_valid_pointer(const void* p) {
+    bool is_valid_pointer(const void* pointer) {
         MEMORY_BASIC_INFORMATION mbi = {nullptr};
-        if (::VirtualQuery(p, &mbi, sizeof(mbi))) {
+        if (::VirtualQuery(pointer, &mbi, sizeof(mbi))) {
             const auto is_rwe = mbi.Protect & (
                 PAGE_READONLY |
                 PAGE_READWRITE |

@@ -1,7 +1,7 @@
 #include <koalabox/loader.hpp>
-
 #include <koalabox/util.hpp>
 #include <koalabox/win_util.hpp>
+#include <koalabox/logger.hpp>
 
 #include <regex>
 
@@ -59,10 +59,10 @@ namespace koalabox::loader {
                     if (matches.size() == 2) {
                         undecorated_function = matches[1];
                     } else {
-                        logger->warn("Exported function regex size != 2: {}", exported_name);
+                        LOG_WARN("Exported function regex size != 2: {}", exported_name)
                     }
                 } else {
-                    logger->warn("Exported function regex failed: {}", exported_name);
+                    LOG_WARN("Exported function regex failed: {}", exported_name)
                 }
 
                 exported_functions.insert({undecorated_function, exported_name});
@@ -94,7 +94,7 @@ namespace koalabox::loader {
 
         auto* const original_module = win_util::load_library(original_module_path);
 
-        logger->info("📚 Loaded original library from: '{}'", original_module_path.string());
+        LOG_INFO("📚 Loaded original library from: '{}'", original_module_path.string())
 
         return original_module;
     }

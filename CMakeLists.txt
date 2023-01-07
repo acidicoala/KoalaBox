@@ -34,19 +34,20 @@ add_subdirectory(dependencies/spdlog EXCLUDE_FROM_ALL)
 set(KOALABOX_HEADERS
     include/koalabox/config_parser.hpp
     include/koalabox/dll_monitor.hpp
-    include/koalabox/file_logger.hpp
+    include/koalabox/logger.hpp
     include/koalabox/hook.hpp
     include/koalabox/http_client.hpp
     include/koalabox/io.hpp
     include/koalabox/loader.hpp
     include/koalabox/patcher.hpp
+    include/koalabox/types.hpp
     include/koalabox/util.hpp
     include/koalabox/win_util.hpp
-    include/koalabox/koalabox.hpp)
+    )
 
 set(KOALABOX_SOURCES
     src/koalabox/dll_monitor.cpp
-    src/koalabox/file_logger.cpp
+    src/koalabox/logger.cpp
     src/koalabox/hook.cpp
     src/koalabox/http_client.cpp
     src/koalabox/io.cpp
@@ -55,7 +56,7 @@ set(KOALABOX_SOURCES
     src/koalabox/patcher.cpp
     src/koalabox/util.cpp
     src/koalabox/win_util.cpp
-    src/koalabox/koalabox.cpp)
+    )
 
 add_library(KoalaBox OBJECT ${KOALABOX_HEADERS} ${KOALABOX_SOURCES})
 

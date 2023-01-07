@@ -1,6 +1,6 @@
 #pragma once
 
-#include <koalabox/koalabox.hpp>
+#include <koalabox/types.hpp>
 
 namespace koalabox::loader {
 
@@ -8,7 +8,7 @@ namespace koalabox::loader {
 
     Map<String, String> get_export_map(const HMODULE& library, bool undecorate = false);
 
-    [[maybe_unused]] String get_decorated_function(const HMODULE& library, const String& function_name);
+    String get_decorated_function(const HMODULE& library, const String& function_name);
 
     HMODULE load_original_library(const Path& self_path, const String& orig_library_name);
 

@@ -1,9 +1,10 @@
+#include <koalabox/logger.hpp>
 #include <koalabox/io.hpp>
-
 #include <fstream>
 
 namespace koalabox::io {
 
+    // TODO: optional
     String read_file(const Path& file_path) {
         std::ifstream input_stream(file_path);
 
@@ -21,12 +22,12 @@ namespace koalabox::io {
         if (output_stream.good()) {
             output_stream << contents;
 
-            logger->debug("{} -> Saved file to disk: '{}'", __func__, file_path.string());
+            LOG_DEBUG("{} -> Saved file to disk: '{}'", __func__, file_path.string())
 
             return true;
         }
 
-        logger->debug("{} -> Error saving file: '{}'", __func__, file_path.string());
+        LOG_DEBUG("{} -> Error saving file: '{}'", __func__, file_path.string())
         return false;
     }
 

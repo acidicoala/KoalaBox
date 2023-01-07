@@ -2,8 +2,7 @@
 #include <koalabox/ntapi.hpp>
 #include <koalabox/util.hpp>
 #include <koalabox/win_util.hpp>
-
-#include <Windows.h>
+#include <koalabox/logger.hpp>
 
 namespace koalabox::dll_monitor {
 
@@ -11,7 +10,7 @@ namespace koalabox::dll_monitor {
 
     void init(
         const String& target_library_name,
-        const std::function<void(const HMODULE& module_handle)>& callback
+        const Function<void(const HMODULE& module_handle)>& callback
     ) {
         init(
             Vector<String>{target_library_name}, [=](const HMODULE& module_handle, const String&) {
@@ -22,20 +21,20 @@ namespace koalabox::dll_monitor {
 
     void init(
         const Vector<String>& target_library_names,
-        const std::function<void(const HMODULE& module_handle, const String& library_name)>& callback
+        const Function<void(const HMODULE& module_handle, const String& library_name)>& callback
     ) {
         if (cookie) {
-            logger->error("[dll_monitor::init] Already initialized");
+            LOG_ERROR("[dll_monitor::process_interface_selector] Already initialized")
             return;
         }
 
         // First start listening for future DLLs
 
-        logger->debug("Initializing DLL monitor");
+        LOG_DEBUG("Initializing DLL monitor");
 
         struct CallbackData {
             Vector<String> target_library_names;
-            std::function<void(const HMODULE& module_handle, const String& library_name)> callback;
+            Function<void(const HMODULE& module_handle, const String& library_name)> callback;
         };
 
         // Pre-process the notification
@@ -56,7 +55,7 @@ namespace koalabox::dll_monitor {
 
             for (const auto& library_name: data->target_library_names) {
                 if (util::strings_are_equal(library_name + ".dll", base_dll_name)) {
-                    logger->debug("Library '{}' has been loaded", library_name);
+                    LOG_DEBUG("Library '{}' has been loaded", library_name);
 
                     auto* const loaded_module = win_util::get_module_handle(full_dll_name.c_str());
 
@@ -83,14 +82,14 @@ namespace koalabox::dll_monitor {
             util::panic("Failed to register DLL listener. Status code: {}", status);
         }
 
-        logger->debug("DLL monitor was successfully initialized");
+        LOG_DEBUG("DLL monitor was successfully initialized");
 
         // Then check if the target dll is already loaded
         for (const auto& library_name: target_library_names) {
             try {
                 auto* const original_library = win_util::get_module_handle_or_throw(library_name.c_str());
 
-                logger->debug("Library is already loaded: '{}'", library_name);
+                LOG_DEBUG("Library is already loaded: '{}'", library_name);
 
                 callback(original_library, library_name);
             } catch (const std::exception& ex) {}
@@ -105,6 +104,6 @@ namespace koalabox::dll_monitor {
         LdrUnregisterDllNotification(cookie);
         cookie = nullptr;
 
-        logger->debug("DLL monitor was successfully shut down");
+        LOG_DEBUG("DLL monitor was successfully shut down");
     }
 }

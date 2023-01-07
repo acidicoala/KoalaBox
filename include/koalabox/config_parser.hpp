@@ -1,10 +1,7 @@
 #pragma once
 
-#include <koalabox/koalabox.hpp>
 #include <koalabox/util.hpp>
-
 #include <nlohmann/json.hpp>
-
 #include <fstream>
 
 namespace koalabox::config_parser {

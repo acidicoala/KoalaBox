@@ -68,7 +68,7 @@ jobs:
         run: cmake --build ${{ env.BUILD_DIR }} --config ${{ inputs.config }}
 
       - name: Upload binaries
-        uses: actions/upload-artifact@v2 # TODO: v3
+        uses: actions/upload-artifact@v3
         with:
           name: ${{ matrix.module }}-${{ matrix.arch }}
           path: ${{ env.BUILD_DIR }}\${{ inputs.config }}\*.dll
@@ -95,7 +95,7 @@ jobs:
           sudo apt install zip tree
 
       - name: Check out repository code
-        uses: actions/checkout@v2 # TODO: v3
+        uses: actions/checkout@v3
 
       - name: Download all workflow run artifacts
         uses: actions/download-artifact@v3

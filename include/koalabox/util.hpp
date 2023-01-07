@@ -1,6 +1,7 @@
 #pragma once
 
-#include <koalabox/koalabox.hpp>
+#include <koalabox/types.hpp>
+#include <spdlog/fmt/fmt.h>
 
 namespace koalabox::util {
     void error_box(const String& title, const String& message);
@@ -29,6 +30,6 @@ namespace koalabox::util {
         return Exception(message.c_str());
     }
 
-    bool is_valid_pointer(const void* p);
+    bool is_valid_pointer(const void* pointer);
 
 }

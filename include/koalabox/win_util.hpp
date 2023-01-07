@@ -1,6 +1,6 @@
 #pragma once
 
-#include <koalabox/koalabox.hpp>
+#include <koalabox/types.hpp>
 
 namespace koalabox::win_util {
 

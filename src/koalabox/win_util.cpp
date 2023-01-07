@@ -1,5 +1,6 @@
 #include <koalabox/win_util.hpp>
 #include <koalabox/util.hpp>
+#include <koalabox/logger.hpp>
 
 #pragma comment(lib, "Version.lib")
 
@@ -8,7 +9,7 @@ namespace koalabox::win_util {
 #define PANIC_ON_CATCH(FUNC, ...) \
     try { \
         return FUNC##_or_throw(__VA_ARGS__); \
-    } catch (const std::exception& ex) { \
+    } catch (const Exception& ex) { \
         util::panic(ex.what()); \
     }
 
@@ -128,25 +129,25 @@ namespace koalabox::win_util {
         const auto callback = [](HMODULE hModule, LPCTSTR lpType, LPTSTR lpName, LONG_PTR lParam) -> BOOL {
             HRSRC resource_handle = FindResource(hModule, lpName, lpType);
             if (resource_handle == nullptr) {
-                logger->error("get_module_manifest -> FindResource returned null. Last error: {}", get_last_error());
+                LOG_ERROR("get_module_manifest -> FindResource returned null. Last error: {}", get_last_error())
                 return TRUE;
             }
 
             const auto resource_size = SizeofResource(hModule, resource_handle);
             if (resource_size == 0) {
-                logger->error("get_module_manifest -> SizeofResource returned 0. Last error: {}", get_last_error());
+                LOG_ERROR("get_module_manifest -> SizeofResource returned 0. Last error: {}", get_last_error())
                 return TRUE;
             }
 
             HGLOBAL resource_data_handle = LoadResource(hModule, resource_handle);
             if (resource_data_handle == nullptr) {
-                logger->error("get_module_manifest -> LoadResource returned null. Last error: {}", get_last_error());
+                LOG_ERROR("get_module_manifest -> LoadResource returned null. Last error: {}", get_last_error())
                 return TRUE;
             }
 
             const auto* resource_data = LockResource(resource_data_handle);
             if (resource_data == nullptr) {
-                logger->error("get_module_manifest -> LockResource returned null. Last error: {}", get_last_error());
+                LOG_ERROR("get_module_manifest -> LockResource returned null. Last error: {}", get_last_error())
                 return TRUE;
             }
 
@@ -156,7 +157,7 @@ namespace koalabox::win_util {
 
         char* manifest = nullptr;
         if (not EnumResourceNames(module_handle, RT_MANIFEST, callback, (LONG_PTR) &manifest)) {
-            logger->error("{} -> EnumResourceNames call error. Last error: {}", __func__, get_last_error());
+            LOG_ERROR("{} -> EnumResourceNames call error. Last error: {}", __func__, get_last_error())
 
             return std::nullopt;
         }
@@ -165,7 +166,7 @@ namespace koalabox::win_util {
             return std::nullopt;
         }
 
-        return std::optional{String(manifest)};
+        return manifest;
     }
 
     String get_pe_section_data_or_throw(const HMODULE& module_handle, const String& section_name) {

@@ -1,88 +1,88 @@
 #pragma once
 
-#include <koalabox/util.hpp>
+#include <koalabox/types.hpp>
 
 namespace koalabox::hook {
 
     void detour_or_throw(
-        Map<String, FunctionAddress>& address_map,
-        FunctionAddress address,
+        Map<String, uintptr_t>& address_map,
+        uintptr_t address,
         const String& function_name,
-        FunctionAddress callback_function
+        uintptr_t callback_function
     );
 
     void detour_or_throw(
-        Map<String, FunctionAddress>& address_map,
+        Map<String, uintptr_t>& address_map,
         const HMODULE& module_handle,
         const String& function_name,
-        FunctionAddress callback_function
+        uintptr_t callback_function
     );
 
     void detour_or_warn(
-        Map<String, FunctionAddress>& address_map,
-        FunctionAddress address,
+        Map<String, uintptr_t>& address_map,
+        uintptr_t address,
         const String& function_name,
-        FunctionAddress callback_function
+        uintptr_t callback_function
     );
 
     void detour_or_warn(
-        Map<String, FunctionAddress>& address_map,
+        Map<String, uintptr_t>& address_map,
         const HMODULE& module_handle,
         const String& function_name,
-        FunctionAddress callback_function
+        uintptr_t callback_function
     );
 
     void detour(
-        Map<String, FunctionAddress>& address_map,
-        FunctionAddress address,
+        Map<String, uintptr_t>& address_map,
+        uintptr_t address,
         const String& function_name,
-        FunctionAddress callback_function
+        uintptr_t callback_function
     );
 
     void detour(
-        Map<String, FunctionAddress>& address_map,
+        Map<String, uintptr_t>& address_map,
         const HMODULE& module_handle,
         const String& function_name,
-        FunctionAddress callback_function
+        uintptr_t callback_function
     );
 
     void eat_hook_or_throw(
-        Map<String, FunctionAddress>& address_map,
+        Map<String, uintptr_t>& address_map,
         const HMODULE& module_handle,
         const String& function_name,
-        FunctionAddress callback_function
+        uintptr_t callback_function
     );
 
     void eat_hook_or_warn(
-        Map<String, FunctionAddress>& address_map,
+        Map<String, uintptr_t>& address_map,
         const HMODULE& module_handle,
         const String& function_name,
-        FunctionAddress callback_function
+        uintptr_t callback_function
     );
 
     void swap_virtual_func_or_throw(
-        Map<String, FunctionAddress>& address_map,
+        Map<String, uintptr_t>& address_map,
         const void* instance,
         const String& function_name,
         int ordinal,
-        FunctionAddress callback_function
+        uintptr_t callback_function
     );
 
     void swap_virtual_func(
-        Map<String, FunctionAddress>& address_map,
+        Map<String, uintptr_t>& address_map,
         const void* instance,
         const String& function_name,
         int ordinal,
-        FunctionAddress callback_function
+        uintptr_t callback_function
     );
 
-    FunctionAddress get_original_function(
+    uintptr_t get_original_function(
         const HMODULE& library,
         const char* function_name
     );
 
-    FunctionAddress get_original_hooked_function(
-        const Map<String, FunctionAddress>& address_map,
+    uintptr_t get_original_hooked_function(
+        const Map<String, uintptr_t>& address_map,
         const char* function_name
     );
 
@@ -92,7 +92,7 @@ namespace koalabox::hook {
     }
 
     template<typename F>
-    F get_original_hooked_function(const Map<String, FunctionAddress>& address_map, const char* function_name, F) {
+    F get_original_hooked_function(const Map<String, uintptr_t>& address_map, const char* function_name, F) {
         return reinterpret_cast<F>(get_original_hooked_function(address_map, function_name));
     }
 
