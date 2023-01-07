@@ -86,10 +86,10 @@ namespace koalabox::patcher {
             // Skip irrelevant code regions
             auto query_success = VirtualQuery((LPCVOID) current_region, &mbi, sizeof(mbi));
             if (query_success && mbi.State == MEM_COMMIT && mbi.Protect != PAGE_NOACCESS) {
-                // logger->trace(
-                //     "current_region: {}, mbi.BaseAddress: {}, mbi.RegionSize: {}",
-                //     fmt::ptr(current_region), mbi.BaseAddress, (void*) mbi.RegionSize
-                // );
+                TRACE(
+                    "current_region: {}, mbi.BaseAddress: {}, mbi.RegionSize: {}",
+                    fmt::ptr(current_region), mbi.BaseAddress, (void*) mbi.RegionSize
+                )
                 const auto max_address = (size_t) min(current_region + mbi.RegionSize, terminal_address);
                 const auto mem_length = max_address - (size_t) current_region;
                 match = find(current_region, mem_length, binaryPattern.c_str(), mask.c_str());

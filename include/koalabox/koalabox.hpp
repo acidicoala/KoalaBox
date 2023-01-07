@@ -32,3 +32,9 @@ namespace koalabox {
     extern String project_name;
 
 }
+
+#ifdef _DEBUG
+#define TRACE(fmt, ...) koalabox::logger->trace(fmt, __VA_ARGS__);
+#else
+#define TRACE(...)
+#endif
