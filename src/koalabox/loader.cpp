@@ -2,12 +2,11 @@
 #include <koalabox/util.hpp>
 #include <koalabox/win_util.hpp>
 #include <koalabox/logger.hpp>
-
 #include <regex>
 
 namespace koalabox::loader {
 
-    Path get_module_dir(const HMODULE& handle) {
+    KOALABOX_API(Path) get_module_dir(const HMODULE& handle) {
         const auto file_name = win_util::get_module_file_name(handle);
 
         const auto module_path = Path(util::to_wstring(file_name));
@@ -18,7 +17,7 @@ namespace koalabox::loader {
     /**
      * Key is undecorated name, value is decorated name, if `undecorate` is set
      */
-    Map<String, String> get_export_map(const HMODULE& library, bool undecorate) {
+    KOALABOX_API(Map<String, String>) get_export_map(const HMODULE& library, bool undecorate) {
         // Adapted from: https://github.com/mborne/dll2def/blob/master/dll2def.cpp
 
         auto exported_functions = Map<String, String>();
@@ -39,8 +38,8 @@ namespace koalabox::loader {
             util::panic("header->OptionalHeader.NumberOfRvaAndSizes <= 0");
         }
 
-        auto virtual_address = header->OptionalHeader.DataDirectory[IMAGE_DIRECTORY_ENTRY_EXPORT].VirtualAddress;
-        auto* exports = reinterpret_cast<PIMAGE_EXPORT_DIRECTORY>((BYTE*) library + virtual_address);
+        const auto& data_dir = header->OptionalHeader.DataDirectory[IMAGE_DIRECTORY_ENTRY_EXPORT];
+        auto* exports = reinterpret_cast<PIMAGE_EXPORT_DIRECTORY>((BYTE*) library + data_dir.VirtualAddress);
 
         PVOID names = (BYTE*) library + exports->AddressOfNames;
 
@@ -74,11 +73,11 @@ namespace koalabox::loader {
         return exported_functions;
     }
 
-    [[maybe_unused]] String get_decorated_function(const HMODULE& library, const String& function_name) {
-        if (util::is_x64()) {
-            return function_name;
-        }
-
+    KOALABOX_API(String) get_decorated_function(const HMODULE& library, const String& function_name) {
+#ifdef _WIN64
+        SUPPRESS_UNUSED(library)
+        return function_name;
+#else
         static Map<HMODULE, Map<String, String>> undecorated_function_maps;
 
         if (not undecorated_function_maps.contains(library)) {
@@ -86,10 +85,10 @@ namespace koalabox::loader {
         }
 
         return undecorated_function_maps[library][function_name];
-
+#endif
     }
 
-    HMODULE load_original_library(const Path& self_path, const String& orig_library_name) {
+    KOALABOX_API(HMODULE) load_original_library(const Path& self_path, const String& orig_library_name) {
         const auto original_module_path = self_path / (orig_library_name + "_o.dll");
 
         auto* const original_module = win_util::load_library(original_module_path);

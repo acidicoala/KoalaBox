@@ -1,10 +1,9 @@
 #pragma once
 
-#include <koalabox/types.hpp>
-#include <nlohmann/json.hpp>
+#include <koalabox/core.hpp>
 
 namespace koalabox::http_client {
 
-    nlohmann::json fetch_json(const String& url);
+    KOALABOX_API(Json) fetch_json(const String& url);
 
 }

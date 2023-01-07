@@ -1,6 +1,7 @@
 #pragma once
 
-#include <koalabox/types.hpp>
+#include <koalabox/core.hpp>
+
 #include <spdlog/spdlog.h>
 
 namespace koalabox::logger {
@@ -11,7 +12,7 @@ namespace koalabox::logger {
      */
     extern std::shared_ptr<spdlog::logger> instance;
 
-    void init_file_logger(const Path& path);
+    KOALABOX_API(void) init_file_logger(const Path& path);
 }
 
 // Define trace in a special way to avoid excessive logging in release builds

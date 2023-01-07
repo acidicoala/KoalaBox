@@ -4,19 +4,11 @@
 
 namespace koalabox::util {
 
-    void error_box(const String& title, const String& message) {
+    KOALABOX_API(void) error_box(const String& title, const String& message) {
         ::MessageBoxW(nullptr, to_wstring(message).c_str(), to_wstring(title).c_str(), MB_OK | MB_ICONERROR);
     }
 
-    // TODO: Replace with macro
-    bool is_x64() {
-        // This is implemented as a memoized lazy function to avoid
-        // "expression always true/false" warnings
-        static const auto result = sizeof(uintptr_t) == 8;
-        return result;
-    }
-
-    [[noreturn]] void panic(String message) {
+    [[noreturn]] KOALABOX_API(void) panic(String message) {
         const auto last_error = ::GetLastError();
         if (last_error != 0) {
             message = fmt::format(
@@ -32,11 +24,11 @@ namespace koalabox::util {
         exit(static_cast<int>(last_error));
     }
 
-    bool strings_are_equal(const String& string1, const String& string2) {
+    KOALABOX_API(bool) strings_are_equal(const String& string1, const String& string2) {
         return _stricmp(string1.c_str(), string2.c_str()) == 0;
     }
 
-    String to_string(const WideString& wstr) {
+    KOALABOX_API(String) to_string(const WideString& wstr) {
         if (wstr.empty()) {
             return {};
         }
@@ -53,7 +45,7 @@ namespace koalabox::util {
         return string;
     }
 
-    WideString to_wstring(const String& str) {
+    KOALABOX_API(WideString) to_wstring(const String& str) {
         if (str.empty()) {
             return {};
         }
@@ -68,10 +60,12 @@ namespace koalabox::util {
         return wstring;
     }
 
-    bool is_valid_pointer(const void* pointer) {
-        MEMORY_BASIC_INFORMATION mbi = {nullptr};
-        if (::VirtualQuery(pointer, &mbi, sizeof(mbi))) {
-            const auto is_rwe = mbi.Protect & (
+    // Source: https://guidedhacking.com/threads/testing-if-pointer-is-invalid.13222/post-77709
+    KOALABOX_API(bool) is_valid_pointer(const void* pointer) {
+        const auto mbi_opt = win_util::virtual_query(pointer);
+
+        if (mbi_opt) {
+            const auto is_rwe = mbi_opt->Protect & (
                 PAGE_READONLY |
                 PAGE_READWRITE |
                 PAGE_WRITECOPY |
@@ -80,13 +74,14 @@ namespace koalabox::util {
                 PAGE_EXECUTE_WRITECOPY
             );
 
-            const auto is_guarded = mbi.Protect & (
+            const auto is_guarded = mbi_opt->Protect & (
                 PAGE_GUARD |
                 PAGE_NOACCESS
             );
 
             return is_rwe && !is_guarded;
         }
+
         return false;
     }
 }

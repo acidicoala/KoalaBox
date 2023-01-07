@@ -32,7 +32,9 @@ add_subdirectory(dependencies/PolyHook_2_0 EXCLUDE_FROM_ALL)
 add_subdirectory(dependencies/spdlog EXCLUDE_FROM_ALL)
 
 set(KOALABOX_HEADERS
+    include/koalabox/cache.hpp
     include/koalabox/config_parser.hpp
+    include/koalabox/core.hpp
     include/koalabox/dll_monitor.hpp
     include/koalabox/logger.hpp
     include/koalabox/hook.hpp
@@ -40,12 +42,12 @@ set(KOALABOX_HEADERS
     include/koalabox/io.hpp
     include/koalabox/loader.hpp
     include/koalabox/patcher.hpp
-    include/koalabox/types.hpp
     include/koalabox/util.hpp
     include/koalabox/win_util.hpp
     )
 
 set(KOALABOX_SOURCES
+    src/koalabox/cache.cpp
     src/koalabox/dll_monitor.cpp
     src/koalabox/logger.cpp
     src/koalabox/hook.cpp

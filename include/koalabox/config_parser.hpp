@@ -1,8 +1,8 @@
 #pragma once
 
+#include <koalabox/core.hpp>
 #include <koalabox/util.hpp>
-#include <nlohmann/json.hpp>
-#include <fstream>
+#include <koalabox/io.hpp>
 
 namespace koalabox::config_parser {
 
@@ -10,15 +10,11 @@ namespace koalabox::config_parser {
      * Parses the given json file and initializes the provided Config type with it
      */
     template<typename Config>
-    Config parse(const Path& path, const bool enable_comments = false) {
-        if (not exists(path)) {
-            return Config{};
-        }
-
+    KOALABOX_API(Config) parse(const Path& path) {
         try {
-            const auto json = nlohmann::json::parse(std::ifstream(path), nullptr, true, enable_comments);
+            const auto file_opt = io::read_file(path);
 
-            return json.get<Config>();
+            return Json::parse(file_opt.value()).get<Config>();
         } catch (const std::exception& ex) {
             util::panic("Failed to parse config file: {}", ex.what());
         }

@@ -1,16 +1,16 @@
-#include <koalabox/logger.hpp>
 #include <koalabox/io.hpp>
+#include <koalabox/logger.hpp>
+
 #include <fstream>
 
 namespace koalabox::io {
 
-    // TODO: optional
-    String read_file(const Path& file_path) {
+    std::optional<String> read_file(const Path& file_path) {
         std::ifstream input_stream(file_path);
 
         return input_stream.good()
-               ? String(std::istreambuf_iterator<char>{input_stream}, {})
-               : "";
+               ? std::optional{String(std::istreambuf_iterator<char>{input_stream}, {})}
+               : std::nullopt;
     }
 
     bool write_file(const Path& file_path, const String& contents) {
@@ -23,7 +23,6 @@ namespace koalabox::io {
             output_stream << contents;
 
             LOG_DEBUG("{} -> Saved file to disk: '{}'", __func__, file_path.string())
-
             return true;
         }
 

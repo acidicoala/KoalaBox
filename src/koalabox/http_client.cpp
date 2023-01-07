@@ -1,11 +1,12 @@
 #include <koalabox/http_client.hpp>
 #include <koalabox/util.hpp>
-#include <nlohmann/json.hpp>
 #include <koalabox/logger.hpp>
+
 #include <cpr/cpr.h>
 
 namespace koalabox::http_client {
-    nlohmann::json fetch_json(const String& url) {
+
+    KOALABOX_API(Json) fetch_json(const String& url) {
         LOG_DEBUG("{} -> GET {}", __func__, url)
 
         const auto res = cpr::Get(cpr::Url{url});
@@ -17,6 +18,7 @@ namespace koalabox::http_client {
             );
         }
 
-        return nlohmann::json::parse(res.text);
+        return Json::parse(res.text);
     }
+
 }

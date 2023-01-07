@@ -1,10 +1,10 @@
 #pragma once
 
-#include <koalabox/types.hpp>
+#include <koalabox/core.hpp>
 
 namespace koalabox::io {
 
-    String read_file(const Path& file_path);
+    std::optional<String> read_file(const Path& file_path);
 
     bool write_file(const Path& file_path, const String& contents);
 

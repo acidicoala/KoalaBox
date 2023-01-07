@@ -1,15 +1,15 @@
 #pragma once
 
-#include <koalabox/types.hpp>
+#include <koalabox/core.hpp>
 
 namespace koalabox::loader {
 
-    Path get_module_dir(const HMODULE& handle);
+    KOALABOX_API(Path) get_module_dir(const HMODULE& handle);
 
-    Map<String, String> get_export_map(const HMODULE& library, bool undecorate = false);
+    KOALABOX_API(Map<String, String>) get_export_map(const HMODULE& library, bool undecorate = false);
 
-    String get_decorated_function(const HMODULE& library, const String& function_name);
+    KOALABOX_API(String) get_decorated_function(const HMODULE& library, const String& function_name);
 
-    HMODULE load_original_library(const Path& self_path, const String& orig_library_name);
+    KOALABOX_API(HMODULE) load_original_library(const Path& self_path, const String& orig_library_name);
 
 }

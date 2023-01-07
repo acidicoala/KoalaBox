@@ -1,6 +1,6 @@
 #pragma once
 
-#include <koalabox/types.hpp>
+#include <koalabox/core.hpp>
 
 /**
  * DLL Monitor starts a DLL load listener and calls the provided callback function
@@ -8,16 +8,16 @@
  */
 namespace koalabox::dll_monitor {
 
-    void init(
-        const Vector <String>& target_library_names,
+    KOALABOX_API(void) init_listener(
+        const Vector<String>& target_library_names,
         const Function<void(const HMODULE& module_handle, const String& library_name)>& callback
     );
 
-    void init(
+    KOALABOX_API(void) init_listener(
         const String& target_library_name,
         const Function<void(const HMODULE& module_handle)>& callback
     );
 
-    void shutdown();
+    KOALABOX_API(void) shutdown_listener();
 
 }

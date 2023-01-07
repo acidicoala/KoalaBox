@@ -1,8 +1,10 @@
 #include <koalabox/logger.hpp>
 #include <koalabox/util.hpp>
+
 #include <spdlog/pattern_formatter.h>
 #include <spdlog/sinks/basic_file_sink.h>
 #include <spdlog/sinks/null_sink.h>
+
 #include <regex>
 
 namespace koalabox::logger {

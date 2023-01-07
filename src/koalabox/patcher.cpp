@@ -70,7 +70,7 @@ namespace koalabox::patcher {
     // Credit: Rake
     // Source: https://guidedhacking.com/threads/external-internal-pattern-scanning-guide.14112/
     uintptr_t scan_internal(uintptr_t ptr_memory, size_t length, String pattern) {
-        const auto terminal_address = ptr_memory + length;
+        const uintptr_t terminal_address = ptr_memory + length;
 
         uintptr_t match = 0;
         MEMORY_BASIC_INFORMATION mbi{};
@@ -86,8 +86,10 @@ namespace koalabox::patcher {
                     "{} -> current_region: {}, mbi.BaseAddress: {}, mbi.RegionSize: {}",
                     __func__, (void*) current_region, mbi.BaseAddress, (void*) mbi.RegionSize
                 )
-                const auto max_address = (size_t) min(current_region + mbi.RegionSize, terminal_address);
-                const auto mem_length = max_address - (size_t) current_region;
+
+                const uintptr_t potential_end = current_region + mbi.RegionSize;
+                const auto max_address = std::min(potential_end, terminal_address);
+                const auto mem_length = max_address - current_region;
                 match = find(current_region, mem_length, binaryPattern.c_str(), mask.c_str());
 
                 if (match) {
@@ -101,7 +103,7 @@ namespace koalabox::patcher {
         return match;
     }
 
-    uintptr_t find_pattern_address(
+    KOALABOX_API(uintptr_t) find_pattern_address(
         const uintptr_t base_address,
         size_t scan_size,
         const String& name,
@@ -122,7 +124,8 @@ namespace koalabox::patcher {
         return address;
     }
 
-    uintptr_t find_pattern_address(const MODULEINFO& process_info, const String& name, const String& pattern) {
+    KOALABOX_API(uintptr_t) find_pattern_address(const MODULEINFO& process_info, const String& name,
+                                                 const String& pattern) {
         return find_pattern_address(
             reinterpret_cast<uintptr_t>(process_info.lpBaseOfDll),
             process_info.SizeOfImage,
