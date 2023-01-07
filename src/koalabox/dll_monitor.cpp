@@ -54,7 +54,7 @@ namespace koalabox::dll_monitor {
             auto* const data = static_cast<CallbackData*>(context);
 
             for (const auto& library_name: data->target_library_names) {
-                if (util::strings_are_equal(library_name + ".dll", base_dll_name)) {
+                if (library_name + ".dll" < equals > base_dll_name) {
                     LOG_DEBUG("Library '{}' has been loaded", library_name)
 
                     auto* const loaded_module = win_util::get_module_handle(full_dll_name.c_str());

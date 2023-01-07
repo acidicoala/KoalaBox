@@ -242,6 +242,6 @@ namespace koalabox::hook {
 
         const auto self_name = Path(module_path).filename().string();
 
-        return not util::strings_are_equal(self_name, orig_library_name + ".dll");
+        return self_name < not_equals > orig_library_name + ".dll";
     }
 }

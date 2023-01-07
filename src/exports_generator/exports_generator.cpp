@@ -10,7 +10,7 @@
 
 using namespace koalabox;
 
-bool parseBoolean(const String& string);
+bool parseBoolean(const String& bool_str);
 
 Set<String> get_implemented_functions(const Path& path);
 
@@ -136,16 +136,16 @@ Set<String> get_implemented_functions(const Path& path) {
     return implemented_functions;
 }
 
-bool parseBoolean(const String& string) {
-    if (util::strings_are_equal(string, "true")) {
+bool parseBoolean(const String& bool_str) {
+    if (bool_str < equals > "true") {
         return true;
     }
 
-    if (util::strings_are_equal(string, "false")) {
+    if (bool_str < equals > "false") {
         return false;
     }
 
-    LOG_ERROR("Invalid boolean value: {}", string)
+    LOG_ERROR("Invalid boolean value: {}", bool_str)
     exit(10);
 }
 

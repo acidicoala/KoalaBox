@@ -48,6 +48,7 @@ set(KOALABOX_HEADERS
 
 set(KOALABOX_SOURCES
     src/koalabox/cache.cpp
+    src/koalabox/core.cpp
     src/koalabox/dll_monitor.cpp
     src/koalabox/logger.cpp
     src/koalabox/hook.cpp

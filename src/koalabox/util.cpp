@@ -24,10 +24,6 @@ namespace koalabox::util {
         exit(static_cast<int>(last_error));
     }
 
-    KOALABOX_API(bool) strings_are_equal(const String& string1, const String& string2) {
-        return _stricmp(string1.c_str(), string2.c_str()) == 0;
-    }
-
     KOALABOX_API(String) to_string(const WideString& wstr) {
         if (wstr.empty()) {
             return {};

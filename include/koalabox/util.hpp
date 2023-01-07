@@ -17,8 +17,6 @@ namespace koalabox::util {
         panic(message);
     }
 
-    KOALABOX_API(bool) strings_are_equal(const String& string1, const String& string2);
-
     KOALABOX_API(String) to_string(const WideString& wstr);
 
     KOALABOX_API(WideString) to_wstring(const String& str);
