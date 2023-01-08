@@ -23,9 +23,7 @@ namespace koalabox::util {
 
     template<typename... Args>
     KOALABOX_API(Exception) exception(fmt::format_string<Args...> fmt, Args&& ...args) {
-        const auto message = fmt::format(fmt, std::forward<Args>(args)...);
-
-        return Exception(message.c_str());
+        return std::runtime_error(fmt::format(fmt, std::forward<Args>(args)...));
     }
 
     KOALABOX_API(bool) is_valid_pointer(const void* pointer);

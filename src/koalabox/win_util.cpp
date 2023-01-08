@@ -105,25 +105,25 @@ namespace koalabox::win_util {
         const auto callback = [](HMODULE hModule, LPCTSTR lpType, LPTSTR lpName, LONG_PTR lParam) -> BOOL {
             HRSRC resource_handle = ::FindResource(hModule, lpName, lpType);
             if (resource_handle == nullptr) {
-                LOG_ERROR("get_module_manifest -> FindResource returned null. Last error: {}", get_last_error())
+                LOG_ERROR("", "get_module_manifest -> FindResource returned null. Last error: {}", get_last_error())
                 return TRUE;
             }
 
             const auto resource_size = SizeofResource(hModule, resource_handle);
             if (resource_size == 0) {
-                LOG_ERROR("get_module_manifest -> SizeofResource returned 0. Last error: {}", get_last_error())
+                LOG_ERROR("", "get_module_manifest -> SizeofResource returned 0. Last error: {}", get_last_error())
                 return TRUE;
             }
 
             HGLOBAL resource_data_handle = LoadResource(hModule, resource_handle);
             if (resource_data_handle == nullptr) {
-                LOG_ERROR("get_module_manifest -> LoadResource returned null. Last error: {}", get_last_error())
+                LOG_ERROR("", "get_module_manifest -> LoadResource returned null. Last error: {}", get_last_error())
                 return TRUE;
             }
 
             const auto* resource_data = LockResource(resource_data_handle);
             if (resource_data == nullptr) {
-                LOG_ERROR("get_module_manifest -> LockResource returned null. Last error: {}", get_last_error())
+                LOG_ERROR("", "get_module_manifest -> LockResource returned null. Last error: {}", get_last_error())
                 return TRUE;
             }
 
@@ -133,7 +133,7 @@ namespace koalabox::win_util {
 
         char* manifest = nullptr;
         if (not EnumResourceNames(module_handle, RT_MANIFEST, callback, (LONG_PTR) &manifest)) {
-            LOG_ERROR("{} -> EnumResourceNames call error. Last error: {}", __func__, get_last_error())
+            LOG_ERROR("EnumResourceNames call error. Last error: {}", get_last_error())
 
             return std::nullopt;
         }

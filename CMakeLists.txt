@@ -33,13 +33,13 @@ add_subdirectory(dependencies/spdlog EXCLUDE_FROM_ALL)
 
 set(KOALABOX_HEADERS
     include/koalabox/cache.hpp
-    include/koalabox/config_parser.hpp
     include/koalabox/core.hpp
     include/koalabox/dll_monitor.hpp
     include/koalabox/logger.hpp
     include/koalabox/hook.hpp
     include/koalabox/http_client.hpp
     include/koalabox/io.hpp
+    include/koalabox/json.hpp
     include/koalabox/loader.hpp
     include/koalabox/patcher.hpp
     include/koalabox/util.hpp
@@ -54,6 +54,7 @@ set(KOALABOX_SOURCES
     src/koalabox/hook.cpp
     src/koalabox/http_client.cpp
     src/koalabox/io.cpp
+    src/koalabox/json.cpp
     src/koalabox/loader.cpp
     src/koalabox/ntapi.hpp
     src/koalabox/patcher.cpp
@@ -62,6 +63,8 @@ set(KOALABOX_SOURCES
     )
 
 add_library(KoalaBox OBJECT ${KOALABOX_HEADERS} ${KOALABOX_SOURCES})
+
+target_compile_options(KoalaBox PUBLIC /Zc:preprocessor)
 
 target_link_libraries(KoalaBox PUBLIC cpr::cpr)
 target_link_libraries(KoalaBox PUBLIC nlohmann_json::nlohmann_json)

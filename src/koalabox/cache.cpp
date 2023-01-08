@@ -7,51 +7,39 @@ namespace koalabox::cache {
     namespace {
         Path cache_path;
 
-        std::optional<Json> read_cache() {
-            try {
-                const auto cache = io::read_file(cache_path).value();
-
-                return Json::parse(cache);
-            } catch (const Exception& e) {
-                return std::nullopt;
-            }
+        Json read_cache() {
+            return Json(io::read_file(cache_path));
         }
     }
 
-    KOALABOX_API(void) init_cache(const Path& path) {
+    KOALABOX_API(void) init_cache(const Path& path) noexcept {
         cache_path = path;
 
-        LOG_DEBUG("{} -> Setting cache path to: {}", __func__, path.string())
+        LOG_DEBUG("Setting cache path to: {}", path.string())
     }
 
-    KOALABOX_API(std::optional<Json>) read_from_cache(const String& key) {
-        try {
-            const auto cache = read_cache().value();
+    KOALABOX_API(Json) read_from_cache(const String& key) {
+        const auto cache = read_cache();
 
-            return cache.at(key);
-        } catch (const Exception& e) {
-            LOG_WARN("{} -> Failed to read cache from disk: {}", __func__, e.what())
-
-            return std::nullopt;
-        }
+        return cache[key];
     }
 
-    KOALABOX_API(bool) save_to_cache(const String& key, const Json& value) {
+    KOALABOX_API(bool) save_to_cache(const String& key, const Json& value) noexcept {
         try {
             Json new_cache;
-
-            const auto cache = read_cache();
-            if (cache) {
-                new_cache = *cache;
+            try {
+                new_cache = read_cache();
+            } catch (const Exception& e) {
+                LOG_WARN("Failed to read cache from disk: {}", e.what())
             }
 
             new_cache[key] = value;
 
-            io::write_file(cache_path, new_cache.dump(2));
+            io::write_file(cache_path, new_cache.to_string());
 
             return true;
         } catch (const Exception& e) {
-            LOG_ERROR("{} -> Failed to write cache to disk: {}", __func__, e.what())
+            LOG_ERROR("Failed to write cache to disk: {}", e.what())
 
             return false;
         }

@@ -7,7 +7,7 @@
 namespace koalabox::http_client {
 
     KOALABOX_API(Json) fetch_json(const String& url) {
-        LOG_DEBUG("{} -> GET {}", __func__, url)
+        LOG_DEBUG("GET {}", url)
 
         const auto res = cpr::Get(cpr::Url{url});
 
@@ -18,7 +18,7 @@ namespace koalabox::http_client {
             );
         }
 
-        return Json::parse(res.text);
+        return Json(res.text);
     }
 
 }

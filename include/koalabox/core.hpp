@@ -1,8 +1,5 @@
 #pragma once
 
-// TODO: Extract into parser package
-#include <nlohmann/json.hpp>
-
 #include <filesystem>
 #include <set>
 #include <map>
@@ -25,7 +22,6 @@ using String = std::string;
 using WideString = std::wstring;
 using Exception = std::exception;
 using Path = std::filesystem::path;
-using Json = nlohmann::json;
 
 template<class T> using Set = std::set<T>;
 template<typename T> using Vector = std::vector<T>;

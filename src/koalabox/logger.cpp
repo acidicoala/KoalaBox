@@ -91,17 +91,26 @@ namespace koalabox::logger {
     /**
      * @param path It is the responsibility of the caller to ensure that all directories in the path exist.
      */
-    void init_file_logger(const Path& path) {
+    KOALABOX_API(void) init_file_logger(const Path& path) {
         const auto sink = std::make_shared<SanitizedFileSink>(path.string());
         instance = std::make_shared<spdlog::logger>("default", sink);
 
         auto formatter = std::make_unique<spdlog::pattern_formatter>();
         formatter->add_flag<EmojiFormatterFlag>('*');
-        formatter->set_pattern("[%H:%M:%S.%e] %* ┃ %v");
+        formatter->set_pattern("%*│ %H:%M:%S.%e │%v");
 
         instance->set_formatter(std::move(formatter));
         instance->set_level(spdlog::level::trace);
         instance->flush_on(spdlog::level::trace);
     }
 
+    KOALABOX_API(String) get_filename(const char* full_path) {
+        static Map<const char*, String> results;
+
+        if (not results.contains(full_path)) {
+            results[full_path] = Path(full_path).filename().string();
+        }
+
+        return results[full_path];
+    }
 }

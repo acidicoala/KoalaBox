@@ -1,6 +1,7 @@
 #pragma once
 
 #include <koalabox/core.hpp>
+#include <koalabox/json.hpp>
 
 namespace koalabox::http_client {
 

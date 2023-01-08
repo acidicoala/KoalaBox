@@ -83,8 +83,8 @@ namespace koalabox::patcher {
             auto query_success = VirtualQuery((LPCVOID) current_region, &mbi, sizeof(mbi));
             if (query_success && mbi.State == MEM_COMMIT && mbi.Protect != PAGE_NOACCESS) {
                 LOG_TRACE(
-                    "{} -> current_region: {}, mbi.BaseAddress: {}, mbi.RegionSize: {}",
-                    __func__, (void*) current_region, mbi.BaseAddress, (void*) mbi.RegionSize
+                    "current_region: {}, mbi.BaseAddress: {}, mbi.RegionSize: {}",
+                    (void*) current_region, mbi.BaseAddress, (void*) mbi.RegionSize
                 )
 
                 const uintptr_t potential_end = current_region + mbi.RegionSize;

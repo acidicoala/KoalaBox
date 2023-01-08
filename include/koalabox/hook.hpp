@@ -76,23 +76,24 @@ namespace koalabox::hook {
         uintptr_t callback_function
     );
 
-    uintptr_t get_original_function(
+    KOALABOX_API(uintptr_t) get_original_function(
         const HMODULE& library,
         const char* function_name
     );
 
-    uintptr_t get_original_hooked_function(
+    KOALABOX_API(uintptr_t) get_original_hooked_function(
         const Map<String, uintptr_t>& address_map,
         const char* function_name
     );
 
     template<typename F>
-    F get_original_function(const HMODULE& library, const char* function_name, F) {
+    KOALABOX_API(F) get_original_function(const HMODULE& library, const char* function_name, F) {
         return reinterpret_cast<F>(get_original_function(library, function_name));
     }
 
     template<typename F>
-    F get_original_hooked_function(const Map<String, uintptr_t>& address_map, const char* function_name, F) {
+    KOALABOX_API(F)
+    get_original_hooked_function(const Map<String, uintptr_t>& address_map, const char* function_name, F) {
         return reinterpret_cast<F>(get_original_hooked_function(address_map, function_name));
     }
 

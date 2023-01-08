@@ -7,6 +7,7 @@
 
 #include <fstream>
 #include <regex>
+#include <spdlog/pattern_formatter.h>
 
 using namespace koalabox;
 
@@ -29,11 +30,14 @@ int wmain(const int argc, const wchar_t* argv[]) {
     logger::instance = spdlog::stdout_logger_st("stdout");
 
     try {
+        auto formatter = std::make_unique<spdlog::pattern_formatter>();
+        formatter->set_pattern("%H:%M:%S.%e │ %l │ %v");
+        logger::instance->set_formatter(std::move(formatter));
         logger::instance->flush_on(spdlog::level::trace);
         logger::instance->set_level(spdlog::level::trace);
 
         for (int i = 0; i < argc; i++) {
-            LOG_DEBUG("Arg #{} = '{}'", i, util::to_string(argv[i]))
+            LOG_INFO("Arg #{} = '{}'", i, util::to_string(argv[i]))
         }
 
         if (argc < 5 || argc > 6) {
@@ -100,7 +104,7 @@ int wmain(const int argc, const wchar_t* argv[]) {
             export_file << line << std::endl;
         }
     } catch (const Exception& ex) {
-        LOG_ERROR(ex.what())
+        LOG_ERROR("Error: {}", ex.what())
         exit(-1);
     }
 }

@@ -5,29 +5,41 @@
 
 namespace koalabox::io {
 
-    std::optional<String> read_file(const Path& file_path) {
+    String read_file(const Path& file_path) {
         std::ifstream input_stream(file_path);
+        input_stream.exceptions(std::ifstream::failbit | std::ifstream::badbit);
 
-        return input_stream.good()
-               ? std::optional{String(std::istreambuf_iterator<char>{input_stream}, {})}
-               : std::nullopt;
+        try {
+            return {std::istreambuf_iterator<char>{input_stream}, {}};
+        } catch (const std::system_error& e) {
+            const auto& code = e.code();
+            throw std::runtime_error(
+                fmt::format("Input file stream error code: {}, message: {}", code.value(), code.message())
+            );
+        }
     }
 
-    bool write_file(const Path& file_path, const String& contents) {
-        if (!std::filesystem::exists(file_path)) {
-            std::filesystem::create_directories(file_path.parent_path());
+    bool write_file(const Path& file_path, const String& contents) noexcept {
+        try {
+
+            if (!std::filesystem::exists(file_path)) {
+                std::filesystem::create_directories(file_path.parent_path());
+            }
+
+            std::ofstream output_stream(file_path);
+            if (output_stream.good()) {
+                output_stream << contents;
+
+                LOG_DEBUG("Saved file to disk: '{}'", file_path.string())
+                return true;
+            }
+
+            LOG_ERROR("Error saving file: '{}'", file_path.string())
+            return false;
+        } catch (const Exception& e) {
+            LOG_ERROR("Unexpected exception caught: {}", e.what())
+            return false;
         }
-
-        std::ofstream output_stream(file_path);
-        if (output_stream.good()) {
-            output_stream << contents;
-
-            LOG_DEBUG("{} -> Saved file to disk: '{}'", __func__, file_path.string())
-            return true;
-        }
-
-        LOG_DEBUG("{} -> Error saving file: '{}'", __func__, file_path.string())
-        return false;
     }
 
 }
