@@ -19,12 +19,12 @@ namespace koalabox::logger {
 }
 
 #define LOG_MESSAGE(LEVEL, fmt, ...) koalabox::logger::instance->LEVEL( \
-    " {:>3}:{:24} ┃ " fmt, __LINE__, koalabox::logger::get_filename(__FILE__) __VA_OPT__(,) __VA_ARGS__ \
+    " {:>3}:{:24} ┃ " fmt, __LINE__, koalabox::logger::get_filename(__FILE__) , __VA_ARGS__ \
 );
 
 // Define trace in a special way to avoid excessive logging in release builds
 #ifdef _DEBUG
-#define LOG_TRACE(fmt, ...) LOG_MESSAGE(trace, fmt __VA_OPT__(,) __VA_ARGS__)
+#define LOG_TRACE(fmt, ...) LOG_MESSAGE(trace, fmt, __VA_ARGS__)
 #else
 #define LOG_TRACE(...)
 #endif

@@ -30,11 +30,11 @@ namespace koalabox::io {
             if (output_stream.good()) {
                 output_stream << contents;
 
-                LOG_DEBUG("Saved file to disk: '{}'", file_path.string())
+                LOG_DEBUG(R"(Writing file to disk: "{}")", file_path.string())
                 return true;
             }
 
-            LOG_ERROR("Error saving file: '{}'", file_path.string())
+            LOG_ERROR(R"(Error saving file: "{}")", file_path.string())
             return false;
         } catch (const Exception& e) {
             LOG_ERROR("Unexpected exception caught: {}", e.what())

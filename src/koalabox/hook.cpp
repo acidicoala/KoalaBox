@@ -48,7 +48,7 @@ namespace koalabox::hook {
         auto* const detour = new PLH::NatDetour(address, callback_function, &trampoline);
 
 #ifdef _WIN64
-        detour->setDetourScheme(static_cast<PLH::x64Detour::detour_scheme_t>(Detour::ALL));
+        detour->setDetourScheme(PLH::x64Detour::ALL);
 #endif
         if (detour->hook() || trampoline == 0) {
             hooks.push_back(detour);

@@ -18,7 +18,9 @@ namespace koalabox::http_client {
             );
         }
 
-        return Json(res.text);
+        LOG_TRACE("Response text: \n{}", res.text)
+
+        return Json::parse(res.text);
     }
 
 }

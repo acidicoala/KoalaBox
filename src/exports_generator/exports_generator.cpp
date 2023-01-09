@@ -4,10 +4,10 @@
 #include <koalabox/logger.hpp>
 
 #include <spdlog/sinks/stdout_sinks.h>
+#include <spdlog/pattern_formatter.h>
 
 #include <fstream>
 #include <regex>
-#include <spdlog/pattern_formatter.h>
 
 using namespace koalabox;
 

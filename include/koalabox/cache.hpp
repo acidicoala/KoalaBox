@@ -1,7 +1,6 @@
 #pragma once
 
 #include <koalabox/core.hpp>
-#include <koalabox/json.hpp>
 
 /**
  * This namespace contains utility functions for reading from and writing to cache file on disk.
