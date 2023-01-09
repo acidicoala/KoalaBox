@@ -33,7 +33,7 @@ template<class Fn> using Function = std::function<Fn>;
 
 constexpr auto BITNESS = 8 * sizeof(void*);
 
-// Be warned, lurker. Dark sorcery await ahead of you...
+// Be warned, lurker. Dark sorcery awaits ahead of you...
 
 /**
  * Performs case-insensitive string comparison. Usage: string1 < equals > string2
@@ -66,51 +66,31 @@ public:
     T& operator*() const { return lhs; }
 };
 
-// TODO: Macro definitions
-
 /// String operators
 
-/// < equals >
-
-const struct equals_t {} equals;
-
-template<typename T>
-ConstOperatorProxy<T, equals_t> operator<(const T& lhs, const equals_t& op) {
-    return ConstOperatorProxy<T, equals_t>(lhs, op);
+#define DEFINE_CONST_OPERATOR(TYPE, OP) \
+const struct OP##_t {} OP; \
+bool operator>(const ConstOperatorProxy<TYPE, OP##_t>& lhs, const TYPE& rhs); \
+template<typename T> \
+ConstOperatorProxy<T, OP##_t> operator<(const T& lhs, const OP##_t& op) { \
+    return ConstOperatorProxy<T, OP##_t>(lhs, op); \
 }
 
-bool operator>(const ConstOperatorProxy<String, equals_t>& lhs, const String& rhs);
-
-/// < not_equals >
-const struct not_equals_t {} not_equals;
-
-template<typename T>
-ConstOperatorProxy<T, not_equals_t> operator<(const T& lhs, const not_equals_t& op) {
-    return ConstOperatorProxy<T, not_equals_t>(lhs, op);
-}
-
-bool operator>(const ConstOperatorProxy<String, not_equals_t>& lhs, const String& rhs);
-
-/// < contains >
-const struct contains_t {} contains;
-
-template<typename T>
-ConstOperatorProxy<T, contains_t> operator<(const T& lhs, const contains_t& op) {
-    return ConstOperatorProxy<T, contains_t>(lhs, op);
-}
-
-bool operator>(const ConstOperatorProxy<String, contains_t>& lhs, const String& rhs);
+DEFINE_CONST_OPERATOR(String, equals)
+DEFINE_CONST_OPERATOR(String, not_equals)
+DEFINE_CONST_OPERATOR(String, contains)
 
 /// Vector operators
 
-const struct append_t {} append;
-
-template<typename T>
-MutableOperatorProxy<T, append_t> operator<(T& lhs, const append_t& op) {
-    return MutableOperatorProxy<T, append_t>(lhs, op);
+#define DEFINE_TEMPLATED_OPERATOR(TYPE, OP) \
+const struct OP##_t {} OP; \
+template<typename T> \
+MutableOperatorProxy<T, OP##_t> operator<(T& lhs, const OP##_t& op) { \
+    return MutableOperatorProxy<T, OP##_t>(lhs, op); \
+} \
+template<typename T> \
+void operator>(const MutableOperatorProxy<TYPE<T>, OP##_t>& lhs, const TYPE<T>& rhs) { \
+    (*lhs).insert((*lhs).end(), rhs.begin(), rhs.end()); \
 }
 
-template<typename VT>
-void operator>(const MutableOperatorProxy<Vector<VT>, append_t>& lhs, const Vector<VT>& rhs) {
-    (*lhs).insert((*lhs).end(), rhs.begin(), rhs.end());
-}
+DEFINE_TEMPLATED_OPERATOR(Vector, append)
