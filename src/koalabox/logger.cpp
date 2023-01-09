@@ -4,6 +4,7 @@
 #include <spdlog/pattern_formatter.h>
 #include <spdlog/sinks/basic_file_sink.h>
 #include <spdlog/sinks/null_sink.h>
+#include <spdlog/async.h>
 
 #include <regex>
 
@@ -92,8 +93,7 @@ namespace koalabox::logger {
      * @param path It is the responsibility of the caller to ensure that all directories in the path exist.
      */
     KOALABOX_API(void) init_file_logger(const Path& path) {
-        const auto sink = std::make_shared<SanitizedFileSink>(path.string());
-        instance = std::make_shared<spdlog::logger>("default", sink);
+        instance = spdlog::create_async<SanitizedFileSink>("async", path.string());
 
         auto formatter = std::make_unique<spdlog::pattern_formatter>();
         formatter->add_flag<EmojiFormatterFlag>('*');
