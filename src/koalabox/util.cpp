@@ -5,7 +5,7 @@
 namespace koalabox::util {
 
     KOALABOX_API(void) error_box(const String& title, const String& message) {
-        ::MessageBoxW(nullptr, to_wstring(message).c_str(), to_wstring(title).c_str(), MB_OK | MB_ICONERROR);
+        ::MessageBox(nullptr, to_wstring(message).c_str(), to_wstring(title).c_str(), MB_OK | MB_ICONERROR);
     }
 
     [[noreturn]] KOALABOX_API(void) panic(String message) {
