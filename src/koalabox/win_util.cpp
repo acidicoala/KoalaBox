@@ -1,9 +1,13 @@
 #include <koalabox/win_util.hpp>
 #include <koalabox/util.hpp>
-#include <koalabox/logger.hpp>
 
 #pragma comment(lib, "Version.lib")
 
+/**
+ * NOTE: It's important not to log anything in these functions, since logging might not have been
+ * initialized yet. All errors must be reported via exceptions, which will be then displayed to user
+ * via logs or message boxes depending on the circumstance.
+ */
 namespace koalabox::win_util {
 
     namespace {
@@ -100,49 +104,62 @@ namespace koalabox::win_util {
         PANIC_ON_CATCH(get_module_info, module_handle)
     }
 
-    KOALABOX_API(std::optional<String>) get_module_manifest(const HMODULE& module_handle) {
+    KOALABOX_API(String) get_module_manifest(const HMODULE& module_handle) {
+        struct Response {
+            bool success = false;
+            String manifest_or_error;
+        };
+
         // Returns TRUE to continue enumeration or FALSE to stop enumeration.
         const auto callback = [](HMODULE hModule, LPCTSTR lpType, LPTSTR lpName, LONG_PTR lParam) -> BOOL {
+            const auto response = [&](bool success, String manifest_or_error) {
+                auto* response = (Response*) lParam;
+
+                if (!success) {
+                    manifest_or_error = fmt::format(
+                        "get_module_manifest_callback -> {}. Last error: {}", manifest_or_error, get_last_error()
+                    );
+                }
+
+                response->success = success;
+                response->manifest_or_error = manifest_or_error;
+
+                return TRUE;
+            };
+
             HRSRC resource_handle = ::FindResource(hModule, lpName, lpType);
             if (resource_handle == nullptr) {
-                LOG_ERROR("", "get_module_manifest -> FindResource returned null. Last error: {}", get_last_error())
-                return TRUE;
+                return response(false, "FindResource returned null.");
             }
 
             const auto resource_size = SizeofResource(hModule, resource_handle);
             if (resource_size == 0) {
-                LOG_ERROR("", "get_module_manifest -> SizeofResource returned 0. Last error: {}", get_last_error())
-                return TRUE;
+                return response(false, "SizeofResource returned 0.");
             }
 
             HGLOBAL resource_data_handle = LoadResource(hModule, resource_handle);
             if (resource_data_handle == nullptr) {
-                LOG_ERROR("", "get_module_manifest -> LoadResource returned null. Last error: {}", get_last_error())
-                return TRUE;
+                return response(false, "LockResource returned null.");
             }
 
             const auto* resource_data = LockResource(resource_data_handle);
             if (resource_data == nullptr) {
-                LOG_ERROR("", "get_module_manifest -> LockResource returned null. Last error: {}", get_last_error())
-                return TRUE;
+                return response(false, "Resource data is null.");
             }
 
-            *((char**) lParam) = (char*) resource_data;
-            return TRUE;
+            return response(true, (char*) resource_data);
         };
 
-        char* manifest = nullptr;
-        if (not EnumResourceNames(module_handle, RT_MANIFEST, callback, (LONG_PTR) &manifest)) {
-            LOG_ERROR("EnumResourceNames call error. Last error: {}", get_last_error())
-
-            return std::nullopt;
+        Response response;
+        if (not EnumResourceNames(module_handle, RT_MANIFEST, callback, (LONG_PTR) &response)) {
+            throw util::exception("EnumResourceNames call error. Last error: {}", get_last_error());
         }
 
-        if (manifest == nullptr) {
-            return std::nullopt;
+        if (!response.success) {
+            throw util::exception("{}", response.manifest_or_error);
         }
 
-        return manifest;
+        return response.manifest_or_error;
     }
 
     KOALABOX_API(String) get_module_version_or_throw(const HMODULE& module_handle) {
@@ -266,6 +283,14 @@ namespace koalabox::win_util {
 
     KOALABOX_API(HMODULE) load_library(const Path& module_path) {
         PANIC_ON_CATCH(load_library, module_path)
+    }
+
+    KOALABOX_API(void) register_application_restart() {
+        const auto result = RegisterApplicationRestart(nullptr, 0);
+
+        if (result != S_OK) {
+            throw util::exception("Failed to register application restart. Result: {}", result);
+        }
     }
 
     KOALABOX_API(std::optional<MEMORY_BASIC_INFORMATION>) virtual_query(const void* pointer) {

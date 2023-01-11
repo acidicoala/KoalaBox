@@ -18,6 +18,11 @@
     static std::once_flag _flag; \
     std::call_once(_flag, [&]() FUNC_BODY);
 
+#define NEW_THREAD(FUNC_BODY) \
+    std::thread( \
+        [&]() FUNC_BODY \
+    ).detach();
+
 using Mutex = std::mutex;
 using MutexLockGuard = std::lock_guard<Mutex>;
 using String = std::string;

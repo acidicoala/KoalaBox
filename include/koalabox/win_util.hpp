@@ -18,7 +18,7 @@ namespace koalabox::win_util {
 
     KOALABOX_API(MODULEINFO) get_module_info(const HMODULE& module_handle);
 
-    KOALABOX_API(std::optional<String>) get_module_manifest(const HMODULE& module_handle);
+    KOALABOX_API(String) get_module_manifest(const HMODULE& module_handle);
 
     KOALABOX_API(String) get_module_version_or_throw(const HMODULE& module_handle);
 
@@ -41,6 +41,8 @@ namespace koalabox::win_util {
     KOALABOX_API(HMODULE) load_library_or_throw(const Path& module_path);
 
     KOALABOX_API(HMODULE) load_library(const Path& module_path);
+
+    KOALABOX_API(void) register_application_restart();
 
     KOALABOX_API(std::optional<MEMORY_BASIC_INFORMATION>) virtual_query(const void* pointer);
 
