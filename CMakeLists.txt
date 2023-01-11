@@ -39,6 +39,7 @@ set(KOALABOX_HEADERS
     include/koalabox/hook.hpp
     include/koalabox/http_client.hpp
     include/koalabox/io.hpp
+    include/koalabox/ipc.hpp
     include/koalabox/loader.hpp
     include/koalabox/patcher.hpp
     include/koalabox/util.hpp
@@ -53,6 +54,7 @@ set(KOALABOX_SOURCES
     src/koalabox/hook.cpp
     src/koalabox/http_client.cpp
     src/koalabox/io.cpp
+    src/koalabox/ipc.cpp
     src/koalabox/loader.cpp
     src/koalabox/ntapi.hpp
     src/koalabox/patcher.cpp

@@ -11,10 +11,6 @@
 namespace koalabox::win_util {
 
     namespace {
-        String get_last_error() {
-            return fmt::format("0x{0:x}", ::GetLastError());
-        }
-
         Vector<uint8_t> get_file_version_info_or_throw(const HMODULE& module_handle) {
             const auto file_name = util::to_wstring(get_module_file_name_or_throw(module_handle));
 
@@ -56,6 +52,10 @@ namespace koalabox::win_util {
         );
 
         return util::to_string(buffer);
+    }
+
+    KOALABOX_API(String) get_last_error() {
+        return fmt::format("0x{0:x}", ::GetLastError());
     }
 
     KOALABOX_API(String) get_module_file_name_or_throw(const HMODULE& module_handle) {

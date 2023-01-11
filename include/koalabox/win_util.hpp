@@ -6,6 +6,8 @@ namespace koalabox::win_util {
 
     KOALABOX_API(String) format_message(DWORD message_id);
 
+    KOALABOX_API(String) get_last_error();
+
     KOALABOX_API(String) get_module_file_name_or_throw(const HMODULE& module_handle);
 
     KOALABOX_API(String) get_module_file_name(const HMODULE& module_handle);
