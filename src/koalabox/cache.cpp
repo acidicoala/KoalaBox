@@ -10,8 +10,6 @@ namespace koalabox::cache {
         Json read_cache() {
             const auto cache_str = io::read_file(cache_path);
 
-            LOG_TRACE("Disk cache: \n{}", cache_str)
-
             return Json::parse(io::read_file(cache_path));
         }
     }
@@ -24,6 +22,8 @@ namespace koalabox::cache {
 
     KOALABOX_API(Json) read_from_cache(const String& key) {
         const auto cache = read_cache();
+
+        LOG_DEBUG("Cache key: {}. Value: \n{}", key, cache.dump(2))
 
         return cache.at(key);
     }

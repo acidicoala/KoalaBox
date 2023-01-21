@@ -33,8 +33,7 @@ namespace koalabox::logger {
             String payload(msg.payload.data(), msg.payload.size());
             std::smatch matches;
             if (std::regex_search(payload, matches, username_regex)) {
-                const String user_name = matches[1];
-                payload.replace(payload.find(user_name), user_name.length(), "%USERNAME%");
+                payload.replace(matches[1].first, matches[1].second, "%USERNAME%");
             }
 
             const spdlog::details::log_msg sanitized_log_msg(msg.time, msg.source, msg.logger_name, msg.level, payload);
