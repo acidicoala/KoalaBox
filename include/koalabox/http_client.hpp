@@ -4,6 +4,8 @@
 
 namespace koalabox::http_client {
 
-    KOALABOX_API(Json) fetch_json(const String& url);
+    KOALABOX_API(Json) get_json(const String& url);
+
+    KOALABOX_API(Json) post_json(const String& url, Json json);
 
 }

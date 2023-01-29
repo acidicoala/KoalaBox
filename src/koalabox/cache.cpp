@@ -1,23 +1,18 @@
 #include <koalabox/cache.hpp>
 #include <koalabox/io.hpp>
 #include <koalabox/logger.hpp>
+#include <koalabox/paths.hpp>
 
 namespace koalabox::cache {
 
     namespace {
-        Path cache_path;
-
         Json read_cache() {
-            const auto cache_str = io::read_file(cache_path);
-
-            return Json::parse(io::read_file(cache_path));
+            return Json::parse(
+                io::read_file(
+                    koalabox::paths::get_cache_path()
+                )
+            );
         }
-    }
-
-    KOALABOX_API(void) init_cache(const Path& path) noexcept {
-        cache_path = path;
-
-        LOG_DEBUG(R"(Setting cache path to: "{}")", path.string())
     }
 
     KOALABOX_API(Json) read_from_cache(const String& key) {
@@ -39,7 +34,7 @@ namespace koalabox::cache {
 
             new_cache[key] = value;
 
-            io::write_file(cache_path, new_cache.dump(2));
+            io::write_file(koalabox::paths::get_cache_path(), new_cache.dump(2));
 
             return true;
         } catch (const Exception& e) {

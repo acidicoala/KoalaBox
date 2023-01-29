@@ -7,7 +7,6 @@
 #include <polyhook2/Detour/NatDetour.hpp>
 
 namespace koalabox::hook {
-    using namespace koalabox;
 
     class PolyhookLogger : public PLH::Logger {
         bool print_info;
@@ -34,9 +33,9 @@ namespace koalabox::hook {
     };
 
     Vector<PLH::IHook*> hooks; // NOLINT(cert-err58-cpp)
+    Map<String, uintptr_t> address_map;
 
     KOALABOX_API(void) detour_or_throw(
-        Map<String, uintptr_t>& address_map,
         const uintptr_t address,
         const String& function_name,
         const uintptr_t callback_function
@@ -59,7 +58,6 @@ namespace koalabox::hook {
     }
 
     KOALABOX_API(void) detour_or_throw(
-        Map<String, uintptr_t>& address_map,
         const HMODULE& module_handle,
         const String& function_name,
         const uintptr_t callback_function
@@ -68,63 +66,58 @@ namespace koalabox::hook {
             win_util::get_proc_address_or_throw(module_handle, function_name.c_str())
         );
 
-        detour_or_throw(address_map, address, function_name, callback_function);
+        detour_or_throw(address, function_name, callback_function);
     }
 
     KOALABOX_API(void) detour_or_warn(
-        Map<String, uintptr_t>& address_map,
         const uintptr_t address,
         const String& function_name,
         const uintptr_t callback_function
     ) {
         try {
-            hook::detour_or_throw(address_map, address, function_name, callback_function);
+            hook::detour_or_throw(address, function_name, callback_function);
         } catch (const Exception& ex) {
             LOG_WARN("Detour error: {}", ex.what())
         }
     }
 
     KOALABOX_API(void) detour_or_warn(
-        Map<String, uintptr_t>& address_map,
         const HMODULE& module_handle,
         const String& function_name,
         const uintptr_t callback_function
     ) {
         try {
-            hook::detour_or_throw(address_map, module_handle, function_name, callback_function);
+            hook::detour_or_throw(module_handle, function_name, callback_function);
         } catch (const Exception& ex) {
             LOG_WARN("Detour error: {}", ex.what())
         }
     }
 
     KOALABOX_API(void) detour(
-        Map<String, uintptr_t>& address_map,
         const uintptr_t address,
         const String& function_name,
         const uintptr_t callback_function
     ) {
         try {
-            detour_or_throw(address_map, address, function_name, callback_function);
+            detour_or_throw(address, function_name, callback_function);
         } catch (const Exception& ex) {
             util::panic("Failed to hook function {} via Detour: {}", function_name, ex.what());
         }
     }
 
     KOALABOX_API(void) detour(
-        Map<String, uintptr_t>& address_map,
         const HMODULE& module_handle,
         const String& function_name,
         const uintptr_t callback_function
     ) {
         try {
-            detour_or_throw(address_map, module_handle, function_name, callback_function);
+            detour_or_throw(module_handle, function_name, callback_function);
         } catch (const Exception& ex) {
             util::panic("Failed to hook function {} via Detour: {}", function_name, ex.what());
         }
     }
 
     KOALABOX_API(void) eat_hook_or_throw(
-        Map<String, uintptr_t>& address_map,
         const HMODULE& module_handle,
         const String& function_name,
         uintptr_t callback_function
@@ -151,20 +144,18 @@ namespace koalabox::hook {
     }
 
     KOALABOX_API(void) eat_hook_or_warn(
-        Map<String, uintptr_t>& address_map,
         const HMODULE& module_handle,
         const String& function_name,
         uintptr_t callback_function
     ) {
         try {
-            hook::eat_hook_or_throw(address_map, module_handle, function_name, callback_function);
+            hook::eat_hook_or_throw(module_handle, function_name, callback_function);
         } catch (const Exception& ex) {
             LOG_WARN("Detour error: {}", ex.what())
         }
     }
 
     KOALABOX_API(void) swap_virtual_func_or_throw(
-        Map<String, uintptr_t>& address_map,
         const void* instance,
         const String& function_name,
         const int ordinal,
@@ -176,7 +167,7 @@ namespace koalabox::hook {
         )
 
         const PLH::VFuncMap redirect = {
-            {ordinal, callback_function},
+            { ordinal, callback_function },
         };
 
         PLH::VFuncMap original_functions;
@@ -192,30 +183,25 @@ namespace koalabox::hook {
     }
 
     KOALABOX_API(void) swap_virtual_func(
-        Map<String, uintptr_t>& address_map,
         const void* instance,
         const String& function_name,
         const int ordinal,
         uintptr_t callback_function
     ) {
         try {
-            swap_virtual_func_or_throw(address_map, instance, function_name, ordinal, callback_function);
+            swap_virtual_func_or_throw(instance, function_name, ordinal, callback_function);
         } catch (const Exception& ex) {
             util::panic("Failed to hook function {} via virtual function swap: {}", function_name, ex.what());
         }
     }
 
-    KOALABOX_API(uintptr_t) get_original_function(const HMODULE& library, const char* function_name) {
+    KOALABOX_API(uintptr_t) get_original_function(const HMODULE& library, const String& function_name) {
         return reinterpret_cast<uintptr_t>(
-            win_util::get_proc_address(library, function_name)
+            win_util::get_proc_address(library, function_name.c_str())
         );
     }
 
-    KOALABOX_API(uintptr_t) get_original_hooked_function(
-        const Map<String,
-            uintptr_t>& address_map,
-        const char* function_name
-    ) {
+    KOALABOX_API(uintptr_t) get_original_hooked_function(const String& function_name) {
         if (not address_map.contains(function_name)) {
             util::panic("Address map does not contain function: {}", function_name);
         }
@@ -234,8 +220,8 @@ namespace koalabox::hook {
     KOALABOX_API(bool) is_hook_mode(const HMODULE& self_module, const String& orig_library_name) {
         const auto module_path = win_util::get_module_file_name(self_module);
 
-        const auto self_name = Path(module_path).filename().string();
+        const auto self_name = Path(module_path).stem().string();
 
-        return self_name < not_equals > orig_library_name + ".dll";
+        return self_name < not_equals > orig_library_name;
     }
 }

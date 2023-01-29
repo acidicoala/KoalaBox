@@ -33,8 +33,10 @@ add_subdirectory(dependencies/spdlog EXCLUDE_FROM_ALL)
 
 set(KOALABOX_HEADERS
     include/koalabox/cache.hpp
+    include/koalabox/config.hpp
     include/koalabox/core.hpp
     include/koalabox/dll_monitor.hpp
+    include/koalabox/globals.hpp
     include/koalabox/logger.hpp
     include/koalabox/hook.hpp
     include/koalabox/http_client.hpp
@@ -42,6 +44,7 @@ set(KOALABOX_HEADERS
     include/koalabox/ipc.hpp
     include/koalabox/loader.hpp
     include/koalabox/patcher.hpp
+    include/koalabox/paths.hpp
     include/koalabox/util.hpp
     include/koalabox/win_util.hpp
     )
@@ -50,6 +53,7 @@ set(KOALABOX_SOURCES
     src/koalabox/cache.cpp
     src/koalabox/core.cpp
     src/koalabox/dll_monitor.cpp
+    src/koalabox/globals.cpp
     src/koalabox/logger.cpp
     src/koalabox/hook.cpp
     src/koalabox/http_client.cpp
@@ -58,6 +62,7 @@ set(KOALABOX_SOURCES
     src/koalabox/loader.cpp
     src/koalabox/ntapi.hpp
     src/koalabox/patcher.cpp
+    src/koalabox/paths.cpp
     src/koalabox/util.cpp
     src/koalabox/win_util.cpp
     )

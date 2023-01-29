@@ -1,4 +1,5 @@
 #include <koalabox/logger.hpp>
+#include <koalabox/paths.hpp>
 #include <koalabox/util.hpp>
 
 #include <spdlog/pattern_formatter.h>
@@ -101,6 +102,10 @@ namespace koalabox::logger {
         instance->set_formatter(std::move(formatter));
         instance->set_level(spdlog::level::trace);
         instance->flush_on(spdlog::level::trace);
+    }
+
+    KOALABOX_API(void) init_file_logger() {
+        init_file_logger(koalabox::paths::get_log_path());
     }
 
     KOALABOX_API(String) get_filename(const char* full_path) {

@@ -8,8 +8,6 @@
  */
 namespace koalabox::cache {
 
-    KOALABOX_API(void) init_cache(const Path& path) noexcept;
-
     KOALABOX_API(Json) read_from_cache(const String& key);
 
     KOALABOX_API(bool) save_to_cache(const String& key, const Json& value) noexcept;

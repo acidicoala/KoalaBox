@@ -15,6 +15,8 @@ namespace koalabox::logger {
 
     KOALABOX_API(void) init_file_logger(const Path& path);
 
+    KOALABOX_API(void) init_file_logger();
+
     KOALABOX_API(String) get_filename(const char* full_path);
 }
 
