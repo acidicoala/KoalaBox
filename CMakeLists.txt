@@ -4,6 +4,10 @@ project(KoalaBox
     LANGUAGES CXX
     DESCRIPTION "A box of koality tools")
 
+# Define options
+
+option(KOALABOX_HTTP_SERVER "Include HTTP server" OFF)
+
 # Configure variables
 
 include(GNUInstallDirs)
@@ -30,6 +34,9 @@ add_subdirectory(dependencies/PolyHook_2_0 EXCLUDE_FROM_ALL)
 
 ## Spdlog - https://github.com/gabime/spdlog
 add_subdirectory(dependencies/spdlog EXCLUDE_FROM_ALL)
+
+## cpp-httplib - https://github.com/yhirose/cpp-httplib
+add_subdirectory(dependencies/cpp-httplib EXCLUDE_FROM_ALL)
 
 set(KOALABOX_HEADERS
     include/koalabox/cache.hpp
@@ -67,12 +74,25 @@ set(KOALABOX_SOURCES
     src/koalabox/win_util.cpp
     )
 
+if (KOALABOX_HTTP_SERVER)
+    set(KOALABOX_HEADERS ${KOALABOX_HEADERS} include/koalabox/http_server.hpp)
+    set(KOALABOX_SOURCES ${KOALABOX_SOURCES} src/koalabox/http_server.cpp)
+endif ()
+
 add_library(KoalaBox OBJECT ${KOALABOX_HEADERS} ${KOALABOX_SOURCES})
+
+## OpenSSL - https://github.com/janbar/openssl-cmake
+if (KOALABOX_HTTP_SERVER)
+    add_subdirectory(dependencies/openssl-cmake)
+    target_link_libraries(KoalaBox PUBLIC ssl)
+    target_link_libraries(KoalaBox PUBLIC crypto)
+endif ()
 
 target_link_libraries(KoalaBox PUBLIC cpr::cpr)
 target_link_libraries(KoalaBox PUBLIC nlohmann_json::nlohmann_json)
 target_link_libraries(KoalaBox PUBLIC PolyHook_2)
 target_link_libraries(KoalaBox PUBLIC spdlog::spdlog)
+target_link_libraries(KoalaBox PUBLIC httplib::httplib)
 
 target_include_directories(KoalaBox PUBLIC
     "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include;${CMAKE_CURRENT_SOURCE_DIR}/src>"

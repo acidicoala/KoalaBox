@@ -7,7 +7,6 @@
     </sourceRoots>
     <excludeRoots>
       <file path="$PROJECT_DIR$/build" />
-      <file path="$PROJECT_DIR$/vcpkg" />
     </excludeRoots>
   </component>
   <component name="RustProjectSettings">

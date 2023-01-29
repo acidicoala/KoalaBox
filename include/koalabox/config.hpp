@@ -23,8 +23,7 @@ namespace koalabox::config {
 
             return config;
         } catch (const Exception& e) {
-            const auto message = fmt::format("Error parsing config file: {}", e.what());
-            koalabox::util::error_box("SmokeAPI Error", message);
+            util::panic("Error parsing config file: {}", e.what());
         }
     }
 
