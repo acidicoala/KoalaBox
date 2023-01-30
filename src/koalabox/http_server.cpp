@@ -51,18 +51,39 @@ namespace koalabox::http_server {
     class Certificate {
     private:
         X509* x509;
-    public:
-        Certificate(const Key& key, const String& common_name) {
+
+        void free_cert() {
+            X509_free(x509);
+            x509 = nullptr;
+        }
+
+        Certificate(
+            const Key& key,
+            const String& common_name,
+            const Key& issuer_key,
+            const Certificate& issuer_certificate,
+            const Map<int, String> ext_map // See https://superuser.com/a/1248085
+        ) {
             LOG_DEBUG("Creating an x509 certificate")
 
             // Allocate memory for the X509 structure.
             x509 = X509_new();
 
-            if (!x509) {
+            if (not x509) {
                 throw Exception("Unable to create an X509 structure.");
             }
 
-            ASN1_INTEGER_set(X509_get_serialNumber(x509), 1);
+            X509_set_version(x509, 2);
+
+            // Create random serial
+            // Source: https://github.com/pashapovalov/Webinos-Platform-buildhive/blob/386178ed83198c7b802aa894f579899edf199525/webinos/common/manager/certificate_manager/src/openssl_wrapper.cpp#L166-L176
+            ASN1_INTEGER* serial = ASN1_INTEGER_new();
+            BIGNUM* big_num = BN_new();
+            //64 bits of randomness?
+            BN_pseudo_rand(big_num, 120, 0, 0);
+            BN_to_ASN1_INTEGER(big_num, serial);
+            BN_free(big_num);
+            X509_set_serialNumber(x509, serial);
 
             // This certificate is valid from now until 25 year from now.
             X509_gmtime_adj(X509_get_notBefore(x509), 0);
@@ -72,58 +93,97 @@ namespace koalabox::http_server {
             X509_set_pubkey(x509, *key);
 
             // We want to copy the subject name to the issuer name.
-            X509_NAME* name = X509_get_subject_name(x509);
+            X509_NAME* subject_name = X509_get_subject_name(x509);
 
             const auto add_entry = [&](const String& field, const String& data) {
                 X509_NAME_add_entry_by_txt(
-                    name, field.c_str(), MBSTRING_ASC, (unsigned char*) data.c_str(), -1, -1, 0
+                    subject_name, // name
+                    field.c_str(), // field
+                    MBSTRING_ASC, // type
+                    (unsigned char*) data.c_str(), // bytes
+                    -1, // len
+                    -1, // loc
+                    0 // set
                 );
             };
 
             // Set the country code and common name.
-            add_entry("C", "AU");
-            add_entry("S", "Eucalyptus forest");
-            add_entry("O", koalabox::globals::get_project_name());
+            const String project_name = koalabox::globals::get_project_name();
+            add_entry("O", "acidicoala");
             add_entry("CN", common_name);
 
-            const auto add_ext = [&](int nid, const String& data) {
-                X509_EXTENSION* ext;
+            for (const auto& [nid, data]: ext_map) {
                 X509V3_CTX ctx;
-                // This sets the context of the extensions. No configuration database
                 X509V3_set_ctx_nodb(&ctx)
 
-                // Issuer and subject certs: both the target since it is self-signed, no request and no CRL
-                X509V3_set_ctx(&ctx, x509, x509, NULL, NULL, 0);
-                ext = X509V3_EXT_conf_nid(NULL, &ctx, nid, data.c_str());
+                X509V3_set_ctx(&ctx, *issuer_certificate, x509, NULL, NULL, 0);
+                auto* ext = X509V3_EXT_conf_nid(NULL, &ctx, nid, data.c_str());
                 if (not X509V3_EXT_conf_nid(NULL, &ctx, nid, data.c_str())) {
                     return;
                 }
 
                 X509_add_ext(x509, ext, -1);
                 X509_EXTENSION_free(ext);
-            };
-
-            add_ext(NID_basic_constraints, "critical,CA:TRUE");
-            add_ext(NID_key_usage, "critical,keyCertSign,cRLSign");
-            add_ext(NID_subject_key_identifier, "hash");
-            // TODO: NID_subject_key_identifier?
+            }
 
             // Now set the issuer name.
-            X509_set_issuer_name(x509, name);
+            X509_set_issuer_name(x509, X509_get_subject_name(*issuer_certificate));
 
             // Actually sign the certificate with our key.
-            if (!X509_sign(x509, *key, EVP_sha1())) {
-                X509_free(x509);
+            if (!X509_sign(x509, *issuer_key, EVP_sha256())) {
+                free_cert();
                 throw Exception("Error signing certificate.");
             }
 
             LOG_DEBUG("Successfully created an x509 certificate")
         }
 
+    public:
+        /**
+         * Constructs a self-signed certificate authority
+         */
+        Certificate(
+            const Key& key
+        ) : Certificate(
+            key,
+            "acidicoala",
+            key,
+            *this,
+            {
+                { NID_basic_constraints,        "critical, CA:TRUE" },
+                { NID_subject_key_identifier,   "hash" },
+                { NID_authority_key_identifier, "keyid:always, issuer:always" },
+                { NID_key_usage,                "critical, cRLSign, digitalSignature, keyCertSign" },
+            }
+        ) {}
+
+        /**
+         * Constructs a server certificate signed by the provided authority
+         */
+        Certificate(
+            const Key& key,
+            const String& server_host,
+            const Key& ca_key,
+            const Certificate& ca_cert
+        ) : Certificate(
+            key,
+            koalabox::globals::get_project_name(),
+            ca_key,
+            ca_cert,
+            {
+                { NID_basic_constraints,        "critical, CA:FALSE" },
+                { NID_subject_key_identifier,   "hash" },
+                { NID_authority_key_identifier, "keyid:always, issuer:always" },
+                { NID_key_usage,                "critical, nonRepudiation, digitalSignature, keyEncipherment, keyAgreement" },
+                { NID_ext_key_usage,            "critical, serverAuth" },
+                { NID_subject_alt_name,         "DNS:" + server_host }
+            }
+        ) {}
+
         ~Certificate() {
             LOG_DEBUG("Freeing an x509 certificate")
 
-            X509_free(x509);
+            free_cert();
         }
 
         X509* operator*() const {
@@ -161,27 +221,31 @@ namespace koalabox::http_server {
     }
 
     void start(
-        const String& host,
+        const String& local_host,
         unsigned int port,
+        const String& server_host,
         const Map<String, httplib::Server::Handler>& pattern_handlers
     ) noexcept {
         std::thread([=]() {
             try {
+                // ca stands for Certificate Authority
+                const auto project_name = koalabox::globals::get_project_name();
+
                 Key ca_key;
-                Certificate ca_cert(ca_key, koalabox::globals::get_project_name());
+                Certificate ca_cert(ca_key);
+                write_ca_to_disk(project_name + ".ca", ca_key, ca_cert);
 
-                write_ca_to_disk(koalabox::globals::get_project_name(), ca_key, ca_cert);
+                Key server_key;
+                Certificate server_cert(server_key, server_host, ca_key, ca_cert);
+                write_ca_to_disk(project_name + ".server", server_key, server_cert);
 
-                X509* cert; // TODO
-                EVP_PKEY* key; // TODO
-
-                httplib::SSLServer server(*ca_cert, *ca_key);
+                httplib::SSLServer server(*server_cert, *server_key);
 
                 for (const auto& [pattern, handler]: pattern_handlers) {
                     server.Get(pattern, handler);
                 }
 
-                if (not server.listen(host, port)) {
+                if (not server.listen(local_host, port)) {
                     throw Exception("server.listen returned false");
                 }
             } catch (const Exception& e) {
