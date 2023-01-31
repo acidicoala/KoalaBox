@@ -14,6 +14,7 @@ namespace koalabox::http_server {
     private:
         EVP_PKEY* key = nullptr;
         X509* x509 = nullptr;
+        String cert_name;
 
         void free_key() {
             EVP_PKEY_free(key);
@@ -25,6 +26,40 @@ namespace koalabox::http_server {
             x509 = nullptr;
 
             free_key();
+        }
+
+        String get_cert_string() {
+            if (not x509) {
+                throw Exception("Null pointer certificate");
+            }
+
+            auto* bio = BIO_new(BIO_s_mem());
+            if (not bio) {
+                throw Exception("Failed to allocate bio buffer");
+            }
+
+            if (not PEM_write_bio_X509(bio, x509)) {
+                BIO_free(bio);
+                throw Exception("Failed to write x509 to bio buffer");
+            }
+
+            BUF_MEM* buf_mem = nullptr;
+            BIO_get_mem_ptr(bio, &buf_mem);
+
+            if (not buf_mem) {
+                BIO_free(bio);
+                throw Exception("Failed to get bio memory pointer");
+            }
+
+            String cert_string(buf_mem->length, '\0');
+
+            if (not BIO_read(bio, cert_string.data(), buf_mem->length)) {
+                throw Exception("Failed to copy bio buffer to string");
+            }
+
+            BIO_free(bio);
+
+            return cert_string;
         }
 
         void create_key() {
@@ -102,7 +137,7 @@ namespace koalabox::http_server {
             // Set the country code and common name.
             const String project_name = koalabox::globals::get_project_name();
             add_entry("O", "acidicoala");
-            add_entry("CN", common_name);
+            add_entry("CN", koalabox::globals::get_project_name() + " " + common_name);
 
             for (const auto& [nid, data]: ext_map) {
                 X509V3_CTX ctx;
@@ -132,9 +167,9 @@ namespace koalabox::http_server {
 
     public:
         /**
-         * Constructs a self-signed certificate authority
+         * Constructs a self-signed certification authority
          */
-        Certificate() : Certificate("acidicoala", *this, {
+        Certificate() : Certificate("Authority", *this, {
                 { NID_basic_constraints,        "critical, CA:TRUE" },
                 { NID_subject_key_identifier,   "hash" },
                 { NID_authority_key_identifier, "keyid:always, issuer:always" },
@@ -148,7 +183,7 @@ namespace koalabox::http_server {
         Certificate(
             const String& server_host,
             const Certificate& issuer
-        ) : Certificate(koalabox::globals::get_project_name(), issuer, {
+        ) : Certificate("Server", issuer, {
                 { NID_basic_constraints,        "critical, CA:FALSE" },
                 { NID_subject_key_identifier,   "hash" },
                 { NID_authority_key_identifier, "keyid:always, issuer:always" },
@@ -172,10 +207,10 @@ namespace koalabox::http_server {
             return x509;
         }
 
-        void write_to_disk(const String& cert_name) {
+        void write_to_disk(const String& file_name) {
             const auto write = [&](const String& extension, const Function<int(FILE*)>& callback) {
-                const auto file_name = cert_name + "." + extension;
-                const auto file_path = (koalabox::paths::get_self_path() / file_name).string();
+                const auto full_file_name = file_name + "." + extension;
+                const auto file_path = (koalabox::paths::get_self_path() / full_file_name).string();
 
                 LOG_DEBUG("Writing {}", file_path)
 
@@ -200,6 +235,41 @@ namespace koalabox::http_server {
                 return PEM_write_X509(stream, get_x509());
             });
         }
+
+        void add_to_system_store(const String& store_name) {
+            const auto cert_string = get_cert_string();
+            LOG_TRACE("Adding cert to system store:\n{}", cert_string)
+
+            Vector<BYTE> binary_buffer(32 * 1024); // 32KB should be more than enough
+            DWORD binary_size = binary_buffer.size();
+            if (not CryptStringToBinaryA(
+                cert_string.c_str(),
+                0,
+                CRYPT_STRING_BASE64_ANY,
+                binary_buffer.data(),
+                &binary_size,
+                NULL,
+                NULL
+            )) {
+                throw Exception("Error converting base64 certificate to binary");
+            }
+
+            if (not CertAddEncodedCertificateToSystemStoreA(
+                store_name.c_str(),
+                binary_buffer.data(),
+                binary_size
+            )) {
+                throw util::exception(
+                    "Error adding a certificate to the system '{}' store",
+                    store_name
+                );
+            }
+
+            LOG_DEBUG(
+                "Successfully added a certificate to the system '{}' store",
+                store_name
+            )
+        }
     };
 
     void start(
@@ -210,16 +280,18 @@ namespace koalabox::http_server {
     ) noexcept {
         std::thread([=]() {
             try {
-                // ca stands for Certificate Authority
                 const auto project_name = koalabox::globals::get_project_name();
 
                 Certificate ca_cert;
                 ca_cert.write_to_disk(project_name + ".ca");
+                ca_cert.add_to_system_store("ROOT");
 
                 Certificate server_cert(server_host, ca_cert);
                 server_cert.write_to_disk(project_name + ".server");
 
                 httplib::SSLServer server(server_cert.get_x509(), server_cert.get_key());
+
+                // TODO: Fallback handlers for other GET paths, and all POST, DELETE, etc. paths
 
                 for (const auto& [pattern, handler]: pattern_handlers) {
                     server.Get(pattern, handler);
