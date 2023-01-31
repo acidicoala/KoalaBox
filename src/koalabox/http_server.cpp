@@ -10,26 +10,38 @@
 namespace koalabox::http_server {
 
     // Source: https://gist.github.com/nathan-osman/5041136
-
-    class Key {
+    class Certificate {
     private:
-        EVP_PKEY* value = nullptr;
-    public:
-        Key() {
+        EVP_PKEY* key = nullptr;
+        X509* x509 = nullptr;
+
+        void free_key() {
+            EVP_PKEY_free(key);
+            key = nullptr;
+        }
+
+        void free_cert() {
+            X509_free(x509);
+            x509 = nullptr;
+
+            free_key();
+        }
+
+        void create_key() {
             LOG_DEBUG("Creating an RSA key")
 
             // Allocate memory for the EVP_PKEY structure.
-            value = EVP_PKEY_new();
+            key = EVP_PKEY_new();
 
-            if (!value) {
+            if (!key) {
                 throw Exception("Unable to create an EVP_PKEY structure.");
             }
 
             // Generate the RSA key and assign it to pkey
             RSA* rsa = RSA_generate_key(2048, RSA_F4, NULL, NULL);
 
-            if (!EVP_PKEY_assign_RSA(value, rsa)) {
-                EVP_PKEY_free(value);
+            if (!EVP_PKEY_assign_RSA(key, rsa)) {
+                EVP_PKEY_free(key);
                 throw Exception("Unable to generate an RSA key.");
             }
 
@@ -37,33 +49,13 @@ namespace koalabox::http_server {
             LOG_DEBUG("Successfully created an RSA key")
         }
 
-        ~Key() {
-            LOG_DEBUG("Freeing an RSA key")
-
-            EVP_PKEY_free(value);
-        }
-
-        EVP_PKEY* operator*() const {
-            return value;
-        }
-    };
-
-    class Certificate {
-    private:
-        X509* x509;
-
-        void free_cert() {
-            X509_free(x509);
-            x509 = nullptr;
-        }
-
         Certificate(
-            const Key& key,
             const String& common_name,
-            const Key& issuer_key,
-            const Certificate& issuer_certificate,
+            const Certificate& issuer,
             const Map<int, String> ext_map // See https://superuser.com/a/1248085
         ) {
+            create_key();
+
             LOG_DEBUG("Creating an x509 certificate")
 
             // Allocate memory for the X509 structure.
@@ -90,7 +82,7 @@ namespace koalabox::http_server {
             X509_gmtime_adj(X509_get_notAfter(x509), 25 * 365 * 24 * 60 * 60);
 
             // Set the public key for our certificate.
-            X509_set_pubkey(x509, *key);
+            X509_set_pubkey(x509, key);
 
             // We want to copy the subject name to the issuer name.
             X509_NAME* subject_name = X509_get_subject_name(x509);
@@ -116,10 +108,10 @@ namespace koalabox::http_server {
                 X509V3_CTX ctx;
                 X509V3_set_ctx_nodb(&ctx)
 
-                X509V3_set_ctx(&ctx, *issuer_certificate, x509, NULL, NULL, 0);
+                X509V3_set_ctx(&ctx, issuer.x509, x509, NULL, NULL, 0);
                 auto* ext = X509V3_EXT_conf_nid(NULL, &ctx, nid, data.c_str());
                 if (not X509V3_EXT_conf_nid(NULL, &ctx, nid, data.c_str())) {
-                    return;
+                    continue;
                 }
 
                 X509_add_ext(x509, ext, -1);
@@ -127,10 +119,10 @@ namespace koalabox::http_server {
             }
 
             // Now set the issuer name.
-            X509_set_issuer_name(x509, X509_get_subject_name(*issuer_certificate));
+            X509_set_issuer_name(x509, X509_get_subject_name(issuer.x509));
 
             // Actually sign the certificate with our key.
-            if (!X509_sign(x509, *issuer_key, EVP_sha256())) {
+            if (!X509_sign(x509, issuer.key, EVP_sha256())) {
                 free_cert();
                 throw Exception("Error signing certificate.");
             }
@@ -142,14 +134,7 @@ namespace koalabox::http_server {
         /**
          * Constructs a self-signed certificate authority
          */
-        Certificate(
-            const Key& key
-        ) : Certificate(
-            key,
-            "acidicoala",
-            key,
-            *this,
-            {
+        Certificate() : Certificate("acidicoala", *this, {
                 { NID_basic_constraints,        "critical, CA:TRUE" },
                 { NID_subject_key_identifier,   "hash" },
                 { NID_authority_key_identifier, "keyid:always, issuer:always" },
@@ -161,16 +146,9 @@ namespace koalabox::http_server {
          * Constructs a server certificate signed by the provided authority
          */
         Certificate(
-            const Key& key,
             const String& server_host,
-            const Key& ca_key,
-            const Certificate& ca_cert
-        ) : Certificate(
-            key,
-            koalabox::globals::get_project_name(),
-            ca_key,
-            ca_cert,
-            {
+            const Certificate& issuer
+        ) : Certificate(koalabox::globals::get_project_name(), issuer, {
                 { NID_basic_constraints,        "critical, CA:FALSE" },
                 { NID_subject_key_identifier,   "hash" },
                 { NID_authority_key_identifier, "keyid:always, issuer:always" },
@@ -186,39 +164,43 @@ namespace koalabox::http_server {
             free_cert();
         }
 
-        X509* operator*() const {
+        EVP_PKEY* get_key() const {
+            return key;
+        }
+
+        X509* get_x509() const {
             return x509;
         }
+
+        void write_to_disk(const String& cert_name) {
+            const auto write = [&](const String& extension, const Function<int(FILE*)>& callback) {
+                const auto file_name = cert_name + "." + extension;
+                const auto file_path = (koalabox::paths::get_self_path() / file_name).string();
+
+                LOG_DEBUG("Writing {}", file_path)
+
+                FILE* stream;
+                if (fopen_s(&stream, file_path.c_str(), "wb")) {
+                    throw koalabox::util::exception("Unable to open {} for writing", file_path);
+                }
+
+                auto key_success = callback(stream);
+                fclose(stream);
+
+                if (not key_success) {
+                    throw koalabox::util::exception("Unable to write {} to disk", file_path);
+                }
+            };
+
+            write("key", [&](FILE* stream) {
+                return PEM_write_PrivateKey(stream, get_key(), NULL, NULL, 0, NULL, NULL);
+            });
+
+            write("crt", [&](FILE* stream) {
+                return PEM_write_X509(stream, get_x509());
+            });
+        }
     };
-
-    void write_ca_to_disk(const String& ca_name, const Key& key, const Certificate& cert) {
-        const auto write = [&](const String& extension, const Function<int(FILE*)>& callback) {
-            const auto file_name = ca_name + "." + extension;
-            const auto file_path = (koalabox::paths::get_self_path() / file_name).string();
-
-            LOG_DEBUG("Writing {}", file_path)
-
-            FILE* stream;
-            if (fopen_s(&stream, file_path.c_str(), "wb")) {
-                throw koalabox::util::exception("Unable to open {} for writing", file_path);
-            }
-
-            auto key_success = callback(stream);
-            fclose(stream);
-
-            if (not key_success) {
-                throw koalabox::util::exception("Unable to write {} to disk", file_path);
-            }
-        };
-
-        write("key", [&](FILE* stream) {
-            return PEM_write_PrivateKey(stream, *key, NULL, NULL, 0, NULL, NULL);
-        });
-
-        write("crt", [&](FILE* stream) {
-            return PEM_write_X509(stream, *cert);
-        });
-    }
 
     void start(
         const String& local_host,
@@ -231,15 +213,13 @@ namespace koalabox::http_server {
                 // ca stands for Certificate Authority
                 const auto project_name = koalabox::globals::get_project_name();
 
-                Key ca_key;
-                Certificate ca_cert(ca_key);
-                write_ca_to_disk(project_name + ".ca", ca_key, ca_cert);
+                Certificate ca_cert;
+                ca_cert.write_to_disk(project_name + ".ca");
 
-                Key server_key;
-                Certificate server_cert(server_key, server_host, ca_key, ca_cert);
-                write_ca_to_disk(project_name + ".server", server_key, server_cert);
+                Certificate server_cert(server_host, ca_cert);
+                server_cert.write_to_disk(project_name + ".server");
 
-                httplib::SSLServer server(*server_cert, *server_key);
+                httplib::SSLServer server(server_cert.get_x509(), server_cert.get_key());
 
                 for (const auto& [pattern, handler]: pattern_handlers) {
                     server.Get(pattern, handler);
