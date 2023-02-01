@@ -14,7 +14,8 @@ namespace koalabox::http_server {
     private:
         EVP_PKEY* key = nullptr;
         X509* x509 = nullptr;
-        String cert_name;
+        bool is_ca;
+        String cert_name = koalabox::globals::get_project_name();
 
         void free_key() {
             EVP_PKEY_free(key);
@@ -28,7 +29,7 @@ namespace koalabox::http_server {
             free_key();
         }
 
-        String get_cert_string() {
+        String get_cert_string() const {
             if (not x509) {
                 throw Exception("Null pointer certificate");
             }
@@ -62,6 +63,36 @@ namespace koalabox::http_server {
             return cert_string;
         }
 
+        void write_ca_to_disk() {
+            if (not is_ca) {
+                throw Exception("Attempt to write non-CA certificate to disk");
+            }
+
+            const auto write = [&](const Path& path, const Function<int(FILE*)>& callback) {
+                LOG_DEBUG("Writing CA certificate to {}", path.string())
+
+                FILE* stream;
+                if (fopen_s(&stream, path.string().c_str(), "wb")) {
+                    throw util::exception("Error opening certificate file for writing");
+                }
+
+                auto key_success = callback(stream);
+                fclose(stream);
+
+                if (not key_success) {
+                    throw util::exception("Error writing certificate to disk");
+                }
+            };
+
+            write(paths::get_ca_key_path(), [&](FILE* stream) {
+                return PEM_write_PrivateKey(stream, key, NULL, NULL, 0, NULL, NULL);
+            });
+
+            write(paths::get_ca_cert_path(), [&](FILE* stream) {
+                return PEM_write_X509(stream, x509);
+            });
+        }
+
         void create_key() {
             LOG_DEBUG("Creating an RSA key")
 
@@ -85,11 +116,13 @@ namespace koalabox::http_server {
         }
 
         Certificate(
-            const String& common_name,
+            bool is_ca,
             const Certificate& issuer,
             const Map<int, String> ext_map // See https://superuser.com/a/1248085
         ) {
             create_key();
+
+            this->is_ca = is_ca;
 
             LOG_DEBUG("Creating an x509 certificate")
 
@@ -137,7 +170,7 @@ namespace koalabox::http_server {
             // Set the country code and common name.
             const String project_name = koalabox::globals::get_project_name();
             add_entry("O", "acidicoala");
-            add_entry("CN", koalabox::globals::get_project_name() + " " + common_name);
+            add_entry("CN", cert_name + " " + (is_ca ? "Authority" : "Server"));
 
             for (const auto& [nid, data]: ext_map) {
                 X509V3_CTX ctx;
@@ -169,13 +202,16 @@ namespace koalabox::http_server {
         /**
          * Constructs a self-signed certification authority
          */
-        Certificate() : Certificate("Authority", *this, {
+        Certificate() : Certificate(true, *this, {
                 { NID_basic_constraints,        "critical, CA:TRUE" },
                 { NID_subject_key_identifier,   "hash" },
                 { NID_authority_key_identifier, "keyid:always, issuer:always" },
                 { NID_key_usage,                "critical, cRLSign, digitalSignature, keyCertSign" },
             }
-        ) {}
+        ) {
+            // We want to cache created CA certificates
+            write_ca_to_disk();
+        }
 
         /**
          * Constructs a server certificate signed by the provided authority
@@ -183,7 +219,7 @@ namespace koalabox::http_server {
         Certificate(
             const String& server_host,
             const Certificate& issuer
-        ) : Certificate("Server", issuer, {
+        ) : Certificate(false, issuer, {
                 { NID_basic_constraints,        "critical, CA:FALSE" },
                 { NID_subject_key_identifier,   "hash" },
                 { NID_authority_key_identifier, "keyid:always, issuer:always" },
@@ -192,6 +228,11 @@ namespace koalabox::http_server {
                 { NID_subject_alt_name,         "DNS:" + server_host }
             }
         ) {}
+
+        /**
+         * Constructs an existing CA certificate
+         */
+        Certificate(EVP_PKEY* key, X509* x509) : key{ key }, x509{ x509 }, is_ca{ true } {}
 
         ~Certificate() {
             LOG_DEBUG("Freeing an x509 certificate")
@@ -207,36 +248,7 @@ namespace koalabox::http_server {
             return x509;
         }
 
-        void write_to_disk(const String& file_name) {
-            const auto write = [&](const String& extension, const Function<int(FILE*)>& callback) {
-                const auto full_file_name = file_name + "." + extension;
-                const auto file_path = (koalabox::paths::get_self_path() / full_file_name).string();
-
-                LOG_DEBUG("Writing {}", file_path)
-
-                FILE* stream;
-                if (fopen_s(&stream, file_path.c_str(), "wb")) {
-                    throw koalabox::util::exception("Unable to open {} for writing", file_path);
-                }
-
-                auto key_success = callback(stream);
-                fclose(stream);
-
-                if (not key_success) {
-                    throw koalabox::util::exception("Unable to write {} to disk", file_path);
-                }
-            };
-
-            write("key", [&](FILE* stream) {
-                return PEM_write_PrivateKey(stream, get_key(), NULL, NULL, 0, NULL, NULL);
-            });
-
-            write("crt", [&](FILE* stream) {
-                return PEM_write_X509(stream, get_x509());
-            });
-        }
-
-        void add_to_system_store(const String& store_name) {
+        void add_to_system_store(const String& store_name) const {
             const auto cert_string = get_cert_string();
             LOG_TRACE("Adding cert to system store:\n{}", cert_string)
 
@@ -254,6 +266,7 @@ namespace koalabox::http_server {
                 throw Exception("Error converting base64 certificate to binary");
             }
 
+            // Will return true even if the cert is already installed
             if (not CertAddEncodedCertificateToSystemStoreA(
                 store_name.c_str(),
                 binary_buffer.data(),
@@ -266,28 +279,77 @@ namespace koalabox::http_server {
             }
 
             LOG_DEBUG(
-                "Successfully added a certificate to the system '{}' store",
+                "Successfully added a certificate to the system '{}' store (or it was already present)",
                 store_name
             )
+        }
+
+        /**
+         * Reads a CA certificate from disk
+         */
+        static Certificate read_from_disk() {
+            if (exists(paths::get_ca_key_path()) && exists(paths::get_ca_cert_path())) {
+                try {
+                    const auto read = [&](
+                        const Path& path,
+                        const Function<void*(FILE*)>& callback
+                    ) {
+                        LOG_DEBUG("Reading CA certificate from {}", path.string())
+
+                        FILE* stream;
+                        if (fopen_s(&stream, path.string().c_str(), "rb")) {
+                            throw util::exception("Error opening certificate file for reading");
+                        }
+
+                        auto* result = callback(stream);
+                        fclose(stream);
+
+                        if (not result) {
+                            throw util::exception("Error reading certificate from disk");
+                        }
+
+                        return result;
+                    };
+
+                    auto* key = (EVP_PKEY*) read(paths::get_ca_key_path(), [](FILE* stream) {
+                        return PEM_read_PrivateKey(stream, nullptr, nullptr, nullptr);
+                    });
+
+                    auto* cert = (X509*) read(paths::get_ca_cert_path(), [](FILE* stream) {
+                        return PEM_read_X509(stream, nullptr, nullptr, nullptr);
+                    });
+
+                    return Certificate(key, cert);
+                } catch (const Exception& e) {
+                    LOG_ERROR("Error reading CA certificate from disk: {}", e.what())
+                }
+            }
+
+            LOG_DEBUG("No valid CA certificate has been found on disk. Creating a new one.")
+
+            // We have to return constructor invocation,
+            // otherwise the underlying key & cert will be freed by the destructor.
+            return Certificate();
         }
     };
 
     void start(
         const String& local_host,
-        unsigned int port,
         const String& server_host,
+        unsigned int server_port,
         const Map<String, httplib::Server::Handler>& pattern_handlers
     ) noexcept {
         std::thread([=]() {
             try {
-                const auto project_name = koalabox::globals::get_project_name();
-
-                Certificate ca_cert;
-                ca_cert.write_to_disk(project_name + ".ca");
+                const auto ca_cert = Certificate::read_from_disk();
                 ca_cert.add_to_system_store("ROOT");
 
                 Certificate server_cert(server_host, ca_cert);
-                server_cert.write_to_disk(project_name + ".server");
+
+                LOG_INFO(
+                    "Starting a local HTTPS server with host '{}' and port {}",
+                    server_host, server_port
+                );
 
                 httplib::SSLServer server(server_cert.get_x509(), server_cert.get_key());
 
@@ -297,7 +359,7 @@ namespace koalabox::http_server {
                     server.Get(pattern, handler);
                 }
 
-                if (not server.listen(local_host, port)) {
+                if (not server.listen(local_host, server_port)) {
                     throw Exception("server.listen returned false");
                 }
             } catch (const Exception& e) {

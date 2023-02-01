@@ -12,8 +12,8 @@ namespace koalabox::http_server {
 
     void start(
         const String& local_host,
-        unsigned int port,
         const String& server_host,
+        unsigned int port,
         const Map<String, httplib::Server::Handler>& pattern_handlers
     ) noexcept;
 

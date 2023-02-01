@@ -31,4 +31,16 @@ namespace koalabox::paths {
         return path;
     }
 
+    KOALABOX_API(Path) get_ca_key_path() {
+        static const auto project_name = koalabox::globals::get_project_name();
+        static const auto path = get_self_path() / (project_name + ".ca.key");
+        return path;
+    }
+
+    KOALABOX_API(Path) get_ca_cert_path() {
+        static const auto project_name = koalabox::globals::get_project_name();
+        static const auto path = get_self_path() / (project_name + ".ca.crt");
+        return path;
+    }
+
 }
