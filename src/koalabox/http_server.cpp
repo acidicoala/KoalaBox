@@ -1,11 +1,15 @@
 #include <koalabox/globals.hpp>
 #include <koalabox/http_server.hpp>
+#include <koalabox/logger.hpp>
 #include <koalabox/paths.hpp>
 #include <koalabox/util.hpp>
 
 #include <openssl/pem.h>
 #include <openssl/x509.h>
-#include <koalabox/logger.hpp>
+
+#include <WinDNS.h>
+
+#pragma comment(lib, "Dnsapi.lib")
 
 namespace koalabox::http_server {
 
@@ -333,8 +337,54 @@ namespace koalabox::http_server {
         }
     };
 
+    void redirect_remote_host_to_local_host(const String& server_host, const String& server_ip) {
+        auto name = util::to_wstring(server_host);
+
+        IN_ADDR net_address;
+        inet_pton(AF_INET, server_ip.c_str(), &net_address);
+        const auto host_address = ntohl(net_address.S_un.S_addr); // reverse byte order
+
+        DNS_RECORD record{
+            .pNext = nullptr,
+            .pName = name.data(),
+            .wType = DNS_TYPE_A,
+            .wDataLength = sizeof(DNS_A_DATA),
+            .Flags = {
+                .DW = 0
+            },
+            .dwTtl = 30 * 24 * 60 * 60, // 30 days (max OS limit)
+            .Data = {
+                .A = {
+                    .IpAddress = host_address
+                }
+            },
+        };
+
+        LOG_DEBUG(
+            "Adding DNS A record with name='{}', address={:#08x}",
+            server_host,
+            host_address
+        )
+
+        const auto status = DnsModifyRecordsInSet(
+            &record,
+            &record,
+            DNS_UPDATE_SECURITY_USE_DEFAULT,
+            NULL,
+            NULL,
+            NULL
+        );
+
+        if (status != 0) {
+            throw util::exception("DnsModifyRecordsInSet error status: {}", status);
+        }
+
+        // We can use `Get-DnsClientCache -Name server_host` in powershell to check the result
+    }
+
     void start(
         const String& local_host,
+        const String& server_ip,
         const String& server_host,
         unsigned int server_port,
         const Map<String, httplib::Server::Handler>& pattern_handlers
@@ -346,10 +396,7 @@ namespace koalabox::http_server {
 
                 Certificate server_cert(server_host, ca_cert);
 
-                LOG_INFO(
-                    "Starting a local HTTPS server with host '{}' and port {}",
-                    server_host, server_port
-                );
+                redirect_remote_host_to_local_host(server_host, server_ip);
 
                 httplib::SSLServer server(server_cert.get_x509(), server_cert.get_key());
 
@@ -358,6 +405,11 @@ namespace koalabox::http_server {
                 for (const auto& [pattern, handler]: pattern_handlers) {
                     server.Get(pattern, handler);
                 }
+
+                LOG_INFO(
+                    "Starting a local HTTPS server with host '{}' and port {}",
+                    server_host, server_port
+                )
 
                 if (not server.listen(local_host, server_port)) {
                     throw Exception("server.listen returned false");
