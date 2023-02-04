@@ -14,7 +14,7 @@ namespace koalabox::globals {
             MutexLockGuard lock(mutex);
 
             if (not initialized) {
-                util::panic("Koalabox globals are not initialized. Call koalabox::globals::init_globals(...);");
+                util::panic("Koalabox globals are not initialized.");
             }
         }
     }
@@ -25,9 +25,12 @@ namespace koalabox::globals {
         return self_handle;
     }
 
-    KOALABOX_API(String) get_project_name() {
-        validate_initialization();
-        
+    KOALABOX_API(String) get_project_name(bool validate) {
+        // Avoid recursion
+        if (validate) {
+            validate_initialization();
+        }
+
         return project_name;
     }
 

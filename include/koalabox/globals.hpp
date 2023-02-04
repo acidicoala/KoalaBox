@@ -9,7 +9,7 @@ namespace koalabox::globals {
      */
     KOALABOX_API(HMODULE) get_self_handle();
 
-    KOALABOX_API(String) get_project_name();
+    KOALABOX_API(String) get_project_name(bool validate = true);
 
     KOALABOX_API(void) init_globals(HMODULE handle, String name);
 

@@ -8,6 +8,9 @@
 #include <openssl/x509.h>
 
 #include <ShlObj_core.h>
+#include <WinDNS.h>
+
+#pragma comment(lib, "Dnsapi.lib")
 
 namespace koalabox::http_server {
 
@@ -426,6 +429,7 @@ namespace koalabox::http_server {
     private:
         static void execute_ps_command(const String& command) {
             const auto ps_command = fmt::format("powershell {}", command);
+            // TODO: Replace with CreateProcess
             const auto result = WinExec(ps_command.c_str(), SW_HIDE);
             LOG_DEBUG("PowerShell returned result {} for command: {}", result, command)
         }
@@ -454,6 +458,68 @@ namespace koalabox::http_server {
                     listen_port, listen_address, connect_port, connect_address
                 )
             );
+        }
+    };
+
+    class DNS {
+    public:
+        static std::optional<String> get_real_ip(const String& hostname) {
+            PDNS_RECORD dns_record;
+            const auto dns_status = DnsQuery_A(
+                hostname.c_str(),
+                DNS_TYPE_A,
+                DNS_QUERY_NO_HOSTS_FILE,
+                NULL,
+                &dns_record,
+                NULL
+            );
+
+            if (dns_status != 0) {
+                return std::nullopt;
+            }
+
+            in_addr addr{
+                .S_un = {
+                    .S_addr = dns_record->Data.A.IpAddress
+                }
+            };
+
+            String ip_str(17, '\0');
+            inet_ntop(
+                AF_INET,
+                &addr,
+                ip_str.data(),
+                ip_str.size()
+            );
+
+            // Trim
+            ip_str = String(ip_str.c_str());
+
+            DnsRecordListFree(dns_record, DnsFreeRecordList);
+
+            return ip_str;
+        }
+
+        static std::optional<String> get_canonical_name(const String& hostname) {
+            PDNS_RECORD dns_record;
+            const auto dns_status = DnsQuery(
+                util::to_wstring(hostname).c_str(),
+                DNS_TYPE_CNAME,
+                DNS_QUERY_NO_HOSTS_FILE,
+                NULL,
+                &dns_record,
+                NULL
+            );
+
+            if (dns_status != 0) {
+                return std::nullopt;
+            }
+
+            const auto cname = util::to_string(dns_record->Data.CNAME.pNameHost);
+
+            DnsRecordListFree(dns_record, DnsFreeRecordList);
+
+            return cname;
         }
     };
 
@@ -490,15 +556,76 @@ namespace koalabox::http_server {
 
                 httplib::SSLServer server(server_cert.get_x509(), server_cert.get_key());
 
-                // TODO: Fallback handlers for other GET paths, and all POST, DELETE, etc. paths
+                server.set_logger([](const auto& req, const auto& res) {
+                    LOG_DEBUG(
+                        "HTTP Server {}:{} {} '{}'. Response code: {}, body:\n{}",
+                        req.local_addr, req.local_port, req.method, req.path, res.status, res.body
+                    )
+                });
+
+                const auto generic_pattern = ".*";
+                const auto generic_handler = [&](
+                    const httplib::Request& req,
+                    httplib::Response& res
+                ) {
+                    try {
+                        const auto original_cname_opt = DNS::get_canonical_name(
+                            original_server_host
+                        );
+
+                        if (!original_cname_opt) {
+                            throw util::exception(
+                                "Error getting CNAME for '{}'", original_server_host
+                            );
+                        }
+
+                        const auto original_cname = *original_cname_opt;
+
+                        LOG_DEBUG("CNAME for '{}': '{}'", original_server_host, original_cname)
+
+                        httplib::SSLClient client(original_cname);
+
+                        auto req_copy = req;
+                        req_copy.headers.erase("LOCAL_ADDR");
+                        req_copy.headers.erase("LOCAL_PORT");
+                        req_copy.headers.erase("REMOTE_ADDR");
+                        req_copy.headers.erase("REMOTE_PORT");
+                        const auto result = client.send(req_copy);
+
+                        if (result.error() != httplib::Error::Success) {
+                            throw util::exception(
+                                "Error sending request to original server. Code: {}",
+                                (int) result.error()
+                            );
+                        }
+
+                        res = *result;
+                    } catch (const Exception& e) {
+                        LOG_ERROR("Generic server handler error: {}", e.what())
+                        res.status = 503;
+                    }
+                };
 
                 for (const auto& [pattern, handler]: pattern_handlers) {
-                    server.Get(pattern, handler);
+                    server.Get(pattern, [&](const httplib::Request& req, httplib::Response& res) {
+                        // Fetch the original response first
+                        generic_handler(req, res);
+
+                        handler(req, res);
+                    });
                 }
 
+                // Fallback handlers must always come after custom handlers
+                server.Get(generic_pattern, generic_handler);
+                server.Delete(generic_pattern, generic_handler);
+                server.Options(generic_pattern, generic_handler);
+                server.Patch(generic_pattern, generic_handler);
+                server.Post(generic_pattern, generic_handler);
+                server.Put(generic_pattern, generic_handler);
+
                 LOG_INFO(
-                    "Starting a local HTTPS server with host '{}' and port {}",
-                    original_server_host, proxy_server_port
+                    "Starting a proxy HTTPS server for hostname '{}' on {}:{}",
+                    original_server_host, proxy_server_host, proxy_server_port
                 )
 
                 if (not server.listen(proxy_server_host, proxy_server_port)) {

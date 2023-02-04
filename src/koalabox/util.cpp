@@ -1,25 +1,29 @@
 #include <koalabox/util.hpp>
 #include <koalabox/win_util.hpp>
 #include <koalabox/logger.hpp>
+#include <koalabox/globals.hpp>
 
 namespace koalabox::util {
 
     KOALABOX_API(void) error_box(const String& title, const String& message) {
-        ::MessageBox(nullptr, to_wstring(message).c_str(), to_wstring(title).c_str(), MB_OK | MB_ICONERROR);
+        ::MessageBox(nullptr, to_wstring(message).c_str(), to_wstring(title).c_str(),
+            MB_OK | MB_ICONERROR);
     }
 
     [[noreturn]] KOALABOX_API(void) panic(String message) {
+        const auto title = fmt::format("[{}] Panic!", globals::get_project_name(false));
+
         const auto last_error = ::GetLastError();
         if (last_error != 0) {
-            message = fmt::format(
-                "{}\n———————— Windows Last Error ————————\nCode: {}\nMessage: {}",
-                message, last_error, win_util::format_message(last_error)
+            message += fmt::format(
+                "\n———————— Windows Last Error ————————\nCode: {}\nMessage: {}",
+                last_error, win_util::format_message(last_error)
             );
         }
 
         LOG_CRITICAL("{}", message)
 
-        error_box("Panic!", message);
+        error_box(title, message);
 
         exit(static_cast<int>(last_error));
     }
@@ -35,7 +39,8 @@ namespace koalabox::util {
 
         String string(required_size, 0);
         WideCharToMultiByte(
-            CP_UTF8, 0, wstr.data(), static_cast<int>(wstr.size()), string.data(), required_size, nullptr, nullptr
+            CP_UTF8, 0, wstr.data(), static_cast<int>(wstr.size()), string.data(), required_size,
+            nullptr, nullptr
         );
 
         return string;
@@ -51,7 +56,8 @@ namespace koalabox::util {
         );
 
         WideString wstring(required_size, 0);
-        MultiByteToWideChar(CP_UTF8, 0, str.data(), static_cast<int>(str.size()), wstring.data(), required_size);
+        MultiByteToWideChar(CP_UTF8, 0, str.data(), static_cast<int>(str.size()), wstring.data(),
+            required_size);
 
         return wstring;
     }
