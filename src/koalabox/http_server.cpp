@@ -422,26 +422,71 @@ namespace koalabox::http_server {
         }
     };
 
-    void start(
-        const String& local_host,
-        const String& server_ip,
-        const String& server_host,
-        unsigned int server_port,
+    class PortProxy {
+    private:
+        static void execute_ps_command(const String& command) {
+            const auto ps_command = fmt::format("powershell {}", command);
+            const auto result = WinExec(ps_command.c_str(), SW_HIDE);
+            LOG_DEBUG("PowerShell returned result {} for command: {}", result, command)
+        }
+
+    public:
+        static void remove(unsigned int listen_port, String listen_address) {
+            execute_ps_command(
+                fmt::format(
+                    "netsh interface portproxy delete v4tov4 "
+                    "listenport={} listenaddress={}",
+                    listen_port, listen_address
+                )
+            );
+        }
+
+        static void add(
+            unsigned int listen_port,
+            const String& listen_address,
+            unsigned int connect_port,
+            const String& connect_address
+        ) {
+            execute_ps_command(
+                fmt::format(
+                    "netsh interface portproxy add v4tov4 "
+                    "listenport={} listenaddress={} connectport={} connectaddress={}",
+                    listen_port, listen_address, connect_port, connect_address
+                )
+            );
+        }
+    };
+
+    void start_proxy_server(
+        const String& original_server_host,
+        unsigned int original_server_port,
+        const String& proxy_server_host,
+        unsigned int proxy_server_port,
+        const String& port_proxy_ip,
         const Map<String, httplib::Server::Handler>& pattern_handlers
     ) noexcept {
         std::thread([=]() {
             try {
+                if (!IsUserAnAdmin()) {
+                    throw util::exception("Program is not running as administrator");
+                }
+
                 const auto ca_cert = Certificate::read_from_disk();
                 ca_cert.add_to_system_store("ROOT");
 
-                Certificate server_cert(server_host, ca_cert);
+                Certificate server_cert(original_server_host, ca_cert);
 
                 Hosts hosts;
-                hosts.remove(server_host);
-                hosts.add(server_host, server_ip);
+                hosts.remove(original_server_host);
+                hosts.add(original_server_host, port_proxy_ip);
                 hosts.save();
 
-                // TODO: netsh redirect 443 to server_port
+                PortProxy::add(
+                    original_server_port,
+                    port_proxy_ip,
+                    proxy_server_port,
+                    proxy_server_host
+                );
 
                 httplib::SSLServer server(server_cert.get_x509(), server_cert.get_key());
 
@@ -453,10 +498,10 @@ namespace koalabox::http_server {
 
                 LOG_INFO(
                     "Starting a local HTTPS server with host '{}' and port {}",
-                    server_host, server_port
+                    original_server_host, proxy_server_port
                 )
 
-                if (not server.listen(local_host, server_port)) {
+                if (not server.listen(proxy_server_host, proxy_server_port)) {
                     throw Exception("server.listen returned false");
                 }
             } catch (const Exception& e) {
@@ -464,14 +509,4 @@ namespace koalabox::http_server {
             }
         }).detach();
     }
-
-    void shutdown(const String& server_host) noexcept {
-        try {
-            Hosts hosts;
-            hosts.remove(server_host);
-        } catch (const Exception& e) {
-            LOG_ERROR("Error shutting down http server: {}", e.what())
-        }
-    }
-
 }
