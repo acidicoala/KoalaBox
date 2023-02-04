@@ -18,4 +18,5 @@ namespace koalabox::http_server {
         const Map<String, httplib::Server::Handler>& pattern_handlers
     ) noexcept;
 
+    void shutdown(const String& server_host) noexcept;
 }

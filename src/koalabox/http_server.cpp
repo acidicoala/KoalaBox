@@ -7,9 +7,7 @@
 #include <openssl/pem.h>
 #include <openssl/x509.h>
 
-#include <WinDNS.h>
-
-#pragma comment(lib, "Dnsapi.lib")
+#include <ShlObj_core.h>
 
 namespace koalabox::http_server {
 
@@ -337,50 +335,92 @@ namespace koalabox::http_server {
         }
     };
 
-    void redirect_remote_host_to_local_host(const String& server_host, const String& server_ip) {
-        auto name = util::to_wstring(server_host);
+    class Hosts {
+    private:
+        Vector<String> lines;
+        const Path hosts_path = get_system32_path() / "drivers" / "etc" / "hosts";
 
-        IN_ADDR net_address;
-        inet_pton(AF_INET, server_ip.c_str(), &net_address);
-        const auto host_address = ntohl(net_address.S_un.S_addr); // reverse byte order
+        static Path get_system32_path() {
+            PWSTR buffer = nullptr;
+            const auto result = SHGetKnownFolderPath(
+                FOLDERID_System, KF_FLAG_DEFAULT, NULL, &buffer
+            );
 
-        DNS_RECORD record{
-            .pNext = nullptr,
-            .pName = name.data(),
-            .wType = DNS_TYPE_A,
-            .wDataLength = sizeof(DNS_A_DATA),
-            .Flags = {
-                .DW = 0
-            },
-            .dwTtl = 30 * 24 * 60 * 60, // 30 days (max OS limit)
-            .Data = {
-                .A = {
-                    .IpAddress = host_address
-                }
-            },
-        };
+            if (result != S_OK) {
+                throw util::exception("SHGetKnownFolderPath error: {}", result);
+            }
 
-        LOG_DEBUG(
-            "Adding DNS A record with name='{}', address={:#08x}",
-            server_host,
-            host_address
-        )
+            const auto path = Path(buffer);
 
-        const auto status = DnsModifyRecordsInSet(
-            &record,
-            &record,
-            DNS_UPDATE_SECURITY_USE_DEFAULT,
-            NULL,
-            NULL,
-            NULL
-        );
+            CoTaskMemFree(buffer);
 
-        if (status != 0) {
-            throw util::exception("DnsModifyRecordsInSet error status: {}", status);
+            return path;
         }
 
-        // We can use `Get-DnsClientCache -Name server_host` in powershell to check the result
-    }
+    public:
+        Hosts() {
+            try {
+                LOG_DEBUG("Reading hosts file from '{}'", hosts_path.string())
+
+                std::ifstream input_stream(hosts_path);
+
+                String line;
+                while (std::getline(input_stream, line)) {
+                    lines.push_back(line);
+                }
+
+                LOG_DEBUG("Read {} lines from hosts file", lines.size())
+            } catch (const Exception& e) {
+                throw util::exception("Error reading hosts file: {}", e.what());
+            }
+        }
+
+        void remove(const String& hostname) {
+            LOG_DEBUG("Removing hostname '{}'", hostname)
+
+            lines.erase(
+                std::remove_if(lines.begin(), lines.end(),
+                    [&](const auto& line) {
+                        auto trimmed_line = line;
+                        const auto comment_index = line.find('#');
+                        if (comment_index != std::string::npos) {
+                            trimmed_line = trimmed_line.substr(0, comment_index);
+                        }
+
+                        // Far from perfect, but good enough for most cases.
+                        return trimmed_line < contains > hostname;
+                    }
+                ),
+                lines.end()
+            );
+        }
+
+        void add(const String& hostname, const String& ip) {
+            LOG_DEBUG("Adding hostname '{}' with ip '{}'", hostname, ip)
+
+            const auto line = fmt::format(
+                "{}    {} # {}", ip, hostname, globals::get_project_name()
+            );
+
+            lines.push_back(line);
+        }
+
+        void save() {
+            try {
+                LOG_DEBUG("Saving changes to the hosts file")
+
+                std::ofstream output_stream;
+                output_stream.exceptions(std::ifstream::failbit | std::ifstream::badbit);
+                output_stream.open(hosts_path);
+
+                for (const auto& line: lines) {
+                    output_stream << line << std::endl;
+                }
+            } catch (const Exception& e) {
+                throw util::exception("Error saving hosts file: {}", e.what());
+            }
+        }
+    };
 
     void start(
         const String& local_host,
@@ -396,7 +436,12 @@ namespace koalabox::http_server {
 
                 Certificate server_cert(server_host, ca_cert);
 
-                redirect_remote_host_to_local_host(server_host, server_ip);
+                Hosts hosts;
+                hosts.remove(server_host);
+                hosts.add(server_host, server_ip);
+                hosts.save();
+
+                // TODO: netsh redirect 443 to server_port
 
                 httplib::SSLServer server(server_cert.get_x509(), server_cert.get_key());
 
@@ -418,6 +463,15 @@ namespace koalabox::http_server {
                 koalabox::util::panic("Error starting http server: {}", e.what());
             }
         }).detach();
+    }
+
+    void shutdown(const String& server_host) noexcept {
+        try {
+            Hosts hosts;
+            hosts.remove(server_host);
+        } catch (const Exception& e) {
+            LOG_ERROR("Error shutting down http server: {}", e.what())
+        }
     }
 
 }
