@@ -1,16 +1,19 @@
-#include <koalabox/globals.hpp>
 #include <koalabox/http_server.hpp>
+#include <koalabox/globals.hpp>
 #include <koalabox/logger.hpp>
 #include <koalabox/paths.hpp>
 #include <koalabox/util.hpp>
+#include <koalabox/win_util.hpp>
 
 #include <openssl/pem.h>
 #include <openssl/x509.h>
 
 #include <ShlObj_core.h>
 #include <WinDNS.h>
+#include <winhttp.h>
 
 #pragma comment(lib, "Dnsapi.lib")
+#pragma comment(lib, "Winhttp.lib")
 
 namespace koalabox::http_server {
 
@@ -425,17 +428,15 @@ namespace koalabox::http_server {
         }
     };
 
-    class PortProxy {
-    private:
-        static void execute_ps_command(const String& command) {
+    namespace port_proxy {
+        void execute_ps_command(const String& command) {
             const auto ps_command = fmt::format("powershell {}", command);
             // TODO: Replace with CreateProcess
             const auto result = WinExec(ps_command.c_str(), SW_HIDE);
             LOG_DEBUG("PowerShell returned result {} for command: {}", result, command)
         }
 
-    public:
-        static void remove(unsigned int listen_port, String listen_address) {
+        void remove(unsigned int listen_port, String listen_address) {
             execute_ps_command(
                 fmt::format(
                     "netsh interface portproxy delete v4tov4 "
@@ -445,7 +446,7 @@ namespace koalabox::http_server {
             );
         }
 
-        static void add(
+        void add(
             unsigned int listen_port,
             const String& listen_address,
             unsigned int connect_port,
@@ -459,82 +460,220 @@ namespace koalabox::http_server {
                 )
             );
         }
-    };
+    }
 
-    class DNS {
-    public:
-        static std::optional<String> get_real_ip(const String& hostname) {
-            PDNS_RECORD dns_record;
-            const auto dns_status = DnsQuery_A(
-                hostname.c_str(),
-                DNS_TYPE_A,
-                DNS_QUERY_NO_HOSTS_FILE,
-                NULL,
-                &dns_record,
-                NULL
-            );
+    std::optional<String> dns::get_real_ip(const String& hostname) {
+        PDNS_RECORD dns_record;
+        const auto dns_status = DnsQuery_A(
+            hostname.c_str(),
+            DNS_TYPE_A,
+            DNS_QUERY_NO_HOSTS_FILE,
+            NULL,
+            &dns_record,
+            NULL
+        );
 
-            if (dns_status != 0) {
+        if (dns_status != 0) {
+            return std::nullopt;
+        }
+
+        in_addr addr{
+            .S_un = {
+                .S_addr = dns_record->Data.A.IpAddress
+            }
+        };
+
+        String ip_str(17, '\0');
+        inet_ntop(
+            AF_INET,
+            &addr,
+            ip_str.data(),
+            ip_str.size()
+        );
+
+        // Trim
+        ip_str = String(ip_str.c_str());
+
+        DnsRecordListFree(dns_record, DnsFreeRecordList);
+
+        return ip_str;
+    }
+
+    std::optional<String> dns::get_canonical_name(const String& hostname) {
+        PDNS_RECORD dns_record;
+        const auto dns_status = DnsQuery(
+            util::to_wstring(hostname).c_str(),
+            DNS_TYPE_CNAME,
+            DNS_QUERY_NO_HOSTS_FILE,
+            NULL,
+            &dns_record,
+            NULL
+        );
+
+        if (dns_status != 0) {
+            return std::nullopt;
+        }
+
+        const auto cname = util::to_string(dns_record->Data.CNAME.pNameHost);
+
+        DnsRecordListFree(dns_record, DnsFreeRecordList);
+
+        return cname;
+    }
+
+    namespace system_proxy {
+        struct ProxyInfo {
+            String scheme;
+            String host;
+            int port;
+        };
+
+        // Key is target scheme
+        std::optional<Map<String, ProxyInfo>> get_info() {
+            Map<String, ProxyInfo> proxy_info_map;
+
+            WINHTTP_CURRENT_USER_IE_PROXY_CONFIG proxy_config;
+            const auto success = WinHttpGetIEProxyConfigForCurrentUser(&proxy_config);
+            if (not success) {
+                LOG_ERROR(
+                    "Error getting default proxy configuration. Last error: {}",
+                    win_util::get_last_error()
+                )
+
                 return std::nullopt;
             }
 
-            in_addr addr{
-                .S_un = {
-                    .S_addr = dns_record->Data.A.IpAddress
+            if (not proxy_config.lpszProxy) {
+                return std::nullopt;
+            }
+
+            const auto proxy_str = util::to_string(proxy_config.lpszProxy);
+
+            const std::regex regex(R"(((\w+)=)?(\w+://)?([^\s:]+)(:(\d+))?[\s;]?)");
+            auto it = std::sregex_iterator(proxy_str.begin(), proxy_str.end(), regex);
+            for (; it != std::sregex_iterator(); it++) {
+                try {
+                    const auto match = *it;
+
+                    LOG_TRACE("Detected system proxy server: {}", match.str())
+
+                    auto target_scheme = match.str(2);
+
+                    // TODO: Extract to utils
+                    std::transform(
+                        target_scheme.begin(),
+                        target_scheme.end(),
+                        target_scheme.begin(),
+                        [](unsigned char c) { return std::tolower(c); }
+                    );
+
+                    const auto port_str = match.str(6);
+
+                    proxy_info_map[target_scheme] = {
+                        .scheme = match.str(3),
+                        .host = match.str(4),
+                        .port = port_str.empty() ? -1 : std::stoi(match.str(6))
+                    };
+                } catch (const Exception& e) {
+                    LOG_ERROR("Error parsing system proxy server: {}", proxy_str)
                 }
-            };
-
-            String ip_str(17, '\0');
-            inet_ntop(
-                AF_INET,
-                &addr,
-                ip_str.data(),
-                ip_str.size()
-            );
-
-            // Trim
-            ip_str = String(ip_str.c_str());
-
-            DnsRecordListFree(dns_record, DnsFreeRecordList);
-
-            return ip_str;
-        }
-
-        static std::optional<String> get_canonical_name(const String& hostname) {
-            PDNS_RECORD dns_record;
-            const auto dns_status = DnsQuery(
-                util::to_wstring(hostname).c_str(),
-                DNS_TYPE_CNAME,
-                DNS_QUERY_NO_HOSTS_FILE,
-                NULL,
-                &dns_record,
-                NULL
-            );
-
-            if (dns_status != 0) {
-                return std::nullopt;
             }
 
-            const auto cname = util::to_string(dns_record->Data.CNAME.pNameHost);
-
-            DnsRecordListFree(dns_record, DnsFreeRecordList);
-
-            return cname;
+            return proxy_info_map;
         }
-    };
+    }
+
+    bool make_original_request(
+        const String& bypass_server_host,
+        httplib::Request req,
+        httplib::Response& res
+    ) {
+        static auto static_req_id = 0;
+        static_req_id++;
+
+        const auto req_id = static_req_id;
+
+        try {
+
+            req.path = req.target;
+
+            LOG_DEBUG(
+                "[{}] Making original request to: https://{}{}",
+                req_id, bypass_server_host, req.target
+            )
+
+            httplib::SSLClient client(bypass_server_host);
+            client.enable_server_certificate_verification(false);
+
+            req.headers.erase("LOCAL_ADDR");
+            req.headers.erase("LOCAL_PORT");
+            req.headers.erase("REMOTE_ADDR");
+            req.headers.erase("REMOTE_PORT");
+
+            const auto system_proxy_map_opt = system_proxy::get_info();
+            if (system_proxy_map_opt) {
+                const auto system_proxy_map = *system_proxy_map_opt;
+
+                std::optional<system_proxy::ProxyInfo> proxy_info_opt = std::nullopt;
+                if (system_proxy_map.contains("https")) {
+                    proxy_info_opt = system_proxy_map.at("https");
+                } else if (system_proxy_map.contains("")) {
+                    proxy_info_opt = system_proxy_map.at("");
+                }
+
+                if (proxy_info_opt) {
+                    const auto proxy_info = *proxy_info_opt;
+
+                    /*LOG_DEBUG(
+                        "[{}] Setting proxy for request: {}{}:{}",
+                        req_id, proxy_info.scheme, proxy_info.host, proxy_info.port
+                    )*/
+
+                    // FIXME: Setting proxy breaks requests :/
+                    // client.set_proxy(proxy_info.host, proxy_info.port);
+                }
+            }
+
+            const auto result = client.send(req);
+
+            if (result.error() != httplib::Error::Success) {
+                throw util::exception(
+                    "Error sending request to original server. Code: {}. Message: {}",
+                    (int) result.error(), httplib::to_string(result.error())
+                );
+            }
+
+            res = *result;
+
+            LOG_DEBUG("[{}] Generic server handler success: {}", req_id, res.status)
+
+            return res.status >= 200 && res.status < 300;
+        } catch (const Exception& e) {
+            LOG_ERROR("[{}] Generic server handler error: {}", req_id, e.what())
+
+            res.status = 503;
+
+            return false;
+        }
+    }
 
     void start_proxy_server(
+        const String& bypass_server_host,
         const String& original_server_host,
         unsigned int original_server_port,
         const String& proxy_server_host,
         unsigned int proxy_server_port,
         const String& port_proxy_ip,
-        const Map<String, httplib::Server::Handler>& pattern_handlers
+        const Vector<std::pair<String, httplib::Server::Handler>>& pattern_handlers
     ) noexcept {
         std::thread([=]() {
             try {
                 if (!IsUserAnAdmin()) {
-                    throw util::exception("Program is not running as administrator");
+                    LOG_WARN(
+                        "Program is not running as administrator. "
+                        "Automatic configuration will be restricted."
+                    )
+                    //throw util::exception("Program is not running as administrator");
                 }
 
                 const auto ca_cert = Certificate::read_from_disk();
@@ -542,80 +681,46 @@ namespace koalabox::http_server {
 
                 Certificate server_cert(original_server_host, ca_cert);
 
-                Hosts hosts;
-                hosts.remove(original_server_host);
-                hosts.add(original_server_host, port_proxy_ip);
-                hosts.save();
+                if (IsUserAnAdmin()) {
+                    // FIXME: Doesn't work with EOS SDK DLL. It queries DNS using DnsQueryEx with
+                    // DNS_QUERY_NO_LOCAL_NAME and DNS_QUERY_NO_HOSTS_FILE flags
+                    // which bypass the hosts file.
 
-                PortProxy::add(
-                    original_server_port,
-                    port_proxy_ip,
-                    proxy_server_port,
-                    proxy_server_host
-                );
+                    Hosts hosts;
+                    hosts.remove(original_server_host);
+                    hosts.add(original_server_host, port_proxy_ip);
+                    hosts.save();
+
+                    port_proxy::add(
+                        original_server_port,
+                        port_proxy_ip,
+                        proxy_server_port,
+                        proxy_server_host
+                    );
+                }
 
                 httplib::SSLServer server(server_cert.get_x509(), server_cert.get_key());
 
                 server.set_logger([](const auto& req, const auto& res) {
-                    LOG_DEBUG(
+                    LOG_TRACE(
                         "HTTP Server {}:{} {} '{}'. Response code: {}, body:\n{}",
-                        req.local_addr, req.local_port, req.method, req.path, res.status, res.body
+                        req.local_addr, req.local_port, req.method, req.target, res.status, res.body
                     )
                 });
 
-                const auto generic_pattern = ".*";
                 const auto generic_handler = [&](
                     const httplib::Request& req,
                     httplib::Response& res
                 ) {
-                    try {
-                        const auto original_cname_opt = DNS::get_canonical_name(
-                            original_server_host
-                        );
-
-                        if (!original_cname_opt) {
-                            throw util::exception(
-                                "Error getting CNAME for '{}'", original_server_host
-                            );
-                        }
-
-                        const auto original_cname = *original_cname_opt;
-
-                        LOG_DEBUG("CNAME for '{}': '{}'", original_server_host, original_cname)
-
-                        httplib::SSLClient client(original_cname);
-
-                        auto req_copy = req;
-                        req_copy.headers.erase("LOCAL_ADDR");
-                        req_copy.headers.erase("LOCAL_PORT");
-                        req_copy.headers.erase("REMOTE_ADDR");
-                        req_copy.headers.erase("REMOTE_PORT");
-                        const auto result = client.send(req_copy);
-
-                        if (result.error() != httplib::Error::Success) {
-                            throw util::exception(
-                                "Error sending request to original server. Code: {}",
-                                (int) result.error()
-                            );
-                        }
-
-                        res = *result;
-                    } catch (const Exception& e) {
-                        LOG_ERROR("Generic server handler error: {}", e.what())
-                        res.status = 503;
-                    }
+                    make_original_request(bypass_server_host, req, res);
                 };
 
                 for (const auto& [pattern, handler]: pattern_handlers) {
-                    server.Get(pattern, [&](const httplib::Request& req, httplib::Response& res) {
-                        // Fetch the original response first
-                        generic_handler(req, res);
-
-                        handler(req, res);
-                    });
+                    server.Get(pattern, handler);
                 }
 
                 // Fallback handlers must always come after custom handlers
+                const auto generic_pattern = ".*";
                 server.Get(generic_pattern, generic_handler);
                 server.Delete(generic_pattern, generic_handler);
                 server.Options(generic_pattern, generic_handler);

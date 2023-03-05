@@ -1,3 +1,8 @@
+set(CMAKE_CXX_STANDARD 20 CACHE STRING "The C++ standard to use")
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>" CACHE STRING "MSVC Runtime Library")
+set(BUILD_SHARED_LIBS OFF CACHE BOOL "Build DLL instead of static library")
+
 # Sets the variable ${VAR} with val_for_32 on 32-bit build
 # and appends 64 to val_for_32 on 64-bit build, unless it an optional argument
 # is provided.
@@ -81,7 +86,57 @@ function(configure_linker_exports)
         "${GENERATED_LINKER_EXPORTS}" # Output header
         "${ARG_INPUT_SOURCES_DIR}" # Input sources
         DEPENDS exports_generator
-        ${ARG_INPUT_DLLS}
-        ${ARG_DEP_SOURCES}
+        "${ARG_INPUT_DLLS}"
+        "${ARG_DEP_SOURCES}"
     )
+endfunction()
+
+function(install_python)
+    # https://www.python.org/downloads/release/python-3112/
+    set(MY_PYTHON_VERSION 3.11.2)
+    set_32_and_64(MY_PYTHON_INSTALLER python-${MY_PYTHON_VERSION}.exe python-${MY_PYTHON_VERSION}-amd64.exe)
+    set_32_and_64(MY_PYTHON_INSTALLER_EXPECTED_MD5 2123016702bbb45688baedc3695852f4 4331ca54d9eacdbe6e97d6ea63526e57)
+
+    set(MY_PYTHON_INSTALLER_PATH "${CMAKE_BINARY_DIR}/python-installer/${MY_PYTHON_INSTALLER}")
+
+    # Download installer if necessary
+    set(MY_PYTHON_INSTALLER_URL "https://www.python.org/ftp/python/${MY_PYTHON_VERSION}/${MY_PYTHON_INSTALLER}")
+
+    MESSAGE(STATUS "Downloading python installer: ${MY_PYTHON_INSTALLER_URL}")
+
+    file(
+        DOWNLOAD ${MY_PYTHON_INSTALLER_URL} "${MY_PYTHON_INSTALLER_PATH}"
+        EXPECTED_HASH MD5=${MY_PYTHON_INSTALLER_EXPECTED_MD5}
+        SHOW_PROGRESS
+    )
+
+    MESSAGE(STATUS "Installing python: ${MY_PYTHON_INSTALLER_PATH}")
+
+    cmake_path(CONVERT "${CMAKE_BINARY_DIR}/python" TO_NATIVE_PATH_LIST MY_PYTHON_INSTALL_DIR NORMALIZE)
+
+    # Install python
+    execute_process(
+        COMMAND "${MY_PYTHON_INSTALLER_PATH}" /quiet
+        InstallAllUsers=0
+        "TargetDir=${MY_PYTHON_INSTALL_DIR}"
+        AssociateFiles=0
+        PrependPath=0
+        AppendPath=0
+        Shortcuts=0
+        Include_doc=0
+        Include_debug=1
+        Include_dev=1
+        Include_exe=0
+        Include_launcher=0
+        Include_lib=1
+        Include_pip=1
+        Include_tcltk=1
+        Include_test=0
+        COMMAND_ERROR_IS_FATAL ANY
+        COMMAND_ECHO STDOUT
+    )
+
+    set(Python_ROOT_DIR CACHE STRING "${MY_PYTHON_INSTALLER_PATH}")
+
+    find_package(Python REQUIRED COMPONENTS Development)
 endfunction()
