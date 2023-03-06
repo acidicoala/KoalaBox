@@ -19,4 +19,6 @@ namespace koalabox::paths {
 
     KOALABOX_API(Path) get_ca_cert_path();
 
+    KOALABOX_API(Path) get_cache_dir();
+
 }

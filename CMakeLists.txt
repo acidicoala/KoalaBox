@@ -17,6 +17,7 @@ set(KOALABOX_HEADERS
     include/koalabox/cache.hpp
     include/koalabox/config.hpp
     include/koalabox/core.hpp
+    include/koalabox/crypto.hpp
     include/koalabox/dll_monitor.hpp
     include/koalabox/globals.hpp
     include/koalabox/logger.hpp
@@ -34,6 +35,7 @@ set(KOALABOX_HEADERS
 set(KOALABOX_SOURCES
     src/koalabox/cache.cpp
     src/koalabox/core.cpp
+    src/koalabox/crypto.cpp
     src/koalabox/dll_monitor.cpp
     src/koalabox/globals.cpp
     src/koalabox/logger.cpp

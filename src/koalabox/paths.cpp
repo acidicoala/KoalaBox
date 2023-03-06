@@ -43,4 +43,10 @@ namespace koalabox::paths {
         return path;
     }
 
+    KOALABOX_API(Path) get_cache_dir() {
+        static const auto path = get_self_path() / "cache";
+        create_directories(path);
+        return path;
+    }
+
 }

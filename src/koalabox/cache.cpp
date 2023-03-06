@@ -15,16 +15,23 @@ namespace koalabox::cache {
         }
     }
 
-    KOALABOX_API(Json) read_from_cache(const String& key) {
+    KOALABOX_API(Json) read_from_cache(const String& key, const Json& fallback) {
         const auto cache = read_cache();
 
         LOG_DEBUG("Cache key: {}. Value: \n{}", key, cache.dump(2))
 
-        return cache.at(key);
+        if (cache.contains(key)) {
+            return cache.at(key);
+        } else {
+            return fallback;
+        }
     }
 
     KOALABOX_API(bool) save_to_cache(const String& key, const Json& value) noexcept {
         try {
+            static Mutex mutex;
+            MutexLockGuard lock(mutex);
+
             Json new_cache;
             try {
                 new_cache = read_cache();
