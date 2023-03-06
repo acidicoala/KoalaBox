@@ -16,3 +16,6 @@
 [submodule "dependencies/openssl-cmake"]
 	path = dependencies/openssl-cmake
 	url = https://github.com/janbar/openssl-cmake.git
+[submodule "dependencies/11Zip"]
+	path = dependencies/11Zip
+	url = https://github.com/Sygmei/11Zip.git

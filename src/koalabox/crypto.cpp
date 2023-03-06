@@ -7,6 +7,24 @@
 
 namespace koalabox::crypto {
 
+    Vector<uint8_t> decode_hex_string(const String& hex_str) {
+        if (hex_str.length() < 2) {
+            return {};
+        }
+
+        Vector<uint8_t> buffer(hex_str.size() / 2);
+
+        std::stringstream ss;
+        ss << std::hex << hex_str;
+
+        for (size_t i = 0; i < hex_str.length(); i++) {
+            ss >> buffer[i];
+        }
+
+        return buffer;
+    }
+
+    // Source: https://learn.microsoft.com/en-us/windows/win32/seccrypto/example-c-program--creating-an-md-5-hash-from-file-content
     String calculate_md5(const Path& file_path) {
         String result_buffer(32, '\0');
         const auto buffer_size = 1024 * 1024; // 1 Mb

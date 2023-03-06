@@ -1,6 +1,8 @@
 #include <koalabox/io.hpp>
 #include <koalabox/logger.hpp>
 
+#include <elzip.hpp>
+
 #include <fstream>
 
 namespace koalabox::io {
@@ -10,18 +12,18 @@ namespace koalabox::io {
         input_stream.exceptions(std::ifstream::failbit | std::ifstream::badbit);
 
         try {
-            return {std::istreambuf_iterator<char>{input_stream}, {}};
+            return { std::istreambuf_iterator<char>{ input_stream }, {}};
         } catch (const std::system_error& e) {
             const auto& code = e.code();
             throw std::runtime_error(
-                fmt::format("Input file stream error code: {}, message: {}", code.value(), code.message())
+                fmt::format("Input file stream error code: {}, message: {}", code.value(),
+                    code.message())
             );
         }
     }
 
     bool write_file(const Path& file_path, const String& contents) noexcept {
         try {
-
             if (!std::filesystem::exists(file_path)) {
                 std::filesystem::create_directories(file_path.parent_path());
             }
@@ -34,10 +36,32 @@ namespace koalabox::io {
                 return true;
             }
 
-            LOG_ERROR(R"(Error saving file: "{}")", file_path.string())
+            LOG_ERROR(
+                R"(Error opening output stream: "{}". Flags: {})",
+                file_path.string(), output_stream.flags()
+            )
             return false;
         } catch (const Exception& e) {
             LOG_ERROR("Unexpected exception caught: {}", e.what())
+            return false;
+        }
+    }
+
+    bool unzip_file(
+        const Path& source_zip,
+        const String& target_file,
+        const Path& destination_dir
+    ) noexcept {
+        try {
+            elz::extractFile(source_zip.string(), target_file, destination_dir);
+
+            return true;
+        } catch (const Exception& e) {
+            LOG_ERROR(
+                R"(Error unzipping file "{}" from "{}" to "{}": {})",
+                target_file, source_zip.string(), destination_dir.string(), e.what()
+            )
+
             return false;
         }
     }

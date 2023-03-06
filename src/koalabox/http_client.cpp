@@ -49,8 +49,12 @@ namespace koalabox::http_client {
         validate_ok_response(res);
 
         if (res.header.find("etag") != res.header.end()) {
-            return res.header.at("etag");
+            const auto etag = res.header.at("etag");
+            LOG_TRACE(R"(Etag for url "{}" = "{}")", url, etag)
+            return etag;
         }
+
+        LOG_TRACE(R"(No etag found for url "{}")", url)
 
         return "";
     }

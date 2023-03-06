@@ -61,6 +61,7 @@ add_library(KoalaBox OBJECT ${KOALABOX_HEADERS} ${KOALABOX_SOURCES})
 # Configure dependencies
 
 ## Cpr - https://github.com/libcpr/cpr/
+SET(CURL_ZLIB OFF CACHE STRING "" FORCE) # Avoid conflict with 11zip
 add_subdirectory(dependencies/cpr EXCLUDE_FROM_ALL)
 target_link_libraries(KoalaBox PUBLIC cpr::cpr)
 
@@ -79,6 +80,10 @@ target_link_libraries(KoalaBox PUBLIC PolyHook_2)
 ## Spdlog - https://github.com/gabime/spdlog
 add_subdirectory(dependencies/spdlog EXCLUDE_FROM_ALL)
 target_link_libraries(KoalaBox PUBLIC spdlog::spdlog)
+
+## 11Zip - https://github.com/Sygmei/11Zip
+add_subdirectory(dependencies/11Zip EXCLUDE_FROM_ALL)
+target_link_libraries(KoalaBox PUBLIC elzip)
 
 if (KOALABOX_HTTP_SERVER)
     ## OpenSSL - https://github.com/janbar/openssl-cmake
