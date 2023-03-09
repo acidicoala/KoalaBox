@@ -15,16 +15,12 @@ namespace koalabox::hook {
 
         void log_impl(const String& msg, PLH::ErrorLevel level) const {
             if (level == PLH::ErrorLevel::INFO && print_info) {
-                LOG_TRACE("[Polyhook] {}", msg)
+                LOG_DEBUG("[Polyhook] {}", msg)
             } else if (level == PLH::ErrorLevel::WARN) {
                 LOG_WARN("[Polyhook] {}", msg)
             } else if (level == PLH::ErrorLevel::SEV) {
                 LOG_ERROR("[Polyhook] {}", msg)
             }
-        }
-
-        void log(std::string&& msg, PLH::ErrorLevel level) override {
-            log_impl(msg, level);
         }
 
         void log(const String& msg, PLH::ErrorLevel level) override {
