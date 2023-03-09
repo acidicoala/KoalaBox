@@ -17,4 +17,6 @@ namespace koalabox::io {
         const String& target_file,
         const Path& destination_dir
     ) noexcept;
+
+    bool is_local_port_in_use(int port);
 }
