@@ -6,13 +6,14 @@
 #include <mutex>
 #include <functional>
 
-#define NOMINMAX
-#include <minwindef.h>
-
 #include <nlohmann/json.hpp>
 
 #define SUPPRESS_UNUSED(PARAM) (void) PARAM;
 #define KOALABOX_API(...) [[maybe_unused]] __VA_ARGS__
+
+#define DECLARE_STRUCT(TYPE, VAR_NAME) \
+    TYPE VAR_NAME; \
+    memset(&VAR_NAME, 0, sizeof(TYPE))
 
 #define CALL_ONCE(FUNC_BODY) \
     static std::once_flag _flag; \

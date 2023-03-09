@@ -4,6 +4,10 @@
 
 #include <spdlog/fmt/fmt.h>
 
+#define KException koalabox::util::exception
+#define STR koalabox::util::to_string
+#define WSTR koalabox::util::to_wstring
+
 namespace koalabox::util {
 
     KOALABOX_API(void) error_box(const String& title, const String& message);
