@@ -431,7 +431,7 @@ namespace koalabox::http_server {
     namespace port_proxy {
         void execute_ps_command(const String& command) {
             const auto ps_command = fmt::format("powershell {}", command);
-            // TODO: Replace with CreateProcess
+            // T0D0: Replace with CreateProcess
             const auto result = WinExec(ps_command.c_str(), SW_HIDE);
             LOG_DEBUG("PowerShell returned result {} for command: {}", result, command)
         }
@@ -559,7 +559,7 @@ namespace koalabox::http_server {
 
                     auto target_scheme = match.str(2);
 
-                    // TODO: Extract to utils
+                    // T0D0: Extract to utils
                     std::transform(
                         target_scheme.begin(),
                         target_scheme.end(),

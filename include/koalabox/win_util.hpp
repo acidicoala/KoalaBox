@@ -2,7 +2,16 @@
 
 #include <koalabox/core.hpp>
 
+#define GET_LAST_ERROR koalabox::win_util::get_last_error
+
 namespace koalabox::win_util {
+
+    KOALABOX_API(PROCESS_INFORMATION) create_process(
+        const String& app_name,
+        const String& args,
+        const Path& working_dir,
+        bool show_window
+    );
 
     KOALABOX_API(String) format_message(DWORD message_id);
 
@@ -24,11 +33,20 @@ namespace koalabox::win_util {
 
     KOALABOX_API(String) get_module_version_or_throw(const HMODULE& module_handle);
 
-    KOALABOX_API(String) get_pe_section_data_or_throw(const HMODULE& module_handle, const String& section_name);
+    KOALABOX_API(String) get_pe_section_data_or_throw(
+        const HMODULE& module_handle,
+        const String& section_name
+    );
 
-    KOALABOX_API(String) get_pe_section_data(const HMODULE& module_handle, const String& section_name);
+    KOALABOX_API(String) get_pe_section_data(
+        const HMODULE& module_handle,
+        const String& section_name
+    );
 
-    KOALABOX_API(FARPROC) get_proc_address_or_throw(const HMODULE& module_handle, LPCSTR procedure_name);
+    KOALABOX_API(FARPROC) get_proc_address_or_throw(
+        const HMODULE& module_handle,
+        LPCSTR procedure_name
+    );
 
     KOALABOX_API(FARPROC) get_proc_address(const HMODULE& module_handle, LPCSTR procedure_name);
 

@@ -1,5 +1,6 @@
 #include <koalabox/win_util.hpp>
 #include <koalabox/util.hpp>
+#include <koalabox/logger.hpp>
 
 #pragma comment(lib, "Version.lib")
 
@@ -18,12 +19,14 @@ namespace koalabox::win_util {
             const DWORD version_size = GetFileVersionInfoSize(file_name.c_str(), &version_handle);
 
             if (not version_size) {
-                throw util::exception("Failed to GetFileVersionInfoSize. Error: {}", get_last_error());
+                throw util::exception("Failed to GetFileVersionInfoSize. Error: {}",
+                    get_last_error());
             }
 
             Vector<uint8_t> version_data(version_size);
 
-            if (not GetFileVersionInfo(file_name.c_str(), version_handle, version_size, version_data.data())) {
+            if (not GetFileVersionInfo(file_name.c_str(), version_handle, version_size,
+                version_data.data())) {
                 throw util::exception("Failed to GetFileVersionInfo. Error: {}", get_last_error());
             }
 
@@ -36,6 +39,47 @@ namespace koalabox::win_util {
         return FUNC##_or_throw(__VA_ARGS__); \
     } catch (const Exception& ex) { \
         util::panic(ex.what()); \
+    }
+
+    KOALABOX_API(PROCESS_INFORMATION) create_process(
+        const String& app_name,
+        const String& args,
+        const Path& working_dir,
+        bool show_window
+    ) {
+        DECLARE_STRUCT(PROCESS_INFORMATION, process_info);
+        DECLARE_STRUCT(STARTUPINFO, startup_info);
+
+        const auto cmd_line = app_name + " " + args;
+
+        LOG_TRACE("Launching {}",cmd_line)
+
+        const auto success = CreateProcess(
+            NULL,
+            WSTR(cmd_line).data(),
+            NULL,
+            NULL,
+            NULL,
+            show_window ? 0 : CREATE_NO_WINDOW,
+            NULL,
+            working_dir.wstring().c_str(),
+            &startup_info,
+            &process_info
+        ) != 0;
+
+        if (!success) {
+            DWORD exit_code = 0;
+            GetExitCodeProcess(process_info.hProcess, &exit_code);
+
+            throw util::exception(
+                R"(Error creating process "{}" with args "{}" at "{}". Last error: {}, Exit code: {})",
+                app_name, args, working_dir.string(), get_last_error(), exit_code
+            );
+        }
+
+        WaitForInputIdle(process_info.hProcess, INFINITE);
+
+        return process_info;
     }
 
     KOALABOX_API(String) format_message(const DWORD message_id) {
@@ -64,8 +108,8 @@ namespace koalabox::win_util {
         const auto length = ::GetModuleFileName(module_handle, buffer, buffer_size);
 
         return (length > 0 and length < buffer_size)
-               ? util::to_string(buffer)
-               : throw util::exception(
+            ? util::to_string(buffer)
+            : throw util::exception(
                 "Failed to get a file name of the given module handle: {}. Length: {}",
                 fmt::ptr(module_handle), length
             );
@@ -77,8 +121,8 @@ namespace koalabox::win_util {
 
     KOALABOX_API(HMODULE) get_module_handle_or_throw(LPCSTR module_name) {
         auto* const handle = module_name
-                             ? ::GetModuleHandle(util::to_wstring(module_name).c_str())
-                             : ::GetModuleHandle(nullptr);
+            ? ::GetModuleHandle(util::to_wstring(module_name).c_str())
+            : ::GetModuleHandle(nullptr);
 
         return handle ? handle : throw util::exception(
             "Failed to get a handle of the module: '{}'", module_name
@@ -90,7 +134,7 @@ namespace koalabox::win_util {
     }
 
     KOALABOX_API(MODULEINFO) get_module_info_or_throw(const HMODULE& module_handle) {
-        MODULEINFO module_info = {nullptr};
+        MODULEINFO module_info = { nullptr };
         const auto success = ::GetModuleInformation(
             GetCurrentProcess(), module_handle, &module_info, sizeof(module_info)
         );
@@ -110,21 +154,33 @@ namespace koalabox::win_util {
             String manifest_or_error;
         };
 
-        // Returns TRUE to continue enumeration or FALSE to stop enumeration.
-        const auto callback = [](HMODULE hModule, LPCTSTR lpType, LPTSTR lpName, LONG_PTR lParam) -> BOOL {
+        // Return TRUE to continue enumeration or FALSE to stop enumeration.
+        const auto callback = [](
+            HMODULE hModule,
+            LPCTSTR lpType,
+            LPTSTR lpName,
+            LONG_PTR lParam
+        ) -> BOOL {
             const auto response = [&](bool success, String manifest_or_error) {
-                auto* response = (Response*) lParam;
+                try {
+                    auto* response = (Response*) lParam;
 
-                if (!success) {
-                    manifest_or_error = fmt::format(
-                        "get_module_manifest_callback -> {}. Last error: {}", manifest_or_error, get_last_error()
-                    );
+                    if (!success) {
+                        manifest_or_error = fmt::format(
+                            "get_module_manifest_callback -> {}. Last error: {}", manifest_or_error,
+                            get_last_error()
+                        );
+                    }
+
+                    response->success = success;
+                    response->manifest_or_error = manifest_or_error;
+
+                    return TRUE;
+                } catch (const Exception& e) {
+                    LOG_ERROR("EnumResourceNames callback error: {}", e.what())
+
+                    return FALSE;
                 }
-
-                response->success = success;
-                response->manifest_or_error = manifest_or_error;
-
-                return TRUE;
             };
 
             HRSRC resource_handle = ::FindResource(hModule, lpName, lpType);
@@ -167,7 +223,8 @@ namespace koalabox::win_util {
 
         UINT size = 0;
         VS_FIXEDFILEINFO* version_info = nullptr;
-        if (not VerQueryValue(version_data.data(), TEXT("\\"), (VOID FAR* FAR*) &version_info, &size)) {
+        if (not VerQueryValue(version_data.data(), TEXT("\\"), (VOID FAR* FAR*) &version_info,
+            &size)) {
             throw util::exception("Failed to VerQueryValue. Error: {}", get_last_error());
         }
 
@@ -176,7 +233,8 @@ namespace koalabox::win_util {
         }
 
         if (version_info->dwSignature != 0xfeef04bd) {
-            throw util::exception("VerQueryValue signature mismatch. Signature: 0x{0:x}", version_info->dwSignature);
+            throw util::exception("VerQueryValue signature mismatch. Signature: 0x{0:x}",
+                version_info->dwSignature);
         }
 
         return fmt::format(
@@ -188,14 +246,17 @@ namespace koalabox::win_util {
         );
     }
 
-    KOALABOX_API(String) get_pe_section_data_or_throw(const HMODULE& module_handle, const String& section_name) {
+    KOALABOX_API(String) get_pe_section_data_or_throw(
+        const HMODULE& module_handle, const String& section_name
+    ) {
         auto* const dos_header = reinterpret_cast<PIMAGE_DOS_HEADER>(module_handle);
 
         if (dos_header->e_magic != IMAGE_DOS_SIGNATURE) {
             throw util::exception("Invalid DOS file");
         }
 
-        auto* const nt_header = (PIMAGE_NT_HEADERS) ((uint8_t*) module_handle + (dos_header->e_lfanew));
+        auto* const nt_header = (PIMAGE_NT_HEADERS) ((uint8_t*) module_handle +
+                                                     (dos_header->e_lfanew));
 
         if (nt_header->Signature != IMAGE_NT_SIGNATURE) {
             throw util::exception("Invalid NT signature");
@@ -210,13 +271,15 @@ namespace koalabox::win_util {
                 continue;
             }
 
-            return {(char*) module_handle + section->PointerToRawData, section->SizeOfRawData};
+            return { (char*) module_handle + section->PointerToRawData, section->SizeOfRawData };
         }
 
         throw util::exception("Section '{}' not found", section_name);
     }
 
-    KOALABOX_API(String) get_pe_section_data(const HMODULE& module_handle, const String& section_name) {
+    KOALABOX_API(String) get_pe_section_data(
+        const HMODULE& module_handle, const String& section_name
+    ) {
         PANIC_ON_CATCH(get_pe_section_data, module_handle, section_name)
     }
 
@@ -224,8 +287,9 @@ namespace koalabox::win_util {
         const auto address = ::GetProcAddress(handle, procedure_name);
 
         return address
-               ? address
-               : throw util::exception("Failed to get the address of the procedure: '{}'", procedure_name);
+            ? address
+            : throw util::exception("Failed to get the address of the procedure: '{}'",
+                procedure_name);
     }
 
     KOALABOX_API(FARPROC) get_proc_address(const HMODULE& handle, LPCSTR procedure_name) {
@@ -256,7 +320,8 @@ namespace koalabox::win_util {
 
     KOALABOX_API(void) free_library_or_throw(const HMODULE& handle) {
         if (not::FreeLibrary(handle)) {
-            throw util::exception("Failed to free a library with the given module handle: {}", fmt::ptr(handle));
+            throw util::exception("Failed to free a library with the given module handle: {}",
+                fmt::ptr(handle));
         }
     }
 
@@ -277,8 +342,9 @@ namespace koalabox::win_util {
         auto* const module_handle = ::LoadLibrary(module_path.wstring().c_str());
 
         return module_handle
-               ? module_handle
-               : throw util::exception("Failed to load the module at path: '{}'", module_path.string());
+            ? module_handle
+            : throw util::exception("Failed to load the module at path: '{}'",
+                module_path.string());
     }
 
     KOALABOX_API(HMODULE) load_library(const Path& module_path) {
@@ -309,13 +375,15 @@ namespace koalabox::win_util {
         SIZE_T bytes_written = 0;
 
         return WriteProcessMemory(process, address, buffer, size, &bytes_written)
-               ? bytes_written
-               : throw util::exception(
+            ? bytes_written
+            : throw util::exception(
                 "Failed to write process memory at address: '{}'", fmt::ptr(address)
             );
     }
 
-    KOALABOX_API(SIZE_T) write_process_memory(const HANDLE& process, LPVOID address, LPCVOID buffer, SIZE_T size) {
+    KOALABOX_API(SIZE_T) write_process_memory(
+        const HANDLE& process, LPVOID address, LPCVOID buffer, SIZE_T size
+    ) {
         PANIC_ON_CATCH(write_process_memory, process, address, buffer, size)
     }
 }
