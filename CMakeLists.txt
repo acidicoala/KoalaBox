@@ -96,6 +96,10 @@ if (KOALABOX_HTTP_SERVER)
     target_link_libraries(KoalaBox PUBLIC httplib::httplib)
 endif ()
 
+## WinReg - https://github.com/GiovanniDicanio/WinReg
+add_subdirectory(dependencies/WinReg EXCLUDE_FROM_ALL)
+target_link_libraries(KoalaBox PUBLIC WinReg)
+
 # Setup KoalaBox exports
 
 target_include_directories(KoalaBox PUBLIC
