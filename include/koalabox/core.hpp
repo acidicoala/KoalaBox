@@ -21,7 +21,7 @@
 
 #define NEW_THREAD(FUNC_BODY) \
     std::thread( \
-        [&]() FUNC_BODY \
+        [=]() FUNC_BODY \
     ).detach();
 
 using Mutex = std::mutex;
