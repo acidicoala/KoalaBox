@@ -19,6 +19,3 @@
 [submodule "dependencies/11Zip"]
 	path = dependencies/11Zip
 	url = https://github.com/Sygmei/11Zip.git
-[submodule "dependencies/WinReg"]
-	path = dependencies/WinReg
-	url = https://github.com/acidicoala/WinReg.git

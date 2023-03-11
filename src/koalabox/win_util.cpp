@@ -386,5 +386,4 @@ namespace koalabox::win_util {
     ) {
         PANIC_ON_CATCH(write_process_memory, process, address, buffer, size)
     }
-
 }
