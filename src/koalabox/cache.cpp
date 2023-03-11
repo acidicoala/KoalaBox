@@ -22,15 +22,15 @@ namespace koalabox::cache {
 
         if (cache.contains(key)) {
             return cache.at(key);
-        } else {
-            return fallback;
         }
+
+        return fallback;
     }
 
     KOALABOX_API(bool) put(const String& key, const Json& value) noexcept {
         try {
             static Mutex mutex;
-            MutexLockGuard lock(mutex);
+            const MutexLockGuard lock(mutex);
 
             Json new_cache;
             try {

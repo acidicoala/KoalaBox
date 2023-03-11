@@ -29,13 +29,17 @@ namespace koalabox::hook {
     };
 
     Vector<PLH::IHook*> hooks; // NOLINT(cert-err58-cpp)
-    Map<String, uintptr_t> address_map;
+    Map<String, uintptr_t> address_map; // NOLINT(cert-err58-cpp)
 
     KOALABOX_API(void) detour_or_throw(
         const uintptr_t address,
         const String& function_name,
         const uintptr_t callback_function
     ) {
+        if (address == callback_function) {
+            LOG_DEBUG("Function '{}' is already hooked. Skipping detour.", function_name)
+        }
+
         LOG_DEBUG("Hooking '{}' at {} via Detour", function_name, (void*) address)
 
         uint64_t trampoline = 0;
@@ -157,13 +161,23 @@ namespace koalabox::hook {
         const int ordinal,
         uintptr_t callback_function
     ) {
+        if (instance) {
+            const auto* vtable = *(uintptr_t**) instance;
+            const auto target_func = vtable[ordinal];
+
+            if (target_func == callback_function) {
+                LOG_DEBUG("Function '{}' is already hooked. Skipping virtual function swap", function_name)
+                return;
+            }
+        }
+
         LOG_DEBUG(
             "Hooking '{}' at [[{}]+0x{:X}] via virtual function swap",
             function_name, instance, ordinal * sizeof(void*)
         )
 
         const PLH::VFuncMap redirect = {
-            { ordinal, callback_function },
+            {ordinal, callback_function},
         };
 
         PLH::VFuncMap original_functions;
