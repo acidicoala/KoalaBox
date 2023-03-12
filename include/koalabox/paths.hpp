@@ -21,4 +21,6 @@ namespace koalabox::paths {
 
     KOALABOX_API(Path) get_cache_dir();
 
+    KOALABOX_API(Path) get_user_dir();
+
 }

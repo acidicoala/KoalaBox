@@ -52,12 +52,6 @@ jobs:
         with:
           arch: ${{ matrix.term }}
 
-      - name: Restore build files
-        uses: actions/cache@v3
-        with:
-          path: ${{ env.BUILD_DIR }}
-          key: ${{ matrix.module }}-${{ matrix.arch }}-${{ hashFiles( 'CMakeLists.txt' ) }}
-
       - name: Print build directory tree
         run: tree /f ${{ env.BUILD_DIR }}
 

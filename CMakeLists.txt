@@ -1,19 +1,16 @@
 cmake_minimum_required(VERSION 3.24)
 
-project(KoalaBox
-    LANGUAGES CXX
+project(
+    KoalaBox LANGUAGES CXX
     DESCRIPTION "A box of koality tools"
-    )
-
-# Define options
-
-option(KOALABOX_HTTP_SERVER "Include HTTP server" OFF)
+)
 
 # Configure variables
 
 include(GNUInstallDirs)
 
-set(KOALABOX_HEADERS
+set(
+    KOALABOX_HEADERS
     include/koalabox/cache.hpp
     include/koalabox/config.hpp
     include/koalabox/core.hpp
@@ -30,9 +27,10 @@ set(KOALABOX_HEADERS
     include/koalabox/paths.hpp
     include/koalabox/util.hpp
     include/koalabox/win_util.hpp
-    )
+)
 
-set(KOALABOX_SOURCES
+set(
+    KOALABOX_SOURCES
     src/koalabox/cache.cpp
     src/koalabox/core.cpp
     src/koalabox/crypto.cpp
@@ -49,63 +47,46 @@ set(KOALABOX_SOURCES
     src/koalabox/paths.cpp
     src/koalabox/util.cpp
     src/koalabox/win_util.cpp
-    )
-
-if (KOALABOX_HTTP_SERVER)
-    set(KOALABOX_HEADERS ${KOALABOX_HEADERS} include/koalabox/http_server.hpp)
-    set(KOALABOX_SOURCES ${KOALABOX_SOURCES} src/koalabox/http_server.cpp)
-endif ()
+)
 
 add_library(KoalaBox OBJECT ${KOALABOX_HEADERS} ${KOALABOX_SOURCES})
 
 # Configure dependencies
 
+include(FetchContent)
+
+function(fetch_library LIB USER_REPO TAG)
+    FetchContent_Declare(${LIB} GIT_REPOSITORY "https://github.com/${USER_REPO}" GIT_TAG ${TAG})
+    FetchContent_MakeAvailable(${LIB})
+    target_link_libraries(KoalaBox PUBLIC ${LIB})
+endfunction()
+
 ## Cpr - https://github.com/libcpr/cpr/
-SET(CURL_ZLIB OFF CACHE STRING "" FORCE) # Avoid conflict with 11zip
-add_subdirectory(dependencies/cpr EXCLUDE_FROM_ALL)
-target_link_libraries(KoalaBox PUBLIC cpr::cpr)
+fetch_library(cpr libcpr/cpr 1.10.1)
 
 ## Json - https://github.com/nlohmann/json
-add_subdirectory(dependencies/json EXCLUDE_FROM_ALL)
-target_link_libraries(KoalaBox PUBLIC nlohmann_json::nlohmann_json)
+fetch_library(nlohmann_json nlohmann/json v3.11.2)
 
 ## Polyhook2 - https://github.com/stevemk14ebr/PolyHook_2_0
-set(POLYHOOK_FEATURE_DETOURS ON)
 set(POLYHOOK_FEATURE_INLINENTD OFF)
 set(POLYHOOK_FEATURE_EXCEPTION OFF)
-set(POLYHOOK_BUILD_DLL ON)
-add_subdirectory(dependencies/PolyHook_2_0 EXCLUDE_FROM_ALL)
-target_link_libraries(KoalaBox PUBLIC PolyHook_2)
+fetch_library(PolyHook_2 stevemk14ebr/PolyHook_2_0 71d273463a3c4e30ec0a4031c4b477b85ea773fb)
 
 ## Spdlog - https://github.com/gabime/spdlog
-add_subdirectory(dependencies/spdlog EXCLUDE_FROM_ALL)
-target_link_libraries(KoalaBox PUBLIC spdlog::spdlog)
+fetch_library(spdlog gabime/spdlog v1.11.0)
 
-## 11Zip - https://github.com/Sygmei/11Zip
-add_subdirectory(dependencies/11Zip EXCLUDE_FROM_ALL)
-target_link_libraries(KoalaBox PUBLIC elzip)
-
-if (KOALABOX_HTTP_SERVER)
-    ## OpenSSL - https://github.com/janbar/openssl-cmake
-    add_subdirectory(dependencies/openssl-cmake)
-    target_link_libraries(KoalaBox PUBLIC ssl)
-    target_link_libraries(KoalaBox PUBLIC crypto)
-
-    ## cpp-httplib - https://github.com/yhirose/cpp-httplib
-    add_subdirectory(dependencies/cpp-httplib EXCLUDE_FROM_ALL)
-    target_link_libraries(KoalaBox PUBLIC httplib::httplib)
-endif ()
+## Miniz - https://github.com/richgel999/miniz
+fetch_library(miniz richgel999/miniz 3.0.2)
 
 ## WinReg - https://github.com/GiovanniDicanio/WinReg
-add_subdirectory(dependencies/WinReg EXCLUDE_FROM_ALL)
-target_link_libraries(KoalaBox PUBLIC WinReg)
+fetch_library(WinReg acidicoala/WinReg b86786c6845a4a03a2e66a456cd65ec77069a7c4)
 
 # Setup KoalaBox exports
-
-target_include_directories(KoalaBox PUBLIC
+target_include_directories(
+    KoalaBox PUBLIC
     "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include;${CMAKE_CURRENT_SOURCE_DIR}/src>"
     "$<INSTALL_INTERFACE:include>"
-    )
+)
 
 set(PCH_PATH ${CMAKE_CURRENT_SOURCE_DIR}/include/koalabox/pch.hpp)
 target_precompile_headers(KoalaBox PUBLIC "$<$<COMPILE_LANGUAGE:CXX>:${PCH_PATH}>")

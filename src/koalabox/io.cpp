@@ -1,7 +1,8 @@
 #include <koalabox/io.hpp>
 #include <koalabox/logger.hpp>
+#include <koalabox/util.hpp>
 
-#include <elzip.hpp>
+#include <miniz.h>
 
 #include <fstream>
 #include <WinSock2.h>
@@ -55,7 +56,68 @@ namespace koalabox::io {
         const Path& destination_dir
     ) noexcept {
         try {
-            elz::extractFile(source_zip.string(), target_file, destination_dir);
+            // open the zip archive for reading
+            DECLARE_STRUCT(mz_zip_archive, archive);
+            if (!mz_zip_reader_init_file(&archive, source_zip.string().c_str(), 0)) {
+                throw KException("Error opening archive");
+            }
+
+            // get the index of the file in the archive
+            mz_uint file_index = mz_zip_reader_locate_file(
+                &archive,
+                target_file.c_str(),
+                nullptr,
+                0
+            );
+
+            if (file_index == -1) {
+                mz_zip_reader_end(&archive);
+                throw KException("File not found in archive");
+            }
+
+            // get the uncompressed size of the file
+            mz_zip_archive_file_stat file_stat;
+            if (!mz_zip_reader_file_stat(&archive, file_index, &file_stat)) {
+                mz_zip_reader_end(&archive);
+                throw KException("Error getting file stats");
+            }
+
+            // allocate a buffer to hold the uncompressed file data
+            void* file_data = malloc(file_stat.m_uncomp_size);
+            if (!file_data) {
+                // error allocating buffer
+                mz_zip_reader_end(&archive);
+                throw KException("Error allocating buffer");
+            }
+
+            // read the file data into the buffer
+            if (!mz_zip_reader_extract_to_mem(
+                &archive,
+                file_index,
+                file_data,
+                file_stat.m_uncomp_size,
+                0
+            )) {
+                free(file_data);
+                mz_zip_reader_end(&archive);
+                throw KException("Error extracting file");
+            }
+
+            // write the file data to disk
+            const auto destination_path = destination_dir / Path(target_file).filename();
+            FILE* fp = fopen(destination_path.string().c_str(), "wb");
+            if (!fp) {
+                // error creating file
+                free(file_data);
+                mz_zip_reader_end(&archive);
+                throw KException("Error creating file");
+            }
+            fwrite(file_data, 1, file_stat.m_uncomp_size, fp);
+            fclose(fp);
+
+            // clean up
+            free(file_data);
+            mz_zip_reader_end(&archive);
 
             return true;
         } catch (const Exception& e) {
@@ -92,10 +154,10 @@ namespace koalabox::io {
         //----------------------
         // The sockaddr_in structure specifies the address family,
         // IP address, and port of the server to be connected to.
-        sockaddr_in clientService;
-        clientService.sin_family = AF_INET;
-        clientService.sin_port = htons(port);
-        iResult = InetPton(AF_INET, L"127.0.0.1", &clientService.sin_addr.s_addr);
+        DECLARE_STRUCT(sockaddr_in, client_service);
+        client_service.sin_family = AF_INET;
+        client_service.sin_port = htons(port);
+        iResult = InetPton(AF_INET, L"127.0.0.1", &client_service.sin_addr.s_addr);
         if (iResult != 1) {
             // LOG_ERROR("InetPton Error: {}", WSAGetLastError())
             return false;
@@ -113,7 +175,7 @@ namespace koalabox::io {
 
         //----------------------
         // Connect to server.
-        iResult = connect(ConnectSocket, (SOCKADDR*) &clientService, sizeof(clientService));
+        iResult = connect(ConnectSocket, (SOCKADDR*) &client_service, sizeof(client_service));
         if (iResult == SOCKET_ERROR) {
             // LOG_ERROR("connect(...) error: {}", WSAGetLastError())
             close_socket();

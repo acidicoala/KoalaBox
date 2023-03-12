@@ -1,11 +1,15 @@
 #include <koalabox/paths.hpp>
 #include <koalabox/globals.hpp>
 #include <koalabox/loader.hpp>
+#include <koalabox/util.hpp>
+#include <koalabox/win_util.hpp>
+
+#include <ShlObj.h>
 
 namespace koalabox::paths {
 
     namespace {
-        String get_file_name(String suffix) {
+        String get_file_name(const String& suffix) {
             return koalabox::globals::get_project_name() + suffix;
         }
     }
@@ -47,6 +51,16 @@ namespace koalabox::paths {
         static const auto path = get_self_path() / "cache";
         create_directories(path);
         return path;
+    }
+
+    KOALABOX_API(Path) get_user_dir() {
+        TCHAR buffer[MAX_PATH];
+        if (SHGetSpecialFolderPath(nullptr, buffer, CSIDL_PROFILE, FALSE)) {
+            // Path retrieved successfully, so print it out
+            return { buffer };
+        }
+
+        throw KException("Error retrieving user directory: {}", GET_LAST_ERROR());
     }
 
 }

@@ -12,7 +12,7 @@
 #define KOALABOX_API(...) [[maybe_unused]] __VA_ARGS__
 
 #define DECLARE_STRUCT(TYPE, VAR_NAME) \
-    TYPE VAR_NAME; \
+    TYPE VAR_NAME = {}; \
     memset(&VAR_NAME, 0, sizeof(TYPE))
 
 #define CALL_ONCE(FUNC_BODY) \
@@ -59,7 +59,6 @@ public:
     const T& operator*() const { return lhs; }
 };
 
-
 // Useful for operators that modify first operand
 template<typename T, typename U>
 struct MutableOperatorProxy {
@@ -83,7 +82,9 @@ ConstOperatorProxy<T, OP##_t> operator<(const T& lhs, const OP##_t& op) { \
 }
 
 DEFINE_CONST_OPERATOR(String, equals)
+
 DEFINE_CONST_OPERATOR(String, not_equals)
+
 DEFINE_CONST_OPERATOR(String, contains)
 
 /// Vector operators

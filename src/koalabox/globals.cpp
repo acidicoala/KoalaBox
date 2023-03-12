@@ -11,7 +11,7 @@ namespace koalabox::globals {
         String project_name = "";
 
         void validate_initialization() {
-            MutexLockGuard lock(mutex);
+            const MutexLockGuard lock(mutex);
 
             if (not initialized) {
                 util::panic("Koalabox globals are not initialized.");
@@ -35,12 +35,14 @@ namespace koalabox::globals {
     }
 
     KOALABOX_API(void) init_globals(HMODULE handle, String name) {
-        MutexLockGuard lock(mutex);
+        const MutexLockGuard lock(mutex);
 
         self_handle = handle;
         project_name = name;
 
         initialized = true;
+
+        DisableThreadLibraryCalls(self_handle);
     }
 
 }
