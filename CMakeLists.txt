@@ -5,6 +5,8 @@ project(
     DESCRIPTION "A box of koality tools"
 )
 
+include(cmake/KoalaBox.cmake)
+
 # Configure variables
 
 include(GNUInstallDirs)
@@ -52,14 +54,6 @@ set(
 add_library(KoalaBox OBJECT ${KOALABOX_HEADERS} ${KOALABOX_SOURCES})
 
 # Configure dependencies
-
-include(FetchContent)
-
-function(fetch_library LIB USER_REPO TAG)
-    FetchContent_Declare(${LIB} GIT_REPOSITORY "https://github.com/${USER_REPO}" GIT_TAG ${TAG})
-    FetchContent_MakeAvailable(${LIB})
-    target_link_libraries(KoalaBox PUBLIC ${LIB})
-endfunction()
 
 ## Cpr - https://github.com/libcpr/cpr/
 fetch_library(cpr libcpr/cpr 1.10.1)

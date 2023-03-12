@@ -2,7 +2,7 @@
 
 A collection of C++ utilities that comes in handy when developing koality projects.
 
-To use this library, add it as a submodule, and add following to the CMake file:
+To use this library as a submodule add the following to the CMake file:
 
 [source,cmake]
 ----
@@ -14,19 +14,12 @@ target_link_libraries(MyProject PRIVATE KoalaBox)
 
 This project makes use of the following libraries:
 
-* https://github.com/Sygmei/11Zip[11Zip]
-* https://github.com/yhirose/cpp-httplib[cpp-httplib]
 * https://github.com/libcpr/cpr[C++ Requests]
 * https://github.com/nlohmann/json[nlohmann JSON]
-* https://github.com/janbar/openssl-cmake[openssl-cmake]
 * https://github.com/stevemk14ebr/PolyHook_2_0[PolyHook 2]
 * https://github.com/gabime/spdlog[spdlog]
 * https://github.com/acidicoala/WinReg[WinReg]
 
 == 📄 License
 
-This software is licensed under [BSD Zero Clause License], terms of which are available in [LICENSE.txt]
-
-[BSD Zero Clause License]: https://choosealicense.com/licenses/0bsd/
-
-[LICENSE.txt]: LICENSE.txt
+This software is licensed under the https://unlicense.org/[Unlicense], terms of which are available in link:UNLICENSE.txt[UNLICENSE.txt]
