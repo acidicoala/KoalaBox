@@ -55,22 +55,27 @@ add_library(KoalaBox OBJECT ${KOALABOX_HEADERS} ${KOALABOX_SOURCES})
 
 # Configure dependencies
 
-## Cpr - https://github.com/libcpr/cpr/
-fetch_library(cpr libcpr/cpr 1.10.1)
+## https://github.com/libcpr/cpr/
+set(CURL_USE_LIBPSL OFF)
+set(CPR_USE_SYSTEM_LIB_PSL ON)
+set(ENABLE_CURL_MANUAL OFF)
+set(BUILD_LIBCURL_DOCS OFF)
+set(BUILD_EXAMPLES OFF)
+fetch_library(cpr libcpr/cpr 1.12.0)
 
-## Json - https://github.com/nlohmann/json
-fetch_library(nlohmann_json nlohmann/json v3.11.2)
+## https://github.com/nlohmann/json
+fetch_library(nlohmann_json nlohmann/json v3.12.0)
 
-## Polyhook2 - https://github.com/stevemk14ebr/PolyHook_2_0
+## https://github.com/stevemk14ebr/PolyHook_2_0
 set(POLYHOOK_FEATURE_INLINENTD OFF)
 set(POLYHOOK_FEATURE_EXCEPTION OFF)
-fetch_library(PolyHook_2 stevemk14ebr/PolyHook_2_0 71d273463a3c4e30ec0a4031c4b477b85ea773fb)
+fetch_library(PolyHook_2 stevemk14ebr/PolyHook_2_0 298d56210b9d9e66cde8f96481d6053925c6ae15)
 
-## Spdlog - https://github.com/gabime/spdlog
-fetch_library(spdlog gabime/spdlog v1.11.0)
+## https://github.com/gabime/spdlog
+fetch_library(spdlog gabime/spdlog v1.15.3)
 
-## Miniz - https://github.com/richgel999/miniz
-fetch_library(miniz richgel999/miniz 3.0.2)
+## https://github.com/richgel999/miniz
+fetch_library(miniz richgel999/miniz c883286f1a6443720e7705450f59e579a4bbb8e2)
 
 ## WinReg - https://github.com/GiovanniDicanio/WinReg
 fetch_library(WinReg acidicoala/WinReg b86786c6845a4a03a2e66a456cd65ec77069a7c4)

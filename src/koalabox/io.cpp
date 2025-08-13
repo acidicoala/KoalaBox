@@ -14,15 +14,7 @@ namespace koalabox::io {
         std::ifstream input_stream(file_path);
         input_stream.exceptions(std::ifstream::failbit | std::ifstream::badbit);
 
-        try {
-            return { std::istreambuf_iterator<char>{ input_stream }, {}};
-        } catch (const std::system_error& e) {
-            const auto& code = e.code();
-            throw std::runtime_error(
-                fmt::format("Input file stream error code: {}, message: {}", code.value(),
-                    code.message())
-            );
-        }
+        return {std::istreambuf_iterator{input_stream}, {}};
     }
 
     bool write_file(const Path& file_path, const String& contents) noexcept {
@@ -175,7 +167,7 @@ namespace koalabox::io {
 
         //----------------------
         // Connect to server.
-        iResult = connect(ConnectSocket, (SOCKADDR*) &client_service, sizeof(client_service));
+        iResult = connect(ConnectSocket, (SOCKADDR*)&client_service, sizeof(client_service));
         if (iResult == SOCKET_ERROR) {
             // LOG_ERROR("connect(...) error: {}", WSAGetLastError())
             close_socket();

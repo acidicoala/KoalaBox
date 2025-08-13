@@ -8,6 +8,7 @@
 #include <spdlog/async.h>
 
 #include <regex>
+#include <spdlog/sinks/stdout_color_sinks-inl.h>
 
 namespace koalabox::logger {
 
@@ -89,9 +90,6 @@ namespace koalabox::logger {
         }
     };
 
-    /**
-     * @param path It is the responsibility of the caller to ensure that all directories in the path exist.
-     */
     KOALABOX_API(void) init_file_logger(const Path& path) {
         instance = spdlog::create_async<SanitizedFileSink>("async", path.string());
 
@@ -105,7 +103,7 @@ namespace koalabox::logger {
     }
 
     KOALABOX_API(void) init_file_logger() {
-        init_file_logger(koalabox::paths::get_log_path());
+        init_file_logger(paths::get_log_path());
     }
 
     KOALABOX_API(String) get_filename(const char* full_path) {

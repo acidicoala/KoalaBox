@@ -13,6 +13,9 @@ namespace koalabox::logger {
      */
     extern std::shared_ptr<spdlog::logger> instance;
 
+    /**
+     * @param path It is the responsibility of the caller to ensure that all directories in the path exist.
+     */
     KOALABOX_API(void) init_file_logger(const Path& path);
 
     KOALABOX_API(void) init_file_logger();

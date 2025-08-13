@@ -6,7 +6,12 @@ set(BUILD_SHARED_LIBS OFF CACHE BOOL "Build DLL instead of static library")
 include(FetchContent)
 
 function(fetch_library LIB USER_REPO TAG)
-    FetchContent_Declare(${LIB} GIT_REPOSITORY "https://github.com/${USER_REPO}" GIT_TAG ${TAG})
+    FetchContent_Declare(
+        ${LIB}
+        GIT_REPOSITORY "https://github.com/${USER_REPO}"
+        GIT_TAG ${TAG}
+        GIT_SHALLOW TRUE
+    )
     FetchContent_MakeAvailable(${LIB})
     target_link_libraries(${PROJECT_NAME} PUBLIC ${LIB})
 endfunction()

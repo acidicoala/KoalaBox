@@ -4,21 +4,23 @@
 
 #include <cpr/cpr.h>
 
-namespace koalabox::http_client {
 
-    void validate_ok_response(const cpr::Response& res) {
-        if (res.status_code != cpr::status::HTTP_OK) {
-            throw util::exception(
-                "Status code: {}, Error code: {},\nResponse headers:\n{}\nBody:\n{}",
-                res.status_code, (int) res.error.code, res.raw_header, res.text
-            );
+namespace koalabox::http_client {
+    namespace {
+        void validate_ok_response(const cpr::Response& res) {
+            if (res.status_code != cpr::status::HTTP_OK) {
+                throw util::exception(
+                    "Status code: {}, Error code: {},\nResponse headers:\n{}\nBody:\n{}",
+                    res.status_code, (int)res.error.code, res.raw_header, res.text
+                );
+            }
         }
     }
 
     KOALABOX_API(Json) get_json(const String& url) {
         LOG_DEBUG("GET {}", url)
 
-        const auto res = cpr::Get(cpr::Url{ url });
+        const auto res = cpr::Get(cpr::Url{url});
 
         validate_ok_response(res);
 
@@ -31,9 +33,9 @@ namespace koalabox::http_client {
         LOG_DEBUG("POST {}", url)
 
         const auto res = cpr::Post(
-            cpr::Url{ url },
-            cpr::Header{{ "content-type", "application/json" }},
-            cpr::Body{ payload.dump() }
+            cpr::Url{url},
+            cpr::Header{{"content-type", "application/json"}},
+            cpr::Body{payload.dump()}
         );
 
         validate_ok_response(res);
@@ -44,7 +46,7 @@ namespace koalabox::http_client {
     }
 
     KOALABOX_API(String) head_etag(const String& url) {
-        const auto res = cpr::Head(cpr::Url{ url });
+        const auto res = cpr::Head(cpr::Url{url});
 
         validate_ok_response(res);
 
@@ -63,7 +65,7 @@ namespace koalabox::http_client {
         LOG_DEBUG(R"(Downloading "{}" to "{}")", url, destination.string())
 
         std::ofstream of(destination, std::ios::binary);
-        cpr::Response res = cpr::Download(of, cpr::Url{ url });
+        cpr::Response res = cpr::Download(of, cpr::Url{url});
 
         validate_ok_response(res);
 
