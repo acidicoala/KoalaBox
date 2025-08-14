@@ -95,8 +95,6 @@ install(
     INCLUDES ${KOALABOX_HEADERS} DESTINATION ${INCLUDE_INSTALL_DIR}
 )
 
-# Exports Generator
+# Tools
 
-add_executable(exports_generator src/exports_generator/exports_generator.cpp)
-
-target_link_libraries(exports_generator PUBLIC KoalaBox)
+add_subdirectory(tools)

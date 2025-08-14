@@ -79,10 +79,8 @@ endfunction()
 
 function(configure_linker_exports)
     cmake_parse_arguments(
-        ARG "UNDECORATE" "FORWARDED_DLL;INPUT_SOURCES_DIR" "INPUT_DLLS;DEP_SOURCES" ${ARGN}
+        ARG "UNDECORATE" "TARGET;FORWARDED_DLL;INPUT_SOURCES_DIR;DLL_FILES_GLOB" "" ${ARGN}
     )
-
-    string(JOIN "|" JOINED_INPUT_DLLS ${ARG_INPUT_DLLS})
 
     set(GENERATED_LINKER_EXPORTS "${CMAKE_CURRENT_BINARY_DIR}/linker_exports.h")
     set(GENERATED_LINKER_EXPORTS "${GENERATED_LINKER_EXPORTS}" PARENT_SCOPE)
@@ -90,18 +88,19 @@ function(configure_linker_exports)
     # Make the linker_exports header available before build
     file(TOUCH ${GENERATED_LINKER_EXPORTS})
 
-    add_custom_command(
-        OUTPUT ${GENERATED_LINKER_EXPORTS}
+    add_custom_target(generate_linker_exports ALL
+        COMMENT "Generate linkers exports for export address table"
         COMMAND exports_generator # Executable path
-        ${ARG_UNDECORATE} # Undecorate boolean
-        ${ARG_FORWARDED_DLL} # Forwarded DLL path
-        "\"${JOINED_INPUT_DLLS}\"" # Input DLLs
+        "${ARG_UNDECORATE}" # Undecorate boolean
+        "${ARG_FORWARDED_DLL}" # Forwarded DLL path
+        "${ARG_DLL_FILES_GLOB}" # Input DLLs
         "${GENERATED_LINKER_EXPORTS}" # Output header
         "${ARG_INPUT_SOURCES_DIR}" # Input sources
+
         DEPENDS exports_generator
-        "${ARG_INPUT_DLLS}"
-        "${ARG_DEP_SOURCES}"
     )
+
+    add_dependencies("${ARG_TARGET}" generate_linker_exports)
 endfunction()
 
 function(install_python)
