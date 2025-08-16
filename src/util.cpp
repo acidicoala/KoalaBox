@@ -25,7 +25,7 @@ namespace koalabox::util {
             );
         }
 
-        LOG_CRITICAL("{}", message)
+        LOG_CRITICAL("{}", message);
 
         error_box(title, message);
 

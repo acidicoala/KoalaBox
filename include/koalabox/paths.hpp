@@ -24,3 +24,5 @@ namespace koalabox::paths {
     KOALABOX_API(Path) get_user_dir();
 
 }
+
+#define TEST_TEST ABC123

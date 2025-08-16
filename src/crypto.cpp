@@ -49,7 +49,7 @@ namespace koalabox::crypto {
             LOG_ERROR(
                 "Error opening file {}. Error: {}",
                 file_path.string(), win_util::get_last_error()
-            )
+            );
 
             return "";
         }
@@ -62,14 +62,14 @@ namespace koalabox::crypto {
             PROV_RSA_FULL,
             CRYPT_VERIFYCONTEXT
         )) {
-            LOG_ERROR("CryptAcquireContext error. Error: {}", win_util::get_last_error())
+            LOG_ERROR("CryptAcquireContext error. Error: {}", win_util::get_last_error());
 
             CloseHandle(hFile);
             return "";
         }
 
         if (!CryptCreateHash(hProv, CALG_MD5, 0, 0, &hHash)) {
-            LOG_ERROR("CryptAcquireContext error. Error: {}", win_util::get_last_error())
+            LOG_ERROR("CryptAcquireContext error. Error: {}", win_util::get_last_error());
 
             CloseHandle(hFile);
             CryptReleaseContext(hProv, 0);
@@ -90,7 +90,7 @@ namespace koalabox::crypto {
             }
 
             if (!CryptHashData(hHash, rgb_file, bytes_read, 0)) {
-                LOG_ERROR("CryptHashData error. Error: {}", win_util::get_last_error())
+                LOG_ERROR("CryptHashData error. Error: {}", win_util::get_last_error());
 
                 CryptReleaseContext(hProv, 0);
                 CryptDestroyHash(hHash);
@@ -100,7 +100,7 @@ namespace koalabox::crypto {
         }
 
         if (!result) {
-            LOG_ERROR("ReadFile error. Error: {}", win_util::get_last_error())
+            LOG_ERROR("ReadFile error. Error: {}", win_util::get_last_error());
 
             CryptReleaseContext(hProv, 0);
             CryptDestroyHash(hHash);
@@ -117,7 +117,7 @@ namespace koalabox::crypto {
                 result_buffer[i * 2 + 1] = rgb_digits[rgb_hash[i] & 0xf];
             }
         } else {
-            LOG_ERROR("ReadFile CryptGetHashParam. Error: {}", win_util::get_last_error())
+            LOG_ERROR("ReadFile CryptGetHashParam. Error: {}", win_util::get_last_error());
         }
 
         CryptDestroyHash(hHash);

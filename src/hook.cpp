@@ -15,11 +15,11 @@ namespace koalabox::hook {
 
         void log_impl(const String& msg, PLH::ErrorLevel level) const {
             if (level == PLH::ErrorLevel::INFO && print_info) {
-                LOG_DEBUG("[Polyhook] {}", msg)
+                LOG_DEBUG("[Polyhook] {}", msg);
             } else if (level == PLH::ErrorLevel::WARN) {
-                LOG_WARN("[Polyhook] {}", msg)
+                LOG_WARN("[Polyhook] {}", msg);
             } else if (level == PLH::ErrorLevel::SEV) {
-                LOG_ERROR("[Polyhook] {}", msg)
+                LOG_ERROR("[Polyhook] {}", msg);
             }
         }
 
@@ -37,10 +37,10 @@ namespace koalabox::hook {
         const uintptr_t callback_function
     ) {
         if (address == callback_function) {
-            LOG_DEBUG("Function '{}' is already hooked. Skipping detour.", function_name)
+            LOG_DEBUG("Function '{}' is already hooked. Skipping detour.", function_name);
         }
 
-        LOG_DEBUG("Hooking '{}' at {} via Detour", function_name, (void*) address)
+        LOG_DEBUG("Hooking '{}' at {} via Detour", function_name, (void*) address);
 
         uint64_t trampoline = 0;
 
@@ -77,7 +77,7 @@ namespace koalabox::hook {
         try {
             hook::detour_or_throw(address, function_name, callback_function);
         } catch (const Exception& ex) {
-            LOG_WARN("Detour error: {}", ex.what())
+            LOG_WARN("Detour error: {}", ex.what());
         }
     }
 
@@ -89,7 +89,7 @@ namespace koalabox::hook {
         try {
             hook::detour_or_throw(module_handle, function_name, callback_function);
         } catch (const Exception& ex) {
-            LOG_WARN("Detour error: {}", ex.what())
+            LOG_WARN("Detour error: {}", ex.what());
         }
     }
 
@@ -122,7 +122,7 @@ namespace koalabox::hook {
         const String& function_name,
         uintptr_t callback_function
     ) {
-        LOG_DEBUG("Hooking '{}' via EAT", function_name)
+        LOG_DEBUG("Hooking '{}' via EAT", function_name);
 
         uint64_t orig_function_address = 0;
         auto* const eat_hook = new PLH::EatHook(
@@ -151,7 +151,7 @@ namespace koalabox::hook {
         try {
             hook::eat_hook_or_throw(module_handle, function_name, callback_function);
         } catch (const Exception& ex) {
-            LOG_WARN("Detour error: {}", ex.what())
+            LOG_WARN("Detour error: {}", ex.what());
         }
     }
 
@@ -166,7 +166,7 @@ namespace koalabox::hook {
             const auto target_func = vtable[ordinal];
 
             if (target_func == callback_function) {
-                LOG_DEBUG("Function '{}' is already hooked. Skipping virtual function swap", function_name)
+                LOG_DEBUG("Function '{}' is already hooked. Skipping virtual function swap", function_name);
                 return;
             }
         }
@@ -174,7 +174,7 @@ namespace koalabox::hook {
         LOG_DEBUG(
             "Hooking '{}' at [[{}]+0x{:X}] via virtual function swap",
             function_name, instance, ordinal * sizeof(void*)
-        )
+        );
 
         const PLH::VFuncMap redirect = {
             {ordinal, callback_function},
@@ -220,7 +220,7 @@ namespace koalabox::hook {
     }
 
     KOALABOX_API(void) init(bool print_info) {
-        LOG_DEBUG("Hooking initialization")
+        LOG_DEBUG("Hooking initialization");
 
         // Initialize polyhook logger
         auto polyhook_logger = std::make_shared<PolyhookLogger>(print_info);

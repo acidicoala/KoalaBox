@@ -52,7 +52,7 @@ namespace koalabox::win_util {
 
         const auto cmd_line = app_name + " " + args;
 
-        LOG_TRACE("Launching {}",cmd_line)
+        LOG_TRACE("Launching {}",cmd_line);
 
         const auto success = CreateProcess(
             NULL,
@@ -177,7 +177,7 @@ namespace koalabox::win_util {
 
                     return TRUE;
                 } catch (const Exception& e) {
-                    LOG_ERROR("EnumResourceNames callback error: {}", e.what())
+                    LOG_ERROR("EnumResourceNames callback error: {}", e.what());
 
                     return FALSE;
                 }

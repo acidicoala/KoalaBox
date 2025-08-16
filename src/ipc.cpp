@@ -13,10 +13,10 @@ namespace koalabox::ipc {
         const Function<Response(const Request& request)>& callback
     ) {
         const auto pipe_name = R"(\\.\pipe\)" + pipe_id;
-        const auto pipe_name_wstr = koalabox::util::to_wstring(pipe_name);
+        const auto pipe_name_wstr = util::to_wstring(pipe_name);
 
         while (true) {
-            LOG_DEBUG("{} -> Awaiting client connections on '{}'", __func__, pipe_name)
+            LOG_DEBUG("{} -> Awaiting client connections on '{}'", __func__, pipe_name);
 
             HANDLE hPipe = CreateNamedPipe(
                 pipe_name_wstr.c_str(),   // pipe name
@@ -35,12 +35,12 @@ namespace koalabox::ipc {
                 LOG_ERROR(
                     "{} -> Error creating a named pipe. Last error: {}",
                     __func__, koalabox::win_util::get_last_error()
-                )
+                );
 
                 break;
             }
 
-            const auto connected = ConnectNamedPipe(hPipe, nullptr) || (::GetLastError() == ERROR_PIPE_CONNECTED);
+            const auto connected = ConnectNamedPipe(hPipe, nullptr) || (GetLastError() == ERROR_PIPE_CONNECTED);
             if (!connected) {
                 // The client could not connect, so close the pipe.
                 CloseHandle(hPipe);
@@ -48,7 +48,7 @@ namespace koalabox::ipc {
             }
 
             try {
-                LOG_DEBUG("{} -> Received client connection", __func__)
+                LOG_DEBUG("{} -> Received client connection", __func__);
 
                 // Loop until done reading
                 char request_buffer[BUFFER_SIZE] = {'\0'};
@@ -63,9 +63,9 @@ namespace koalabox::ipc {
 
                 if (!read_success || bytes_read == 0) {
                     if (GetLastError() == ERROR_BROKEN_PIPE) {
-                        LOG_ERROR("{} -> Client disconnected", __func__)
+                        LOG_ERROR("{} -> Client disconnected", __func__);
                     } else {
-                        LOG_ERROR("{} -> ReadFile error: {}", __func__, koalabox::win_util::get_last_error())
+                        LOG_ERROR("{} -> ReadFile error: {}", __func__, koalabox::win_util::get_last_error());
                     }
                     return;
                 }
@@ -74,13 +74,13 @@ namespace koalabox::ipc {
                 try {
                     const auto json = Json::parse(request_buffer);
 
-                    LOG_DEBUG("{} -> Parsed request json: \n{}", __func__, json.dump(2))
+                    LOG_DEBUG("{} -> Parsed request json: \n{}", __func__, json.dump(2));
 
                     const auto request = json.get<Request>();
 
                     response = callback(request);
                 } catch (const Exception& e) {
-                    LOG_ERROR("{} -> Error processing message: {}", __func__, e.what())
+                    LOG_ERROR("{} -> Error processing message: {}", __func__, e.what());
 
                     response.success = false;
                     response.data["error_message"] = e.what();
@@ -88,7 +88,7 @@ namespace koalabox::ipc {
 
                 const auto response_str = Json(response).dump(2);
 
-                LOG_DEBUG("{} -> Response json: \n{}", __func__, response_str)
+                LOG_DEBUG("{} -> Response json: \n{}", __func__, response_str);
 
                 // Write the reply to the pipe.
                 DWORD bytes_written = 0;
@@ -104,7 +104,7 @@ namespace koalabox::ipc {
                     LOG_ERROR(
                         "{} -> Error writing file. Last error: {}",
                         __func__, koalabox::win_util::get_last_error()
-                    )
+                    );
                     return;
                 }
 
@@ -116,9 +116,9 @@ namespace koalabox::ipc {
                 DisconnectNamedPipe(hPipe);
                 CloseHandle(hPipe);
 
-                LOG_DEBUG("{} -> Finished processing request", __func__)
+                LOG_DEBUG("{} -> Finished processing request", __func__);
             } catch (const Exception& e) {
-                LOG_ERROR("Pipe server error processing client connection: {}", e.what())
+                LOG_ERROR("Pipe server error processing client connection: {}", e.what());
             }
         }
     }

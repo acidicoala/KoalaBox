@@ -4,12 +4,11 @@
 #include <koalabox/paths.hpp>
 
 namespace koalabox::cache {
-
     namespace {
         Json read_cache() {
             return Json::parse(
                 io::read_file(
-                    koalabox::paths::get_cache_path()
+                    paths::get_cache_path()
                 )
             );
         }
@@ -18,7 +17,7 @@ namespace koalabox::cache {
     KOALABOX_API(Json) get(const String& key, const Json& fallback) {
         const auto cache = read_cache();
 
-        LOG_DEBUG("Cache key: \"{}\". Value: \n{}", key, cache.dump(2))
+        LOG_DEBUG("Cache key: \"{}\". Value: \n{}", key, cache.dump(2));
 
         if (cache.contains(key)) {
             return cache.at(key);
@@ -36,7 +35,7 @@ namespace koalabox::cache {
             try {
                 new_cache = read_cache();
             } catch (const Exception& e) {
-                LOG_WARN("Failed to read cache from disk: {}", e.what())
+                LOG_WARN("Failed to read cache from disk: {}", e.what());
             }
 
             new_cache[key] = value;
@@ -45,7 +44,7 @@ namespace koalabox::cache {
 
             return true;
         } catch (const Exception& e) {
-            LOG_ERROR("Failed to write cache to disk: {}", e.what())
+            LOG_ERROR("Failed to write cache to disk: {}", e.what());
 
             return false;
         }

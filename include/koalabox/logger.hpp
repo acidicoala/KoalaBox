@@ -1,41 +1,24 @@
 #pragma once
 
-#include <koalabox/core.hpp>
+#include <filesystem>
 
 #include <spdlog/spdlog.h>
 
+namespace fs = std::filesystem;
 
 namespace koalabox::logger {
-    /**
-     * A global single instance of the logger. Not meant to be used directly,
-     * as it is considered implementation detail. Instead, callers should use
-     * the macros defined below.
-     */
-    extern std::shared_ptr<spdlog::logger> instance;
+    void init_file_logger(const fs::path& path);
 
-    /**
-     * @param path It is the responsibility of the caller to ensure that all directories in the path exist.
-     */
-    KOALABOX_API(void) init_file_logger(const Path& path);
+    void init_console_logger();
 
-    KOALABOX_API(void) init_file_logger();
-
-    KOALABOX_API(String) get_filename(const char* full_path);
+    void shutdown();
 }
 
-#define LOG_MESSAGE(LEVEL, fmt, ...) koalabox::logger::instance->LEVEL( \
-    " {:>3}:{:24} ┃ " fmt, __LINE__, koalabox::logger::get_filename(__FILE__) , __VA_ARGS__ \
-);
+// Use macros for logging to capture source file, line number and function name
 
-// Define trace in a special way to avoid excessive logging in release builds
-#ifdef _DEBUG
-#define LOG_TRACE(fmt, ...) LOG_MESSAGE(trace, fmt, __VA_ARGS__)
-#else
-#define LOG_TRACE(...)
-#endif
-
-#define LOG_DEBUG(fmt, ...)     LOG_MESSAGE(debug, fmt, __VA_ARGS__)
-#define LOG_WARN(fmt, ...)      LOG_MESSAGE(warn, fmt, __VA_ARGS__)
-#define LOG_INFO(fmt, ...)      LOG_MESSAGE(info, fmt, __VA_ARGS__)
-#define LOG_ERROR(fmt, ...)     LOG_MESSAGE(error, fmt, __VA_ARGS__)
-#define LOG_CRITICAL(fmt, ...)  LOG_MESSAGE(critical, fmt, __VA_ARGS__)
+#define LOG_TRACE(...) SPDLOG_TRACE(__VA_ARGS__)
+#define LOG_DEBUG(...) SPDLOG_DEBUG(__VA_ARGS__)
+#define LOG_WARN(...) SPDLOG_WARN(__VA_ARGS__)
+#define LOG_INFO(...) SPDLOG_INFO(__VA_ARGS__)
+#define LOG_ERROR(...) SPDLOG_ERROR(__VA_ARGS__)
+#define LOG_CRITICAL(...) SPDLOG_CRITICAL(__VA_ARGS__)

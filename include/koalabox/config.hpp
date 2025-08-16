@@ -15,11 +15,11 @@ namespace koalabox::config {
         }
 
         try {
-            const auto config_str = koalabox::io::read_file(config_path);
+            const auto config_str = io::read_file(config_path);
 
             const auto config = Json::parse(config_str).get<Config>();
 
-            LOG_DEBUG("Parsed config:\n{}", Json(config).dump(2))
+            LOG_DEBUG("Parsed config:\n{}", Json(config).dump(2));
 
             return config;
         } catch (const Exception& e) {
@@ -29,6 +29,6 @@ namespace koalabox::config {
 
     template<class Config>
     KOALABOX_API(Config) parse() {
-        return parse<Config>(koalabox::paths::get_config_path());
+        return parse<Config>(paths::get_config_path());
     }
 }

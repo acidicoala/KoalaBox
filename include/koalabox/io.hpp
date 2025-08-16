@@ -12,11 +12,5 @@ namespace koalabox::io {
      */
     bool write_file(const Path& file_path, const String& contents) noexcept;
 
-    bool unzip_file(
-        const Path& source_zip,
-        const String& target_file,
-        const Path& destination_dir
-    ) noexcept;
-
     bool is_local_port_in_use(int port);
 }

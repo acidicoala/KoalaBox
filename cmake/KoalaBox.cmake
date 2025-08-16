@@ -1,36 +1,36 @@
-set(CMAKE_CXX_STANDARD 20 CACHE STRING "The C++ standard to use")
+include_guard()
+
+set(CMAKE_CXX_STANDARD 23 CACHE STRING "The C++ standard to use")
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>" CACHE STRING "MSVC Runtime Library")
 set(BUILD_SHARED_LIBS OFF CACHE BOOL "Build DLL instead of static library")
 
-include(FetchContent)
+include("${CMAKE_CURRENT_LIST_DIR}/get_cpm.cmake")
 
-function(fetch_library LIB USER_REPO TAG)
-    FetchContent_Declare(
-        ${LIB}
-        GIT_REPOSITORY "https://github.com/${USER_REPO}"
+function(kb_add_package LIB USER_REPO TAG)
+    CPMAddPackage(
+        NAME ${LIB}
+        GIT_REPOSITORY "https://github.com/${USER_REPO}.git"
         GIT_TAG ${TAG}
-        GIT_SHALLOW TRUE
     )
-    FetchContent_MakeAvailable(${LIB})
-    target_link_libraries(${PROJECT_NAME} PUBLIC ${LIB})
+    target_link_libraries(KoalaBox PUBLIC ${LIB})
 endfunction()
 
 # Sets the variable ${VAR} with val_for_32 on 32-bit build
 # and appends 64 to val_for_32 on 64-bit build, unless it an optional argument
 # is provided.
 function(set_32_and_64 VAR val_for_32)
-    if (DEFINED ARGV2)
+    if(DEFINED ARGV2)
         set(val_for_64 ${ARGV2})
-    else ()
+    else()
         set(val_for_64 "${val_for_32}64")
-    endif ()
+    endif()
 
-    if (CMAKE_SIZEOF_VOID_P EQUAL 8)
+    if(CMAKE_SIZEOF_VOID_P EQUAL 8)
         set(${VAR} ${val_for_64} PARENT_SCOPE)
-    else ()
+    else()
         set(${VAR} ${val_for_32} PARENT_SCOPE)
-    endif ()
+    endif()
 endfunction()
 
 ## Generate version resource file
@@ -50,13 +50,13 @@ function(configure_build_config)
 
     configure_file(KoalaBox/res/build_config.gen.h ${BUILD_CONFIG_HEADER})
 
-    foreach (EXTRA_CONFIG IN LISTS ARGN)
+    foreach(EXTRA_CONFIG IN LISTS ARGN)
         set(GENERATED_EXTRA_CONFIG ${CMAKE_CURRENT_BINARY_DIR}/${EXTRA_CONFIG}.h)
 
         file(TOUCH ${GENERATED_EXTRA_CONFIG})
         configure_file(${CMAKE_CURRENT_SOURCE_DIR}/res/${EXTRA_CONFIG}.gen.h ${GENERATED_EXTRA_CONFIG})
         file(APPEND ${BUILD_CONFIG_HEADER} "#include <${EXTRA_CONFIG}.h>\n")
-    endforeach ()
+    endforeach()
 endfunction()
 
 

@@ -85,7 +85,7 @@ namespace koalabox::patcher {
                 LOG_TRACE(
                     "current_region: {}, mbi.BaseAddress: {}, mbi.RegionSize: {}",
                     (void*) current_region, mbi.BaseAddress, (void*) mbi.RegionSize
-                )
+                );
 
                 const uintptr_t potential_end = current_region + mbi.RegionSize;
                 const auto max_address = std::min(potential_end, terminal_address);
@@ -116,9 +116,9 @@ namespace koalabox::patcher {
         const double elapsed_time = std::chrono::duration<double, std::milli>(t2 - t1).count();
 
         if (address) {
-            LOG_DEBUG("'{}' address: {}. Search time: {:.2f} ms", name, (void*) address, elapsed_time)
+            LOG_DEBUG("'{}' address: {}. Search time: {:.2f} ms", name, (void*) address, elapsed_time);
         } else {
-            LOG_ERROR("Failed to find address of '{}'. Search time: {:.2f} ms", name, elapsed_time)
+            LOG_ERROR("Failed to find address of '{}'. Search time: {:.2f} ms", name, elapsed_time);
         }
 
         return address;

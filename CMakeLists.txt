@@ -1,15 +1,11 @@
 cmake_minimum_required(VERSION 3.24)
 
+include(cmake/KoalaBox.cmake)
+
 project(
     KoalaBox LANGUAGES CXX
     DESCRIPTION "A box of koality tools"
 )
-
-include(cmake/KoalaBox.cmake)
-
-# Configure variables
-
-include(GNUInstallDirs)
 
 set(
     KOALABOX_HEADERS
@@ -29,56 +25,61 @@ set(
     include/koalabox/paths.hpp
     include/koalabox/util.hpp
     include/koalabox/win_util.hpp
+    include/koalabox/zip.hpp
 )
 
-set(
-    KOALABOX_SOURCES
-    src/koalabox/cache.cpp
-    src/koalabox/core.cpp
-    src/koalabox/crypto.cpp
-    src/koalabox/dll_monitor.cpp
-    src/koalabox/globals.cpp
-    src/koalabox/logger.cpp
-    src/koalabox/hook.cpp
-    src/koalabox/http_client.cpp
-    src/koalabox/io.cpp
-    src/koalabox/ipc.cpp
-    src/koalabox/loader.cpp
-    src/koalabox/ntapi.hpp
-    src/koalabox/patcher.cpp
-    src/koalabox/paths.cpp
-    src/koalabox/util.cpp
-    src/koalabox/win_util.cpp
+add_library(KoalaBox OBJECT
+    src/cache.cpp
+    src/core.cpp
+    src/crypto.cpp
+    src/dll_monitor.cpp
+    src/globals.cpp
+    src/logger.cpp
+    src/hook.cpp
+    src/http_client.cpp
+    src/io.cpp
+    src/ipc.cpp
+    src/loader.cpp
+    src/patcher.cpp
+    src/paths.cpp
+    src/util.cpp
+    src/win_util.cpp
+    src/zip.cpp
 )
 
-add_library(KoalaBox OBJECT ${KOALABOX_HEADERS} ${KOALABOX_SOURCES})
+# Configure variables
+
+include(GNUInstallDirs) # I think this should be after add_library?
 
 # Configure dependencies
 
-## https://github.com/libcpr/cpr/
-set(CURL_USE_LIBPSL OFF)
-set(CPR_USE_SYSTEM_LIB_PSL ON)
+kb_add_package(miniz richgel999/miniz c883286f1a6443720e7705450f59e579a4bbb8e2)
+
+set(CURL_USE_LIBPSL OFF) # We don't need support for Public Suffix List
+set(CPR_USE_SYSTEM_LIB_PSL ON) # CPR requires meson if not using system PSL
 set(ENABLE_CURL_MANUAL OFF)
 set(BUILD_LIBCURL_DOCS OFF)
 set(BUILD_EXAMPLES OFF)
-fetch_library(cpr libcpr/cpr 1.12.0)
+kb_add_package(cpr libcpr/cpr 1.12.0)
 
 ## https://github.com/nlohmann/json
-fetch_library(nlohmann_json nlohmann/json v3.12.0)
+kb_add_package(nlohmann_json nlohmann/json v3.12.0)
 
 ## https://github.com/stevemk14ebr/PolyHook_2_0
 set(POLYHOOK_FEATURE_INLINENTD OFF)
 set(POLYHOOK_FEATURE_EXCEPTION OFF)
-fetch_library(PolyHook_2 stevemk14ebr/PolyHook_2_0 298d56210b9d9e66cde8f96481d6053925c6ae15)
+kb_add_package(PolyHook_2 stevemk14ebr/PolyHook_2_0 298d56210b9d9e66cde8f96481d6053925c6ae15)
 
 ## https://github.com/gabime/spdlog
-fetch_library(spdlog gabime/spdlog v1.15.3)
-
-## https://github.com/richgel999/miniz
-fetch_library(miniz richgel999/miniz c883286f1a6443720e7705450f59e579a4bbb8e2)
+if($<CONFIG:Debug>)
+    add_compile_definitions(SPDLOG_ACTIVE_LEVEL=SPDLOG_LEVEL_TRACE)
+else()
+    add_compile_definitions(SPDLOG_ACTIVE_LEVEL=SPDLOG_LEVEL_DEBUG)
+endif()
+kb_add_package(spdlog gabime/spdlog v1.15.3)
 
 ## WinReg - https://github.com/GiovanniDicanio/WinReg
-fetch_library(WinReg acidicoala/WinReg b86786c6845a4a03a2e66a456cd65ec77069a7c4)
+kb_add_package(WinReg acidicoala/WinReg b86786c6845a4a03a2e66a456cd65ec77069a7c4)
 
 # Setup KoalaBox exports
 target_include_directories(
@@ -87,14 +88,12 @@ target_include_directories(
     "$<INSTALL_INTERFACE:include>"
 )
 
-set(PCH_PATH ${CMAKE_CURRENT_SOURCE_DIR}/include/koalabox/pch.hpp)
+set(PCH_PATH ${CMAKE_CURRENT_SOURCE_DIR}/src/pch.hpp)
 target_precompile_headers(KoalaBox PUBLIC "$<$<COMPILE_LANGUAGE:CXX>:${PCH_PATH}>")
 
 install(
     TARGETS KoalaBox DESTINATION ${LIB_INSTALL_DIR}
     INCLUDES ${KOALABOX_HEADERS} DESTINATION ${INCLUDE_INSTALL_DIR}
 )
-
-# Tools
 
 add_subdirectory(tools)
