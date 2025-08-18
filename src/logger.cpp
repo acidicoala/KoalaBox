@@ -1,14 +1,12 @@
 #include <regex>
 
-#include <spdlog/async.h>
-#include <spdlog/common.h>
-#include <spdlog/details/log_msg.h>
-#include <spdlog/sinks/stdout_sinks-inl.h>
-#include <spdlog/spdlog.h>
-
 #include <koalabox/logger.hpp>
 #include <koalabox/paths.hpp>
+
+// It's important to include them after koalabox/logger.hpp
+// to avoid SPDLOG_ACTIVE_LEVEL redefinitions
 #include <spdlog/sinks/basic_file_sink.h>
+#include <spdlog/sinks/stdout_sinks.h>
 
 namespace {
     namespace fs = std::filesystem;
@@ -29,7 +27,13 @@ namespace {
         // %e - Millisecond part of the current second 000-999
         // %v - The actual text to log
 
-        // This will include annoyting things like `anonymous-namespace'::
+        // align            meaning                     example result
+        // %<width>!<flag>  Right align or truncate	%3!l	"inf"
+        // %-<width>!<flag> Left align or truncate	%-2!l	"in"
+        // %=<width>!<flag> Center align or truncate    %=1!l	"i"
+
+        // Functions names unfortunately have to be excluded because they
+        // contain annoying prefixes like `anonymous-namespace::`
         // constexpr auto src_func_name = "%-32!!";
 
         constexpr auto src_file_name = "%32!s";
@@ -42,7 +46,6 @@ namespace {
     class UsernameFilterFormatter final : public spdlog::formatter {
       public:
         void format(const spdlog::details::log_msg& msg, spdlog::memory_buf_t& dest) override {
-            std::string original_msg(msg.payload.begin(), msg.payload.end());
             static const std::regex username_regex(
                 R"(\w:[/\\]Users[/\\]([^/\\]+))", std::regex_constants::icase
             );

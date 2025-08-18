@@ -1,4 +1,3 @@
-
 #include <deque>
 #include <fstream>
 #include <iostream>
@@ -6,10 +5,11 @@
 
 #include <glob/glob.h>
 
-#include "koalabox/io.hpp"
-#include "koalabox/parser.hpp"
+#include <koalabox/io.hpp>
 #include <koalabox/loader.hpp>
 #include <koalabox/logger.hpp>
+#include <koalabox/parser.hpp>
+#include <koalabox/str.hpp>
 #include <koalabox/util.hpp>
 #include <koalabox/win_util.hpp>
 
@@ -107,7 +107,7 @@ int wmain(const int argc, const wchar_t* argv[]) { // NOLINT(*-use-internal-link
         koalabox::logger::init_console_logger();
 
         for (int i = 0; i < argc; i++) {
-            LOG_INFO("Arg #{} = '{}'", i, koalabox::util::to_string(argv[i]));
+            LOG_INFO("Arg #{} = '{}'", i, koalabox::str::to_str(argv[i]));
         }
 
         if (argc != 5 && argc != 6) {
@@ -116,9 +116,9 @@ int wmain(const int argc, const wchar_t* argv[]) { // NOLINT(*-use-internal-link
             exit(1);
         }
 
-        const auto undecorate = parseBoolean(kb::util::to_string(argv[1]));
-        const auto forwarded_dll_name = kb::util::to_string(argv[2]);
-        const auto input_dll_glob = kb::util::to_string(argv[3]);
+        const auto undecorate = parseBoolean(kb::str::to_str(argv[1]));
+        const auto forwarded_dll_name = kb::str::to_str(argv[2]);
+        const auto input_dll_glob = kb::str::to_str(argv[3]);
         const auto header_output_path = fs::path(argv[4]);
 
         // Input sources are optional because Koaloader doesn't have them.

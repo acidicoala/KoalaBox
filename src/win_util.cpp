@@ -1,6 +1,7 @@
 #include <koalabox/win_util.hpp>
 #include <koalabox/util.hpp>
 #include <koalabox/logger.hpp>
+#include <koalabox/str.hpp>
 
 #pragma comment(lib, "Version.lib")
 
@@ -13,7 +14,7 @@ namespace koalabox::win_util {
 
     namespace {
         Vector<uint8_t> get_file_version_info_or_throw(const HMODULE& module_handle) {
-            const auto file_name = util::to_wstring(get_module_file_name_or_throw(module_handle));
+            const auto file_name = str::to_wstr(get_module_file_name_or_throw(module_handle));
 
             DWORD version_handle = 0;
             const DWORD version_size = GetFileVersionInfoSize(file_name.c_str(), &version_handle);
@@ -56,7 +57,7 @@ namespace koalabox::win_util {
 
         const auto success = CreateProcess(
             NULL,
-            WSTR(cmd_line).data(),
+            str::to_wstr(cmd_line).data(),
             NULL,
             NULL,
             NULL,
@@ -95,7 +96,7 @@ namespace koalabox::win_util {
             nullptr
         );
 
-        return util::to_string(buffer);
+        return str::to_str(buffer);
     }
 
     KOALABOX_API(String) get_last_error() {
@@ -108,7 +109,7 @@ namespace koalabox::win_util {
         const auto length = ::GetModuleFileName(module_handle, buffer, buffer_size);
 
         return (length > 0 and length < buffer_size)
-            ? util::to_string(buffer)
+            ? str::to_str(buffer)
             : throw util::exception(
                 "Failed to get a file name of the given module handle: {}. Length: {}",
                 fmt::ptr(module_handle), length
@@ -121,7 +122,7 @@ namespace koalabox::win_util {
 
     KOALABOX_API(HMODULE) get_module_handle_or_throw(LPCSTR module_name) {
         auto* const handle = module_name
-            ? ::GetModuleHandle(util::to_wstring(module_name).c_str())
+            ? ::GetModuleHandle(str::to_wstr(module_name).c_str())
             : ::GetModuleHandle(nullptr);
 
         return handle ? handle : throw util::exception(

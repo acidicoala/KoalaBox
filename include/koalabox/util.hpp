@@ -5,8 +5,6 @@
 #include <spdlog/fmt/fmt.h>
 
 #define KException koalabox::util::exception
-#define STR koalabox::util::to_string
-#define WSTR koalabox::util::to_wstring
 
 namespace koalabox::util {
 
@@ -20,10 +18,6 @@ namespace koalabox::util {
 
         panic(message);
     }
-
-    KOALABOX_API(String) to_string(const WideString& wstr);
-
-    KOALABOX_API(WideString) to_wstring(const String& str);
 
     template<typename... Args>
     KOALABOX_API(Exception) exception(fmt::format_string<Args...> fmt, Args&& ...args) {

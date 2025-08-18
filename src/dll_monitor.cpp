@@ -6,9 +6,13 @@
 #include <koalabox/util.hpp>
 #include <koalabox/win_util.hpp>
 
-namespace koalabox::dll_monitor {
+namespace {
 
     PVOID cookie = nullptr;
+
+}
+
+namespace koalabox::dll_monitor {
 
     KOALABOX_API(void)
     init_listener(
@@ -49,15 +53,13 @@ namespace koalabox::dll_monitor {
                 return;
             }
 
-            const auto base_dll_name =
-                util::to_string(NotificationData->Loaded.BaseDllName->Buffer);
-            const auto full_dll_name =
-                util::to_string(NotificationData->Loaded.FullDllName->Buffer);
+            const auto base_dll_name = str::to_str(NotificationData->Loaded.BaseDllName->Buffer);
+            const auto full_dll_name = str::to_str(NotificationData->Loaded.FullDllName->Buffer);
 
             auto* const data = static_cast<CallbackData*>(context);
 
             for (const auto& library_name : data->target_library_names) {
-                if (koalabox::str::eq(library_name + ".dll", base_dll_name)) {
+                if (str::eq(library_name + ".dll", base_dll_name)) {
                     LOG_DEBUG("Library '{}' has been loaded", library_name);
 
                     auto* const loaded_module = win_util::get_module_handle(full_dll_name.c_str());

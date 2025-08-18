@@ -19,11 +19,6 @@
     static std::once_flag _flag; \
     std::call_once(_flag, [&]() FUNC_BODY);
 
-#define NEW_THREAD(FUNC_BODY) \
-    std::thread( \
-        [=]() FUNC_BODY \
-    ).detach();
-
 using Mutex = std::mutex;
 using MutexLockGuard = std::lock_guard<Mutex>;
 using String = std::string;
@@ -38,32 +33,3 @@ template<class K, class V> using Map = std::map<K, V>;
 template<class Fn> using Function = std::function<Fn>;
 
 constexpr auto BITNESS = 8 * sizeof(void*);
-
-// Useful for operators that modify first operand
-template<typename T, typename U>
-struct MutableOperatorProxy {
-private:
-    T& lhs;
-    const U op;
-public:
-    explicit MutableOperatorProxy(T& lhs, const U& op) : lhs(lhs), op(op) {}
-
-    T& operator*() const { return lhs; }
-};
-
-
-/// Vector operators
-
-#define DEFINE_TEMPLATED_OPERATOR(TYPE, OP) \
-const struct OP##_t {} OP; \
-template<typename T> \
-MutableOperatorProxy<T, OP##_t> operator<(T& lhs, const OP##_t& op) { \
-    return MutableOperatorProxy<T, OP##_t>(lhs, op); \
-} \
-template<typename T> \
-void operator>(const MutableOperatorProxy<TYPE<T>, OP##_t>& lhs, const TYPE<T>& rhs) { \
-    (*lhs).insert((*lhs).end(), rhs.begin(), rhs.end()); \
-}
-
-// TODO: Replace with normal function
-DEFINE_TEMPLATED_OPERATOR(Vector, append)

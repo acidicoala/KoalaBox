@@ -1,15 +1,17 @@
+#include <regex>
+
 #include <koalabox/loader.hpp>
+#include <koalabox/str.hpp>
 #include <koalabox/util.hpp>
 #include <koalabox/win_util.hpp>
 #include <koalabox/logger.hpp>
-#include <regex>
 
 namespace koalabox::loader {
 
     KOALABOX_API(Path) get_module_dir(const HMODULE& handle) {
         const auto file_name = win_util::get_module_file_name(handle);
 
-        const auto module_path = Path(util::to_wstring(file_name));
+        const auto module_path = Path(str::to_wstr(file_name));
 
         return module_path.parent_path();
     }

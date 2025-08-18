@@ -1,3 +1,4 @@
+#include <koalabox/str.hpp>
 #include <koalabox/ipc.hpp>
 #include <koalabox/logger.hpp>
 #include <koalabox/util.hpp>
@@ -13,7 +14,7 @@ namespace koalabox::ipc {
         const Function<Response(const Request& request)>& callback
     ) {
         const auto pipe_name = R"(\\.\pipe\)" + pipe_id;
-        const auto pipe_name_wstr = util::to_wstring(pipe_name);
+        const auto pipe_name_wstr = str::to_wstr(pipe_name);
 
         while (true) {
             LOG_DEBUG("{} -> Awaiting client connections on '{}'", __func__, pipe_name);
