@@ -1,8 +1,13 @@
+
+#include <deque>
 #include <fstream>
+#include <iostream>
 #include <regex>
 
 #include <glob/glob.h>
 
+#include "koalabox/io.hpp"
+#include "koalabox/parser.hpp"
 #include <koalabox/loader.hpp>
 #include <koalabox/logger.hpp>
 #include <koalabox/util.hpp>
@@ -13,37 +18,43 @@ namespace kb = koalabox;
 namespace {
     namespace fs = std::filesystem;
 
+    std::string preprocess_source_file(const std::string& source_file_content) {
+        const std::regex dll_export_regex(R"(DLL_EXPORT\(\s*([^)]+?)\s*\))");
+        return std::regex_replace(source_file_content, dll_export_regex, "$1");
+    }
+
     /**
      * Returns a list of functions parsed from the sources
      * in a given directory. Edge cases: Comments
      */
-    Set<String> get_implemented_functions(const Path& path) {
-        Set<String> implemented_functions;
+    auto get_defined_functions(const fs::path& path) {
+        std::set<std::string> declared_functions;
 
-        for (const auto& p : std::filesystem::recursive_directory_iterator(path)) {
-            const auto& file_path = p.path();
+        for (const auto& entry : std::filesystem::recursive_directory_iterator(path)) {
+            const auto& file_path = entry.path();
+            if (file_path.extension() != ".cpp") {
+                continue;
+            }
 
-            std::ifstream ifs(file_path);
-            std::string file_content(std::istreambuf_iterator{ifs}, {});
+            LOG_DEBUG("Processing source file: {}", file_path.string());
 
-            // TODO: Use tree-sitter instead of regex
-            // Matches function name in the 1st group
-            static const std::regex func_name_pattern(
-                R"(\s*DLL_EXPORT\([\w|\s]+\**\)\s*(\w+)\s*\()"
+            const auto file_content = koalabox::io::read_file(file_path);
+
+            const auto processed_source = preprocess_source_file(file_content);
+
+            const auto query_results = koalabox::parser::query(
+                processed_source,
+                // language=regexp
+                std::regex(R"((/\w+)*/function_declarator/identifier)")
             );
-            std::smatch match;
-            while (regex_search(file_content, match, func_name_pattern)) {
-                if (const auto func_name = match.str(1);
-                    not implemented_functions.contains(func_name)) {
-                    implemented_functions.insert(func_name);
-                    LOG_INFO("Implemented function: `{}`", func_name);
-                }
 
-                file_content = match.suffix();
+            for (const auto& [_, value] : query_results) {
+                LOG_DEBUG("Found function: {}", value);
+                declared_functions.insert(std::string(value));
             }
         }
 
-        return implemented_functions;
+        return declared_functions;
     }
 
     bool parseBoolean(const String& bool_str) {
@@ -65,7 +76,7 @@ namespace {
         const auto dll_path_list = glob::glob(dll_files_glob);
         LOG_INFO("Found {} DLL files", dll_path_list.size());
 
-        for (auto& dll_path : dll_path_list) {
+        for (const auto& dll_path : dll_path_list) {
             if (not fs::exists(dll_path)) {
                 continue;
             }
@@ -108,14 +119,14 @@ int wmain(const int argc, const wchar_t* argv[]) { // NOLINT(*-use-internal-link
         const auto undecorate = parseBoolean(kb::util::to_string(argv[1]));
         const auto forwarded_dll_name = kb::util::to_string(argv[2]);
         const auto input_dll_glob = kb::util::to_string(argv[3]);
-        const auto header_output_path = Path(argv[4]);
+        const auto header_output_path = fs::path(argv[4]);
 
         // Input sources are optional because Koaloader doesn't have them.
-        const auto sources_input_path = Path(argc == 6 ? argv[5] : L"");
+        const auto sources_input_path = fs::path(argc == 6 ? argv[5] : L"");
 
-        const auto implemented_functions = sources_input_path.empty()
-                                               ? Set<String>()
-                                               : get_implemented_functions(sources_input_path);
+        const auto defined_functions = sources_input_path.empty()
+                                           ? std::set<std::string>()
+                                           : get_defined_functions(sources_input_path);
 
         const auto dll_exports = get_dll_exports(input_dll_glob, undecorate);
 
@@ -132,13 +143,13 @@ int wmain(const int argc, const wchar_t* argv[]) { // NOLINT(*-use-internal-link
         // Add header guard
         export_file << "#pragma once" << std::endl << std::endl;
 
-        // Iterate over exported functions to exclude implemented ones
         for (const auto& [function_name, decorated_function_name] : dll_exports) {
-            auto comment = implemented_functions.contains(function_name);
+            // Comment out exports that we have defined
+            const std::string comment = defined_functions.contains(function_name) ? "//" : "";
 
-            const String line = fmt::format(
-                R"({}#pragma comment(linker, "/export:{}={}.{}"))", comment ? "// " : "",
-                decorated_function_name, forwarded_dll_name, decorated_function_name
+            const auto line = std::format(
+                R"({}#pragma comment(linker, "/export:{}={}.{}"))", //
+                comment, decorated_function_name, forwarded_dll_name, decorated_function_name
             );
 
             export_file << line << std::endl;

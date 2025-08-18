@@ -76,7 +76,7 @@ namespace koalabox::crypto {
             return "";
         }
 
-        BYTE rgb_file[buffer_size];
+        auto* rgb_file = new BYTE[buffer_size];
         DWORD bytes_read = 0;
         while ((result = ReadFile(
             hFile,
@@ -98,6 +98,7 @@ namespace koalabox::crypto {
                 return "";
             }
         }
+        delete[] rgb_file;
 
         if (!result) {
             LOG_ERROR("ReadFile error. Error: {}", win_util::get_last_error());

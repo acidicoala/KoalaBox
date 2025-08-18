@@ -29,6 +29,7 @@ namespace koalabox::util {
 
         error_box(title, message);
 
+        logger::shutdown();
         exit(static_cast<int>(last_error));
     }
 

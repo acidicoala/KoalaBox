@@ -5,6 +5,7 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>" CACHE STRING "MSVC Runtime Library")
 set(BUILD_SHARED_LIBS OFF CACHE BOOL "Build DLL instead of static library")
 
+set(CPM_SOURCE_CACHE "${CMAKE_SOURCE_DIR}/build/.cache" CACHE STRING "CPM.cmake source cache")
 include("${CMAKE_CURRENT_LIST_DIR}/get_cpm.cmake")
 
 function(kb_add_package LIB USER_REPO TAG)

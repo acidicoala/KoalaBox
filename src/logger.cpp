@@ -36,7 +36,7 @@ namespace {
         constexpr auto src_line_num = "%-4!#";
         constexpr auto timestamp = "%H:%M:%S.%e";
 
-        return std::format("%L|{}|{}:{}│%v", timestamp, src_file_name, src_line_num);
+        return std::format("%L|{}|{}:{}|%v", timestamp, src_file_name, src_line_num);
     }
 
     class UsernameFilterFormatter final : public spdlog::formatter {

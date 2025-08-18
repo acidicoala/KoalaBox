@@ -21,8 +21,10 @@ set(
     include/koalabox/io.hpp
     include/koalabox/ipc.hpp
     include/koalabox/loader.hpp
+    include/koalabox/parser.hpp
     include/koalabox/patcher.hpp
     include/koalabox/paths.hpp
+    include/koalabox/str.hpp
     include/koalabox/util.hpp
     include/koalabox/win_util.hpp
     include/koalabox/zip.hpp
@@ -30,7 +32,6 @@ set(
 
 add_library(KoalaBox OBJECT
     src/cache.cpp
-    src/core.cpp
     src/crypto.cpp
     src/dll_monitor.cpp
     src/globals.cpp
@@ -40,18 +41,16 @@ add_library(KoalaBox OBJECT
     src/io.cpp
     src/ipc.cpp
     src/loader.cpp
+    src/parser.cpp
     src/patcher.cpp
     src/paths.cpp
+    src/str.cpp
     src/util.cpp
     src/win_util.cpp
     src/zip.cpp
 )
 
-# Configure variables
-
-include(GNUInstallDirs) # I think this should be after add_library?
-
-# Configure dependencies
+### Configure dependencies
 
 kb_add_package(miniz richgel999/miniz c883286f1a6443720e7705450f59e579a4bbb8e2)
 
@@ -71,17 +70,30 @@ set(POLYHOOK_FEATURE_EXCEPTION OFF)
 kb_add_package(PolyHook_2 stevemk14ebr/PolyHook_2_0 298d56210b9d9e66cde8f96481d6053925c6ae15)
 
 ## https://github.com/gabime/spdlog
-if($<CONFIG:Debug>)
-    add_compile_definitions(SPDLOG_ACTIVE_LEVEL=SPDLOG_LEVEL_TRACE)
-else()
-    add_compile_definitions(SPDLOG_ACTIVE_LEVEL=SPDLOG_LEVEL_DEBUG)
-endif()
 kb_add_package(spdlog gabime/spdlog v1.15.3)
 
 ## WinReg - https://github.com/GiovanniDicanio/WinReg
 kb_add_package(WinReg acidicoala/WinReg b86786c6845a4a03a2e66a456cd65ec77069a7c4)
 
-# Setup KoalaBox exports
+## C++ parser needs to be installed in a special way
+CPMAddPackage(
+    NAME cpp-tree-sitter
+    GIT_REPOSITORY https://github.com/nsumner/cpp-tree-sitter.git
+    # The latest commit includes a fix for MSVC, which is not present in the latest release
+    GIT_TAG 9cd7f3c9de9fc6d19bc982c6772fcd7a39e5797a
+)
+
+# Downloads a tree-sitter grammar from github
+# and makes it available as a cmake library target.
+add_grammar_from_repo(tree-sitter-cpp                  # Library name
+    https://github.com/tree-sitter/tree-sitter-cpp.git # Repository URL
+    0.23.4                                             # Version tag
+)
+
+target_link_libraries(KoalaBox PUBLIC cpp-tree-sitter tree-sitter-cpp)
+
+### Setup KoalaBox exports
+
 target_include_directories(
     KoalaBox PUBLIC
     "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include;${CMAKE_CURRENT_SOURCE_DIR}/src>"
@@ -90,10 +102,5 @@ target_include_directories(
 
 set(PCH_PATH ${CMAKE_CURRENT_SOURCE_DIR}/src/pch.hpp)
 target_precompile_headers(KoalaBox PUBLIC "$<$<COMPILE_LANGUAGE:CXX>:${PCH_PATH}>")
-
-install(
-    TARGETS KoalaBox DESTINATION ${LIB_INSTALL_DIR}
-    INCLUDES ${KOALABOX_HEADERS} DESTINATION ${INCLUDE_INSTALL_DIR}
-)
 
 add_subdirectory(tools)

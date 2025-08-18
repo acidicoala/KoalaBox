@@ -1,10 +1,12 @@
+#include "koalabox/str.hpp"
+
 #include <koalabox/hook.hpp>
 #include <koalabox/logger.hpp>
 #include <koalabox/util.hpp>
 #include <koalabox/win_util.hpp>
-#include <polyhook2/Virtuals/VFuncSwapHook.hpp>
-#include <polyhook2/PE/EatHook.hpp>
 #include <polyhook2/Detour/NatDetour.hpp>
+#include <polyhook2/PE/EatHook.hpp>
+#include <polyhook2/Virtuals/VFuncSwapHook.hpp>
 
 namespace koalabox::hook {
 
@@ -232,6 +234,6 @@ namespace koalabox::hook {
 
         const auto self_name = Path(module_path).stem().string();
 
-        return self_name < not_equals > orig_library_name;
+        return not str::eq(self_name, orig_library_name);
     }
 }
