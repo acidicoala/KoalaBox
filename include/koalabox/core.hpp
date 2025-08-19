@@ -6,6 +6,7 @@
 #include <mutex>
 #include <functional>
 
+#define JSON_DIAGNOSTICS 1
 #include <nlohmann/json.hpp>
 
 #define SUPPRESS_UNUSED(PARAM) (void) PARAM;

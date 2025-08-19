@@ -13,11 +13,13 @@ namespace koalabox::util {
     }
 
     [[noreturn]] KOALABOX_API(void) panic(String message) {
-        const auto title = fmt::format("[{}] Panic!", globals::get_project_name(false));
+        const auto title = std::format("[{}] Panic!", globals::get_project_name(false));
+
+        OutputDebugString(str::to_wstr(message).c_str());
 
         const auto last_error = ::GetLastError();
         if (last_error != 0) {
-            message += fmt::format(
+            message += std::format(
                 "\n———————— Windows Last Error ————————\nCode: {}\nMessage: {}", last_error,
                 win_util::format_message(last_error)
             );
