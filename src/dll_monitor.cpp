@@ -14,24 +14,24 @@ namespace {
 
 namespace koalabox::dll_monitor {
 
-    KOALABOX_API(void)
-    init_listener(
+    KOALABOX_API(void) init_listener( //
         const String& target_library_name,
         const Function<void(const HMODULE& module_handle)>& callback
     ) {
         init_listener(
             Vector{target_library_name},
-            [=](const HMODULE& module_handle, const String&) { callback(module_handle); }
+            [=](const HMODULE& module_handle, const std::string&) { callback(module_handle); }
         );
     }
 
-    KOALABOX_API(void)
-    init_listener(
-        const Vector<String>& target_library_names,
-        const Function<void(const HMODULE& module_handle, const String& library_name)>& callback
+    KOALABOX_API(void) init_listener( //
+        const std::vector<std::string>& target_library_names,
+        const std::function<
+            void(const HMODULE& module_handle, const std::string& library_name)
+        >& callback
     ) {
         if (cookie) {
-            LOG_ERROR("Already initialized");
+            LOG_ERROR("DLL monitor already initialized");
             return;
         }
 
@@ -39,15 +39,15 @@ namespace koalabox::dll_monitor {
 
         LOG_DEBUG("Initializing DLL monitor");
 
-        struct CallbackData {
+        struct callback_data {
             Vector<String> target_library_names;
-            Function<void(const HMODULE& module_handle, const String& library_name)> callback;
+            Function<void(const HMODULE& module_handle, const std::string& library_name)> callback;
         };
 
         // Pre-process the notification
-        const auto notification_listener = [](ULONG NotificationReason,
-                                              PLDR_DLL_NOTIFICATION_DATA NotificationData,
-                                              PVOID context) {
+        const auto notification_listener = [](const ULONG NotificationReason,
+                                              const PLDR_DLL_NOTIFICATION_DATA NotificationData,
+                                              const PVOID context) {
             // Only interested in load events
             if (NotificationReason != LDR_DLL_NOTIFICATION_REASON_LOADED) {
                 return;
@@ -56,9 +56,12 @@ namespace koalabox::dll_monitor {
             const auto base_dll_name = str::to_str(NotificationData->Loaded.BaseDllName->Buffer);
             const auto full_dll_name = str::to_str(NotificationData->Loaded.FullDllName->Buffer);
 
-            auto* const data = static_cast<CallbackData*>(context);
+            LOG_DEBUG("DLL loaded: '{}'", full_dll_name);
 
-            for (const auto& library_name : data->target_library_names) {
+            for  ( //
+                const auto* data = static_cast<callback_data*>(context);
+                const auto& library_name : data->target_library_names
+            ) {
                 if (str::eq(library_name + ".dll", base_dll_name)) {
                     LOG_DEBUG("Library '{}' has been loaded", library_name);
 
@@ -72,7 +75,7 @@ namespace koalabox::dll_monitor {
             // delete data;
         };
 
-        auto* const context = new CallbackData{
+        auto* const context = new callback_data{
             .target_library_names = target_library_names,
             .callback = callback,
         };
@@ -92,27 +95,29 @@ namespace koalabox::dll_monitor {
 
         // Then check if the target dll is already loaded
         for (const auto& library_name : target_library_names) {
-            try {
-                auto* const original_library =
-                    win_util::get_module_handle_or_throw(library_name.c_str());
+            auto* original_library = GetModuleHandle(str::to_wstr(library_name).c_str());
 
-                LOG_DEBUG("Library is already loaded: '{}'", library_name);
-
-                callback(original_library, library_name);
-            } catch (...) {
+            if (not original_library) {
+                continue;
             }
+
+            LOG_DEBUG("Library is already loaded: '{}'", library_name);
+
+            callback(original_library, library_name);
         }
     }
 
     KOALABOX_API(void) shutdown_listener() {
-        static const auto LdrUnregisterDllNotification =
-            reinterpret_cast<_LdrUnregisterDllNotification>(win_util::get_proc_address(
-                win_util::get_module_handle("ntdll"), "LdrUnregisterDllNotification"
-            ));
+        std::thread([] {
+            static const auto LdrUnregisterDllNotification =
+                reinterpret_cast<_LdrUnregisterDllNotification>(win_util::get_proc_address(
+                    win_util::get_module_handle("ntdll"), "LdrUnregisterDllNotification"
+                ));
 
-        LdrUnregisterDllNotification(cookie);
-        cookie = nullptr;
+            LdrUnregisterDllNotification(cookie);
+            cookie = nullptr;
 
-        LOG_DEBUG("DLL monitor was successfully shut down");
+            LOG_DEBUG("DLL monitor was successfully shut down");
+        }).detach();
     }
 }

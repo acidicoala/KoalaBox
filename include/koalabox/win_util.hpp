@@ -33,6 +33,11 @@ namespace koalabox::win_util {
 
     KOALABOX_API(String) get_module_version_or_throw(const HMODULE& module_handle);
 
+    KOALABOX_API(PIMAGE_SECTION_HEADER) get_pe_section_or_throw(
+        const HMODULE& module_handle,
+        const String& section_name
+    );
+
     KOALABOX_API(String) get_pe_section_data_or_throw(
         const HMODULE& module_handle,
         const String& section_name

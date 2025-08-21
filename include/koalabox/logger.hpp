@@ -10,10 +10,8 @@
 
 #include <spdlog/spdlog.h>
 
-namespace fs = std::filesystem;
-
 namespace koalabox::logger {
-    void init_file_logger(const fs::path& path);
+    void init_file_logger(const std::filesystem::path& path);
 
     void init_console_logger();
 

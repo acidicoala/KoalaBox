@@ -8,16 +8,19 @@
  */
 namespace koalabox::dll_monitor {
 
-    KOALABOX_API(void) init_listener(
-        const Vector<String>& target_library_names,
-        const Function<void(const HMODULE& module_handle, const String& library_name)>& callback
+    void init_listener(
+        const std::vector<std::string>& target_library_names,
+        const std::function<void( //
+            const HMODULE& module_handle,
+            const std::string& library_name
+        )>& callback
     );
 
-    KOALABOX_API(void) init_listener(
-        const String& target_library_name,
-        const Function<void(const HMODULE& module_handle)>& callback
+    void init_listener(
+        const std::string& target_library_name,
+        const std::function<void(const HMODULE& module_handle)>& callback
     );
 
-    KOALABOX_API(void) shutdown_listener();
+    void shutdown_listener();
 
 }

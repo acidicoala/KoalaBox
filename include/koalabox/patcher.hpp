@@ -17,4 +17,11 @@ namespace koalabox::patcher {
         const String& pattern
     );
 
+    KOALABOX_API(uintptr_t) find_pattern_address(
+        HMODULE module_handle,
+        const String& section_name,
+        const String& name,
+        const String& pattern
+    );
+
 }

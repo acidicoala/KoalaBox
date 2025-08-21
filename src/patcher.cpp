@@ -1,9 +1,10 @@
-#include <koalabox/patcher.hpp>
-#include <koalabox/logger.hpp>
-
 #include <chrono>
 #include <cstring>
 #include <regex>
+
+#include <koalabox/patcher.hpp>
+#include <koalabox/logger.hpp>
+#include <koalabox/win_util.hpp>
 
 namespace koalabox::patcher {
 
@@ -129,6 +130,26 @@ namespace koalabox::patcher {
         return find_pattern_address(
             reinterpret_cast<uintptr_t>(process_info.lpBaseOfDll),
             process_info.SizeOfImage,
+            name,
+            pattern
+        );
+    }
+
+    KOALABOX_API(uintptr_t) find_pattern_address(
+        const HMODULE module_handle,
+        const String& section_name,
+        const String& name,
+        const String& pattern
+    ) {
+        const auto* section = win_util::get_pe_section_or_throw(module_handle, section_name);
+
+        const auto* section_address =
+            reinterpret_cast<uint8_t*>(module_handle) + section->PointerToRawData;
+
+        // First find the string in the .rdata section
+        return find_pattern_address(
+            reinterpret_cast<uintptr_t>(section_address),
+            section->SizeOfRawData,
             name,
             pattern
         );

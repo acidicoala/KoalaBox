@@ -1,4 +1,8 @@
 #include <algorithm>
+#include <iomanip>
+#include <ios>
+#include <sstream>
+
 #include <koalabox/str.hpp>
 
 namespace koalabox::str {
@@ -70,4 +74,32 @@ namespace koalabox::str {
 
         return result;
     }
+
+    std::string to_hex(const std::string& str) {
+        std::ostringstream oss;
+        for (size_t i = 0; i < str.size(); ++i) {
+            oss << std::uppercase << std::hex << std::setw(2) << std::setfill('0')
+                << static_cast<int>(static_cast<unsigned char>(str[i]));
+
+            if (i != str.size() - 1) {
+                oss << ' ';
+            }
+        }
+
+        return oss.str();
+    }
+
+    std::string from_little_endian(const uint32_t number) {
+        std::ostringstream oss;
+        for (int i = 0; i < 4; ++i) {
+            const uint8_t byte = (number >> (i * 8)) & 0xFF;
+            if (i > 0) {
+                oss << ' ';
+            }
+            oss << std::uppercase << std::hex << std::setw(2) << std::setfill('0')
+                << static_cast<int>(byte);
+        }
+        return oss.str();
+    }
+
 }
