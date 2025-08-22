@@ -52,9 +52,12 @@ add_library(KoalaBox OBJECT
 
 ### Configure dependencies
 
+# Note: Dependencies should be linked to KoalaBox using PUBLIC scope
+# to avoid inconsistent flags/definitions.
+
 ## Miniz - https://github.com/richgel999/miniz
 CPMAddPackage("gh:richgel999/miniz#c883286f1a6443720e7705450f59e579a4bbb8e2")
-target_link_libraries(KoalaBox PRIVATE miniz)
+target_link_libraries(KoalaBox PUBLIC miniz)
 
 CPMAddPackage(
     URI "gh:libcpr/cpr#1.12.0"
@@ -65,7 +68,7 @@ CPMAddPackage(
     "BUILD_LIBCURL_DOCS OFF"
     "BUILD_EXAMPLES OFF"
 )
-target_link_libraries(KoalaBox PRIVATE cpr)
+target_link_libraries(KoalaBox PUBLIC cpr)
 
 ## JSON - https://github.com/nlohmann/json
 CPMAddPackage(
@@ -81,7 +84,7 @@ CPMAddPackage(
     "POLYHOOK_FEATURE_INLINENTD OFF"
     "POLYHOOK_FEATURE_EXCEPTION OFF"
 )
-target_link_libraries(KoalaBox PRIVATE PolyHook_2)
+target_link_libraries(KoalaBox PUBLIC PolyHook_2)
 
 ## Logging - https://github.com/gabime/spdlog
 target_compile_definitions(KoalaBox PUBLIC
@@ -90,10 +93,6 @@ target_compile_definitions(KoalaBox PUBLIC
 )
 CPMAddPackage("gh:gabime/spdlog@1.15.3")
 target_link_libraries(KoalaBox PUBLIC spdlog)
-
-## WinReg - https://github.com/GiovanniDicanio/WinReg
-CPMAddPackage("gh:acidicoala/WinReg#b86786c6845a4a03a2e66a456cd65ec77069a7c4")
-target_link_libraries(KoalaBox PRIVATE WinReg)
 
 ## C++ parser - https://github.com/nsumner/cpp-tree-sitter
 # The latest commit includes a fix for MSVC, which is not present in the latest release
