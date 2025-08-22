@@ -5,9 +5,7 @@
 #include "koalabox/io.hpp"
 #include "koalabox/logger.hpp"
 
-
 namespace koalabox::io {
-
     std::string read_file(const fs::path& file_path) {
         std::ifstream input_stream(file_path);
         input_stream.exceptions(std::ifstream::failbit | std::ifstream::badbit);
@@ -17,12 +15,12 @@ namespace koalabox::io {
 
     bool write_file(const fs::path& file_path, const std::string& contents) noexcept {
         try {
-            if (!std::filesystem::exists(file_path)) {
+            if(!std::filesystem::exists(file_path)) {
                 std::filesystem::create_directories(file_path.parent_path());
             }
 
             std::ofstream output_stream(file_path);
-            if (output_stream.good()) {
+            if(output_stream.good()) {
                 output_stream << contents;
 
                 LOG_DEBUG(R"(Writing file to disk: "{}")", file_path.string());
@@ -31,10 +29,11 @@ namespace koalabox::io {
 
             LOG_ERROR(
                 R"(Error opening output stream: "{}". Flags: {})",
-                file_path.string(), output_stream.flags()
+                file_path.string(),
+                output_stream.flags()
             );
             return false;
-        } catch (const std::exception& e) {
+        } catch(const std::exception& e) {
             LOG_ERROR("Unexpected exception caught: {}", e.what());
             return false;
         }
@@ -46,7 +45,7 @@ namespace koalabox::io {
         // Initialize Winsock
         WSADATA wsaData;
         int iResult = WSAStartup(MAKEWORD(2, 2), &wsaData);
-        if (iResult != NO_ERROR) {
+        if(iResult != NO_ERROR) {
             // LOG_ERROR("WSAStartup error: {}", iResult)
             return false;
         }
@@ -54,7 +53,7 @@ namespace koalabox::io {
         //----------------------
         // Create a SOCKET for connecting to server
         SOCKET ConnectSocket = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
-        if (ConnectSocket == INVALID_SOCKET) {
+        if(ConnectSocket == INVALID_SOCKET) {
             // LOG_ERROR("socket(...) error: {}", WSAGetLastError())
             WSACleanup();
             return false;
@@ -67,7 +66,7 @@ namespace koalabox::io {
         client_service.sin_family = AF_INET;
         client_service.sin_port = htons(port);
         iResult = InetPton(AF_INET, L"127.0.0.1", &client_service.sin_addr.s_addr);
-        if (iResult != 1) {
+        if(iResult != 1) {
             // LOG_ERROR("InetPton Error: {}", WSAGetLastError())
             return false;
         }
@@ -84,8 +83,12 @@ namespace koalabox::io {
 
         //----------------------
         // Connect to server.
-        iResult = connect(ConnectSocket, reinterpret_cast<SOCKADDR*>(&client_service), sizeof(client_service));
-        if (iResult == SOCKET_ERROR) {
+        iResult = connect(
+            ConnectSocket,
+            reinterpret_cast<SOCKADDR*>(&client_service),
+            sizeof(client_service)
+        );
+        if(iResult == SOCKET_ERROR) {
             // LOG_ERROR("connect(...) error: {}", WSAGetLastError())
             close_socket();
             return false;

@@ -7,7 +7,6 @@
 #include "koalabox/win_util.hpp"
 
 namespace koalabox::patcher {
-
     struct pattern_mask {
         std::string binary_pattern;
         std::string mask;
@@ -24,14 +23,14 @@ namespace koalabox::patcher {
         // Convert hex to binary
         std::stringstream pattern_stream;
         std::stringstream mask_stream;
-        for (size_t i = 0; i < pattern.length(); i += 2) {
+        for(size_t i = 0; i < pattern.length(); i += 2) {
             const std::string byte_string = pattern.substr(i, 2);
 
             mask_stream << (byte_string == "??" ? '?' : 'x');
 
             // Handle wildcards ourselves, rest goes to strtol
             pattern_stream
-                << (byte_string == "??" ? '?' : (char)strtol(byte_string.c_str(), nullptr, 16));
+                << (byte_string == "??" ? '?' : (char) strtol(byte_string.c_str(), nullptr, 16));
         }
 
         return {pattern_stream.str(), mask_stream.str()};
@@ -39,18 +38,21 @@ namespace koalabox::patcher {
 
     // Credit: superdoc1234
     // Source: https://www.unknowncheats.me/forum/1364641-post150.html
-    uintptr_t
-    find(const uintptr_t base_address, size_t mem_length, const char* pattern, const char* mask) {
-
+    uintptr_t find(
+        const uintptr_t base_address,
+        size_t mem_length,
+        const char* pattern,
+        const char* mask
+    ) {
         auto i_end = strlen(mask) - 1;
 
         auto DataCompare = [&](const char* data) -> bool {
-            if (data[i_end] != pattern[i_end]) {
+            if(data[i_end] != pattern[i_end]) {
                 return false;
             }
 
-            for (size_t i = 0; i <= i_end; ++i) {
-                if (mask[i] == 'x' && data[i] != pattern[i]) {
+            for(size_t i = 0; i <= i_end; ++i) {
+                if(mask[i] == 'x' && data[i] != pattern[i]) {
                     return false;
                 }
             }
@@ -58,8 +60,8 @@ namespace koalabox::patcher {
             return true;
         };
 
-        for (size_t i = 0; i < mem_length - strlen(mask); ++i) {
-            if (DataCompare(reinterpret_cast<char*>(base_address + i))) {
+        for(size_t i = 0; i < mem_length - strlen(mask); ++i) {
+            if(DataCompare(reinterpret_cast<char*>(base_address + i))) {
                 return base_address + i;
             }
         }
@@ -80,11 +82,13 @@ namespace koalabox::patcher {
         auto current_region = ptr_memory;
         do {
             // Skip irrelevant code regions
-            auto query_success = VirtualQuery((LPCVOID)current_region, &mbi, sizeof(mbi));
-            if (query_success && mbi.State == MEM_COMMIT && mbi.Protect != PAGE_NOACCESS) {
+            auto query_success = VirtualQuery((LPCVOID) current_region, &mbi, sizeof(mbi));
+            if(query_success && mbi.State == MEM_COMMIT && mbi.Protect != PAGE_NOACCESS) {
                 LOG_TRACE(
                     "current_region: {}, mbi.BaseAddress: {}, mbi.RegionSize: {}",
-                    (void*)current_region, mbi.BaseAddress, (void*)mbi.RegionSize
+                    (void*) current_region,
+                    mbi.BaseAddress,
+                    (void*) mbi.RegionSize
                 );
 
                 const uintptr_t potential_end = current_region + mbi.RegionSize;
@@ -92,19 +96,21 @@ namespace koalabox::patcher {
                 const auto mem_length = max_address - current_region;
                 match = find(current_region, mem_length, binaryPattern.c_str(), mask.c_str());
 
-                if (match) {
+                if(match) {
                     break;
                 }
             }
 
             current_region += mbi.RegionSize;
-        } while (current_region < ptr_memory + length);
+        } while(current_region < ptr_memory + length);
 
         return match;
     }
 
     uintptr_t find_pattern_address(
-        const uintptr_t base_address, size_t scan_size, const std::string& name,
+        const uintptr_t base_address,
+        size_t scan_size,
+        const std::string& name,
         const std::string& pattern
     ) {
         const auto t1 = std::chrono::high_resolution_clock::now();
@@ -113,9 +119,12 @@ namespace koalabox::patcher {
 
         const double elapsed_time = std::chrono::duration<double, std::milli>(t2 - t1).count();
 
-        if (address) {
+        if(address) {
             LOG_DEBUG(
-                "'{}' address: {}. Search time: {:.2f} ms", name, (void*)address, elapsed_time
+                "'{}' address: {}. Search time: {:.2f} ms",
+                name,
+                (void*) address,
+                elapsed_time
             );
         } else {
             LOG_ERROR("Failed to find address of '{}'. Search time: {:.2f} ms", name, elapsed_time);
@@ -125,16 +134,22 @@ namespace koalabox::patcher {
     }
 
     uintptr_t find_pattern_address(
-        const MODULEINFO& process_info, const std::string& name, const std::string& pattern
+        const MODULEINFO& process_info,
+        const std::string& name,
+        const std::string& pattern
     ) {
         return find_pattern_address(
-            reinterpret_cast<uintptr_t>(process_info.lpBaseOfDll), process_info.SizeOfImage, name,
+            reinterpret_cast<uintptr_t>(process_info.lpBaseOfDll),
+            process_info.SizeOfImage,
+            name,
             pattern
         );
     }
 
     uintptr_t find_pattern_address(
-        const HMODULE module_handle, const std::string& section_name, const std::string& name,
+        const HMODULE module_handle,
+        const std::string& section_name,
+        const std::string& name,
         const std::string& pattern
     ) {
         const auto* section = win_util::get_pe_section_or_throw(module_handle, section_name);
@@ -144,8 +159,10 @@ namespace koalabox::patcher {
 
         // First find the string in the .rdata section
         return find_pattern_address(
-            reinterpret_cast<uintptr_t>(section_address), section->SizeOfRawData, name, pattern
+            reinterpret_cast<uintptr_t>(section_address),
+            section->SizeOfRawData,
+            name,
+            pattern
         );
     }
-
 }

@@ -7,30 +7,27 @@
 #include "koalabox/win_util.hpp"
 
 namespace {
-
     PVOID cookie = nullptr;
-
 }
 
 namespace koalabox::dll_monitor {
-
-    void init_listener( //
+    void init_listener(
         const std::string& target_library_name,
-        const std::function<void(const HMODULE& module_handle)>& callback
+        const std::function<callback_t>& callback
     ) {
         init_listener(
             std::vector{target_library_name},
-            [=](const HMODULE& module_handle, const std::string&) { callback(module_handle); }
+            [=](const HMODULE& module_handle, const std::string&) {
+                callback(module_handle);
+            }
         );
     }
 
-    void init_listener( //
+    void init_listener(
         const std::vector<std::string>& target_library_names,
-        const std::function<
-            void(const HMODULE& module_handle, const std::string& library_name)
-        >& callback
+        const std::function<callback_multi_t>& callback
     ) {
-        if (cookie) {
+        if(cookie) {
             LOG_ERROR("DLL monitor already initialized");
             return;
         }
@@ -42,15 +39,17 @@ namespace koalabox::dll_monitor {
         struct callback_data {
             std::vector<std::string> target_library_names;
             std::function<void(const HMODULE& module_handle, const std::string& library_name)>
-                callback;
+            callback;
         };
 
         // Pre-process the notification
-        const auto notification_listener = [](const ULONG NotificationReason,
-                                              const PLDR_DLL_NOTIFICATION_DATA NotificationData,
-                                              const PVOID context) {
+        const auto notification_listener = [](
+            const ULONG NotificationReason,
+            const PLDR_DLL_NOTIFICATION_DATA NotificationData,
+            const PVOID context
+        ) {
             // Only interested in load events
-            if (NotificationReason != LDR_DLL_NOTIFICATION_REASON_LOADED) {
+            if(NotificationReason != LDR_DLL_NOTIFICATION_REASON_LOADED) {
                 return;
             }
 
@@ -60,11 +59,11 @@ namespace koalabox::dll_monitor {
             // It's better to use trace logging because this reveals filesystem paths
             LOG_TRACE("DLL loaded: '{}'", full_dll_name);
 
-            for  ( //
+            for( //
                 const auto* data = static_cast<callback_data*>(context);
                 const auto& library_name : data->target_library_names
             ) {
-                if (str::eq(library_name + ".dll", base_dll_name)) {
+                if(str::eq(library_name + ".dll", base_dll_name)) {
                     LOG_DEBUG("Library '{}' has been loaded", library_name);
 
                     auto* const loaded_module = win_util::get_module_handle(full_dll_name.c_str());
@@ -84,10 +83,11 @@ namespace koalabox::dll_monitor {
 
         static const auto LdrRegisterDllNotification =
             reinterpret_cast<_LdrRegisterDllNotification>(win_util::get_proc_address(
-                win_util::get_module_handle("ntdll"), "LdrRegisterDllNotification"
+                win_util::get_module_handle("ntdll"),
+                "LdrRegisterDllNotification"
             ));
 
-        if (const auto status =
+        if(const auto status =
                 LdrRegisterDllNotification(0, notification_listener, context, &cookie);
             status != STATUS_SUCCESS) {
             util::panic("Failed to register DLL listener. Status code: {}", status);
@@ -96,10 +96,10 @@ namespace koalabox::dll_monitor {
         LOG_DEBUG("DLL monitor was successfully initialized");
 
         // Then check if the target dll is already loaded
-        for (const auto& library_name : target_library_names) {
+        for(const auto& library_name : target_library_names) {
             auto* original_library = GetModuleHandle(str::to_wstr(library_name).c_str());
 
-            if (not original_library) {
+            if(not original_library) {
                 continue;
             }
 
@@ -110,20 +110,23 @@ namespace koalabox::dll_monitor {
     }
 
     void shutdown_listener() {
-        std::thread([] {
-            static const auto LdrUnregisterDllNotification =
-                reinterpret_cast<_LdrUnregisterDllNotification>(win_util::get_proc_address(
-                    win_util::get_module_handle("ntdll"), "LdrUnregisterDllNotification"
-                ));
+        std::thread(
+            [] {
+                static const auto LdrUnregisterDllNotification =
+                    reinterpret_cast<_LdrUnregisterDllNotification>(win_util::get_proc_address(
+                        win_util::get_module_handle("ntdll"),
+                        "LdrUnregisterDllNotification"
+                    ));
 
-            const auto status = LdrUnregisterDllNotification(cookie);
-            cookie = nullptr;
+                const auto status = LdrUnregisterDllNotification(cookie);
+                cookie = nullptr;
 
-            if (status != STATUS_SUCCESS) {
-                LOG_ERROR("Failed to unregister DLL listener. Status code: {}", status);
+                if(status != STATUS_SUCCESS) {
+                    LOG_ERROR("Failed to unregister DLL listener. Status code: {}", status);
+                }
+
+                LOG_DEBUG("DLL monitor was successfully shut down");
             }
-
-            LOG_DEBUG("DLL monitor was successfully shut down");
-        }).detach();
+        ).detach();
     }
 }

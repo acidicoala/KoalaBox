@@ -3,7 +3,6 @@
 #include <string>
 
 namespace koalabox::globals {
-
     /**
      * @return A handle representing the project DLL. Usually obtained from DllMain.
      */
@@ -12,5 +11,4 @@ namespace koalabox::globals {
     std::string get_project_name();
 
     void init_globals(HMODULE handle, const std::string& name);
-
 }

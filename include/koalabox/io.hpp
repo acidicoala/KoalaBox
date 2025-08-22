@@ -4,7 +4,6 @@
 #include <string>
 
 namespace koalabox::io {
-
     namespace fs = std::filesystem;
 
     /**

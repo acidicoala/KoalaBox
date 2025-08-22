@@ -7,11 +7,14 @@
 namespace koalabox::http_client {
     namespace {
         void validate_ok_response(const cpr::Response& res) {
-            if (res.status_code != cpr::status::HTTP_OK) {
+            if(res.status_code != cpr::status::HTTP_OK) {
                 throw std::runtime_error(
                     std::format(
                         "Status code: {}, Error code: {},\nResponse headers:\n{}\nBody:\n{}",
-                        res.status_code, static_cast<int>(res.error.code), res.raw_header, res.text
+                        res.status_code,
+                        static_cast<int>(res.error.code),
+                        res.raw_header,
+                        res.text
                     )
                 );
             }
@@ -34,7 +37,8 @@ namespace koalabox::http_client {
         LOG_DEBUG("POST {}", url);
 
         const auto res = cpr::Post(
-            cpr::Url{url}, cpr::Header{{"content-type", "application/json"}},
+            cpr::Url{url},
+            cpr::Header{{"content-type", "application/json"}},
             cpr::Body{payload.dump()}
         );
 
@@ -50,7 +54,7 @@ namespace koalabox::http_client {
 
         validate_ok_response(res);
 
-        if (res.header.contains("etag")) {
+        if(res.header.contains("etag")) {
             const auto etag = res.header.at("etag");
             LOG_TRACE(R"(Etag for url "{}" = "{}")", url, etag);
             return etag;
@@ -71,7 +75,7 @@ namespace koalabox::http_client {
 
         LOG_DEBUG("Download complete ({} bytes)", res.downloaded_bytes);
 
-        if (res.header.contains("etag")) {
+        if(res.header.contains("etag")) {
             return res.header.at("etag");
         }
 

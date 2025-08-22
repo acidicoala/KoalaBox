@@ -3,7 +3,6 @@
 #include <nlohmann/json.hpp>
 
 namespace koalabox::ipc {
-
     struct Request {
         std::string name;
         nlohmann::json::object_t args;
@@ -19,9 +18,8 @@ namespace koalabox::ipc {
     };
 
     /// Note: This function is intended to be called from a new thread, in a try-catch block.
-    void
-    init_pipe_server(
-        const std::string& pipe_id, const std::function<Response(const Request& request)>& callback
+    void init_pipe_server(
+        const std::string& pipe_id,
+        const std::function<Response(const Request& request)>& callback
     );
-
 }

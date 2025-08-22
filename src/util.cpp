@@ -5,10 +5,11 @@
 #include "koalabox/win_util.hpp"
 
 namespace koalabox::util {
-
     void error_box(const std::string& title, const std::string& message) {
         ::MessageBox(
-            nullptr, str::to_wstr(message).c_str(), str::to_wstr(title).c_str(),
+            nullptr,
+            str::to_wstr(message).c_str(),
+            str::to_wstr(title).c_str(),
             MB_OK | MB_ICONERROR
         );
     }
@@ -18,10 +19,11 @@ namespace koalabox::util {
 
         OutputDebugString(str::to_wstr(message).c_str());
 
-        const auto last_error = ::GetLastError();
-        if (last_error != 0) {
+        const auto last_error = GetLastError();
+        if(last_error != 0) {
             message += std::format(
-                "\n———————— Windows Last Error ————————\nCode: {}\nMessage: {}", last_error,
+                "\n———————— Windows Last Error ————————\nCode: {}\nMessage: {}",
+                last_error,
                 win_util::format_message(last_error)
             );
         }
@@ -38,7 +40,7 @@ namespace koalabox::util {
     bool is_valid_pointer(const void* pointer) {
         const auto mbi_opt = win_util::virtual_query(pointer);
 
-        if (mbi_opt) {
+        if(mbi_opt) {
             const auto is_rwe =
                 mbi_opt->Protect &
                 (PAGE_READONLY | PAGE_READWRITE | PAGE_WRITECOPY | PAGE_EXECUTE_READ |
@@ -51,5 +53,4 @@ namespace koalabox::util {
 
         return false;
     }
-
 }

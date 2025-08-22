@@ -43,14 +43,15 @@ namespace {
     }
 
     class UsernameFilterFormatter final : public spdlog::formatter {
-      public:
+    public:
         void format(const spdlog::details::log_msg& msg, spdlog::memory_buf_t& dest) override {
             static const std::regex username_regex(
-                R"(\w:[/\\]Users[/\\]([^/\\]+))", std::regex_constants::icase
+                R"(\w:[/\\]Users[/\\]([^/\\]+))",
+                std::regex_constants::icase
             );
 
             std::string filtered_msg(msg.payload.data(), msg.payload.size());
-            if (std::smatch matches; std::regex_search(filtered_msg, matches, username_regex)) {
+            if(std::smatch matches; std::regex_search(filtered_msg, matches, username_regex)) {
                 filtered_msg.replace(matches[1].first, matches[1].second, "%USERNAME%");
             }
 

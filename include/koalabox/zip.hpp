@@ -15,7 +15,6 @@ namespace koalabox::zip {
      */
     void extract_files(
         const fs::path& zip_path,
-        const std::function<fs::path(const std::string& name, bool is_dir)>& predicate
+        const std::function<fs::path(const std::string & name, bool is_dir)>& predicate
     );
-
 }

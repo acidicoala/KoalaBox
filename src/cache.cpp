@@ -19,7 +19,7 @@ namespace koalabox::cache {
 
         LOG_DEBUG("Cache key: \"{}\". Value: \n{}", key, cache.dump(2));
 
-        if (cache.contains(key)) {
+        if(cache.contains(key)) {
             return cache.at(key);
         }
 
@@ -33,10 +33,10 @@ namespace koalabox::cache {
 
             nlohmann::json new_cache;
 
-            if (fs::exists(paths::get_cache_path())) {
+            if(fs::exists(paths::get_cache_path())) {
                 try {
                     new_cache = read_cache();
-                } catch (const std::exception& e) {
+                } catch(const std::exception& e) {
                     LOG_WARN("Failed to read cache from disk: {}", e.what());
                 }
             }
@@ -46,11 +46,10 @@ namespace koalabox::cache {
             io::write_file(paths::get_cache_path(), new_cache.dump(2));
 
             return true;
-        } catch (const std::exception& e) {
+        } catch(const std::exception& e) {
             LOG_ERROR("Failed to write cache to disk: {}", e.what());
 
             return false;
         }
     }
-
 }

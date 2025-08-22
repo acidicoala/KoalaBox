@@ -7,7 +7,6 @@
 #include "koalabox/win_util.hpp"
 
 namespace koalabox::loader {
-
     fs::path get_module_dir(const HMODULE& handle) {
         const auto file_name = win_util::get_module_file_name(handle);
 
@@ -26,39 +25,39 @@ namespace koalabox::loader {
 
         auto* dos_header = reinterpret_cast<PIMAGE_DOS_HEADER>(library);
 
-        if (dos_header->e_magic != IMAGE_DOS_SIGNATURE) {
+        if(dos_header->e_magic != IMAGE_DOS_SIGNATURE) {
             util::panic("e_magic  != IMAGE_DOS_SIGNATURE");
         }
 
-        auto* header = reinterpret_cast<PIMAGE_NT_HEADERS>((BYTE*)library + dos_header->e_lfanew);
+        auto* header = reinterpret_cast<PIMAGE_NT_HEADERS>((BYTE*) library + dos_header->e_lfanew);
 
-        if (header->Signature != IMAGE_NT_SIGNATURE) {
+        if(header->Signature != IMAGE_NT_SIGNATURE) {
             util::panic("header->Signature != IMAGE_NT_SIGNATURE");
         }
 
-        if (header->OptionalHeader.NumberOfRvaAndSizes <= 0) {
+        if(header->OptionalHeader.NumberOfRvaAndSizes <= 0) {
             util::panic("header->OptionalHeader.NumberOfRvaAndSizes <= 0");
         }
 
         const auto& data_dir = header->OptionalHeader.DataDirectory[IMAGE_DIRECTORY_ENTRY_EXPORT];
         auto* exports =
-            reinterpret_cast<PIMAGE_EXPORT_DIRECTORY>((BYTE*)library + data_dir.VirtualAddress);
+            reinterpret_cast<PIMAGE_EXPORT_DIRECTORY>((BYTE*) library + data_dir.VirtualAddress);
 
-        PVOID names = (BYTE*)library + exports->AddressOfNames;
+        PVOID names = (BYTE*) library + exports->AddressOfNames;
 
         // Iterate over the names and add them to the vector
-        for (unsigned int i = 0; i < exports->NumberOfNames; i++) {
-            std::string exported_name = (char*)library + ((DWORD*)names)[i];
+        for(unsigned int i = 0; i < exports->NumberOfNames; i++) {
+            std::string exported_name = (char*) library + ((DWORD*) names)[i];
 
-            if (undecorate) {
+            if(undecorate) {
                 std::string undecorated_function = exported_name; // fallback value
 
                 // Extract function name from decorated name
                 static const std::regex expression(R"((?:^_)?(\w+)(?:@\d+$)?)");
 
                 std::smatch matches;
-                if (std::regex_match(exported_name, matches, expression)) {
-                    if (matches.size() == 2) {
+                if(std::regex_match(exported_name, matches, expression)) {
+                    if(matches.size() == 2) {
                         undecorated_function = matches[1];
                     } else {
                         LOG_WARN("Exported function regex size != 2: {}", exported_name);
@@ -82,7 +81,10 @@ namespace koalabox::loader {
 #else
         static std::map<HMODULE, std::map<std::string, std::string>> undecorated_function_maps;
 
-        if (not undecorated_function_maps.contains(library)) {
+        if(not
+            undecorated_function_maps.contains(library)
+        )
+        {
             undecorated_function_maps[library] = get_export_map(library, true);
         }
 
@@ -99,5 +101,4 @@ namespace koalabox::loader {
 
         return original_module;
     }
-
 }

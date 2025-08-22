@@ -10,8 +10,9 @@
 namespace koalabox::config {
     namespace fs = std::filesystem;
 
-    template <class Config> Config parse(const fs::path& config_path) {
-        if (not fs::exists(config_path)) {
+    template<class Config>
+    Config parse(const fs::path& config_path) {
+        if(not fs::exists(config_path)) {
             return Config();
         }
 
@@ -23,12 +24,13 @@ namespace koalabox::config {
             LOG_DEBUG("Parsed config:\n{}", nlohmann::json(config).dump(2));
 
             return config;
-        } catch (const std::exception& e) {
+        } catch(const std::exception& e) {
             util::panic("Error parsing config file: {}", e.what());
         }
     }
 
-    template <class Config> Config parse() {
+    template<class Config>
+    Config parse() {
         return parse<Config>(paths::get_config_path());
     }
 }

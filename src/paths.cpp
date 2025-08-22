@@ -7,7 +7,6 @@
 #include "koalabox/win_util.hpp"
 
 namespace koalabox::paths {
-
     namespace {
         std::string get_file_name(const std::string& suffix) {
             return globals::get_project_name() + suffix;
@@ -36,13 +35,13 @@ namespace koalabox::paths {
     }
 
     fs::path get_ca_key_path() {
-        static const auto project_name = koalabox::globals::get_project_name();
+        static const auto project_name = globals::get_project_name();
         static const auto path = get_self_path() / (project_name + ".ca.key");
         return path;
     }
 
     fs::path get_ca_cert_path() {
-        static const auto project_name = koalabox::globals::get_project_name();
+        static const auto project_name = globals::get_project_name();
         static const auto path = get_self_path() / (project_name + ".ca.crt");
         return path;
     }
@@ -55,7 +54,7 @@ namespace koalabox::paths {
 
     fs::path get_user_dir() {
         TCHAR buffer[MAX_PATH];
-        if (SHGetSpecialFolderPath(nullptr, buffer, CSIDL_PROFILE, FALSE)) {
+        if(SHGetSpecialFolderPath(nullptr, buffer, CSIDL_PROFILE, FALSE)) {
             // Path retrieved successfully, so print it out
             return {buffer};
         }
@@ -64,5 +63,4 @@ namespace koalabox::paths {
             std::format("Error retrieving user directory: {}", win_util::get_last_error())
         );
     }
-
 }

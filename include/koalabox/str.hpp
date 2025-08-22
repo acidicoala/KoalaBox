@@ -3,7 +3,6 @@
 #include <string>
 
 namespace koalabox::str {
-
     /**
      * @return A new string_view with leading and trailing spaces removed
      */
@@ -50,5 +49,4 @@ namespace koalabox::str {
      * Target output: <code>"D4 06 93 7A"</code>
      */
     std::string from_little_endian(uint32_t number);
-
 }

@@ -8,15 +8,6 @@ set(BUILD_SHARED_LIBS OFF CACHE BOOL "Build DLL instead of static library")
 set(CPM_SOURCE_CACHE "${CMAKE_SOURCE_DIR}/build/.cache" CACHE STRING "CPM.cmake source cache")
 include("${CMAKE_CURRENT_LIST_DIR}/get_cpm.cmake")
 
-function(kb_add_package LIB USER_REPO TAG)
-    CPMAddPackage(
-        NAME ${LIB}
-        GIT_REPOSITORY "https://github.com/${USER_REPO}.git"
-        GIT_TAG ${TAG}
-    )
-    target_link_libraries(KoalaBox PUBLIC ${LIB})
-endfunction()
-
 # Sets the variable ${VAR} with val_for_32 on 32-bit build
 # and appends 64 to val_for_32 on 64-bit build, unless it an optional argument
 # is provided.
@@ -74,10 +65,6 @@ function(configure_include_directories)
         "${ARGN}")
 endfunction()
 
-function(link_to_koalabox)
-    target_link_libraries(${CMAKE_PROJECT_NAME} PRIVATE KoalaBox)
-endfunction()
-
 function(configure_linker_exports)
     cmake_parse_arguments(
         ARG "UNDECORATE" "TARGET;HEADER_NAME;FORWARDED_DLL;INPUT_SOURCES_DIR;DLL_FILES_GLOB" "" ${ARGN}
@@ -91,7 +78,7 @@ function(configure_linker_exports)
 
     set(GENERATE_LINKER_EXPORTS_TARGET "generate_linker_exports_for_${ARG_HEADER_NAME}")
     add_custom_target("${GENERATE_LINKER_EXPORTS_TARGET}" ALL
-        COMMENT "Generate linkers exports for export address table"
+        COMMENT "Generate linker exports for export address table"
         COMMAND exports_generator # Executable path
         "${ARG_UNDECORATE}" # Undecorate boolean
         "${ARG_FORWARDED_DLL}" # Forwarded DLL path
@@ -103,54 +90,4 @@ function(configure_linker_exports)
     )
 
     add_dependencies("${ARG_TARGET}" "${GENERATE_LINKER_EXPORTS_TARGET}")
-endfunction()
-
-function(install_python)
-    # https://www.python.org/downloads/release/python-3112/
-    set(MY_PYTHON_VERSION 3.11.2)
-    set_32_and_64(MY_PYTHON_INSTALLER python-${MY_PYTHON_VERSION}.exe python-${MY_PYTHON_VERSION}-amd64.exe)
-    set_32_and_64(MY_PYTHON_INSTALLER_EXPECTED_MD5 2123016702bbb45688baedc3695852f4 4331ca54d9eacdbe6e97d6ea63526e57)
-
-    set(MY_PYTHON_INSTALLER_PATH "${CMAKE_BINARY_DIR}/python-installer/${MY_PYTHON_INSTALLER}")
-
-    # Download installer if necessary
-    set(MY_PYTHON_INSTALLER_URL "https://www.python.org/ftp/python/${MY_PYTHON_VERSION}/${MY_PYTHON_INSTALLER}")
-
-    MESSAGE(STATUS "Downloading python installer: ${MY_PYTHON_INSTALLER_URL}")
-
-    file(
-        DOWNLOAD ${MY_PYTHON_INSTALLER_URL} "${MY_PYTHON_INSTALLER_PATH}"
-        EXPECTED_HASH MD5=${MY_PYTHON_INSTALLER_EXPECTED_MD5}
-        SHOW_PROGRESS
-    )
-
-    MESSAGE(STATUS "Installing python: ${MY_PYTHON_INSTALLER_PATH}")
-
-    cmake_path(CONVERT "${CMAKE_BINARY_DIR}/python" TO_NATIVE_PATH_LIST MY_PYTHON_INSTALL_DIR NORMALIZE)
-
-    # Install python
-    execute_process(
-        COMMAND "${MY_PYTHON_INSTALLER_PATH}" /quiet
-        InstallAllUsers=0
-        "TargetDir=${MY_PYTHON_INSTALL_DIR}"
-        AssociateFiles=0
-        PrependPath=0
-        AppendPath=0
-        Shortcuts=0
-        Include_doc=0
-        Include_debug=1
-        Include_dev=1
-        Include_exe=0
-        Include_launcher=0
-        Include_lib=1
-        Include_pip=1
-        Include_tcltk=1
-        Include_test=0
-        COMMAND_ERROR_IS_FATAL ANY
-        COMMAND_ECHO STDOUT
-    )
-
-    set(Python_ROOT_DIR CACHE STRING "${MY_PYTHON_INSTALLER_PATH}")
-
-    find_package(Python REQUIRED COMPONENTS Development)
 endfunction()

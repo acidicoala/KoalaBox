@@ -3,7 +3,6 @@
 #include <filesystem>
 
 namespace koalabox::paths {
-
     namespace fs = std::filesystem;
 
     /**
@@ -24,5 +23,4 @@ namespace koalabox::paths {
     fs::path get_cache_dir();
 
     fs::path get_user_dir();
-
 }

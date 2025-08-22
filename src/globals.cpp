@@ -9,7 +9,6 @@
 #endif
 
 namespace koalabox::globals {
-
     namespace {
         bool initialized = false;
 
@@ -37,5 +36,4 @@ namespace koalabox::globals {
 
         DisableThreadLibraryCalls(self_handle);
     }
-
 }

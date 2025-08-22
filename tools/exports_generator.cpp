@@ -13,9 +13,8 @@
 #include <koalabox/util.hpp>
 #include <koalabox/win_util.hpp>
 
-namespace kb = koalabox;
-
 namespace {
+    namespace kb = koalabox;
     namespace fs = std::filesystem;
 
     std::string preprocess_source_file(const std::string& source_file_content) {
@@ -30,9 +29,9 @@ namespace {
     auto get_defined_functions(const fs::path& path) {
         std::set<std::string> declared_functions;
 
-        for (const auto& entry : std::filesystem::recursive_directory_iterator(path)) {
+        for(const auto& entry : std::filesystem::recursive_directory_iterator(path)) {
             const auto& file_path = entry.path();
-            if (file_path.extension() != ".cpp") {
+            if(file_path.extension() != ".cpp") {
                 continue;
             }
 
@@ -48,7 +47,7 @@ namespace {
                 std::regex(R"((/\w+)*/function_declarator/identifier)")
             );
 
-            for (const auto& [_, value] : query_results) {
+            for(const auto& [_, value] : query_results) {
                 LOG_DEBUG("Found function: {}", value);
                 declared_functions.insert(std::string(value));
             }
@@ -58,11 +57,11 @@ namespace {
     }
 
     bool parseBoolean(const std::string& bool_str) {
-        if (bool_str == "TRUE") {
+        if(kb::str::eq(bool_str, "TRUE")) {
             return true;
         }
 
-        if (bool_str == "FALSE") {
+        if(kb::str::eq(bool_str, "FALSE")) {
             return false;
         }
 
@@ -76,8 +75,8 @@ namespace {
         const auto dll_path_list = glob::glob(dll_files_glob);
         LOG_INFO("Found {} DLL files", dll_path_list.size());
 
-        for (const auto& dll_path : dll_path_list) {
-            if (not fs::exists(dll_path)) {
+        for(const auto& dll_path : dll_path_list) {
+            if(not fs::exists(dll_path)) {
                 continue;
             }
 
@@ -106,13 +105,12 @@ int wmain(const int argc, const wchar_t* argv[]) { // NOLINT(*-use-internal-link
     try {
         koalabox::logger::init_console_logger();
 
-        for (int i = 0; i < argc; i++) {
+        for(int i = 0; i < argc; i++) {
             LOG_INFO("Arg #{} = '{}'", i, koalabox::str::to_str(argv[i]));
         }
 
-        if (argc != 5 && argc != 6) {
+        if(argc != 5 && argc != 6) {
             LOG_ERROR("Invalid number of arguments. Expected 5 or 6. Got: {}", argc);
-
             exit(1);
         }
 
@@ -135,7 +133,7 @@ int wmain(const int argc, const wchar_t* argv[]) { // NOLINT(*-use-internal-link
 
         // Open the export header file for writing
         std::ofstream export_file(header_output_path, std::ofstream::out | std::ofstream::trunc);
-        if (not export_file.is_open()) {
+        if(not export_file.is_open()) {
             LOG_ERROR("Filed to open header file for writing");
             exit(4);
         }
@@ -143,18 +141,24 @@ int wmain(const int argc, const wchar_t* argv[]) { // NOLINT(*-use-internal-link
         // Add header guard
         export_file << "#pragma once" << std::endl << std::endl;
 
-        for (const auto& [function_name, decorated_function_name] : dll_exports) {
+        for(const auto& [function_name, decorated_function_name] : dll_exports) {
             // Comment out exports that we have defined
             const std::string comment = defined_functions.contains(function_name) ? "//" : "";
 
             const auto line = std::format(
-                R"({}#pragma comment(linker, "/export:{}={}.{}"))", //
-                comment, decorated_function_name, forwarded_dll_name, decorated_function_name
+                R"({}#pragma comment(linker, "/export:{}={}.{}"))",
+                //
+                comment,
+                decorated_function_name,
+                forwarded_dll_name,
+                decorated_function_name
             );
 
             export_file << line << std::endl;
         }
-    } catch (const std::exception& ex) {
+
+        LOG_INFO("Finished generating {}", header_output_path.string());
+    } catch(const std::exception& ex) {
         LOG_ERROR("Error: {}", ex.what());
         exit(-1);
     }

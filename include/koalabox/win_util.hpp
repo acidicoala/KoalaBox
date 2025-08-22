@@ -4,7 +4,6 @@
 
 // TODO: Rename to `win`
 namespace koalabox::win_util {
-
     namespace fs = std::filesystem;
 
     PROCESS_INFORMATION create_process(
@@ -44,15 +43,9 @@ namespace koalabox::win_util {
         const std::string& section_name
     );
 
-    std::string get_pe_section_data(
-        const HMODULE& module_handle,
-        const std::string& section_name
-    );
+    std::string get_pe_section_data(const HMODULE& module_handle, const std::string& section_name);
 
-    FARPROC get_proc_address_or_throw(
-        const HMODULE& module_handle,
-        LPCSTR procedure_name
-    );
+    FARPROC get_proc_address_or_throw(const HMODULE& module_handle, LPCSTR procedure_name);
 
     FARPROC get_proc_address(const HMODULE& module_handle, LPCSTR procedure_name);
 
@@ -73,9 +66,13 @@ namespace koalabox::win_util {
     std::optional<MEMORY_BASIC_INFORMATION> virtual_query(const void* pointer);
 
     SIZE_T write_process_memory_or_throw(
-        const HANDLE& process, LPVOID address, LPCVOID buffer, SIZE_T size
+        const HANDLE& process,
+        LPVOID address,
+        LPCVOID buffer,
+        SIZE_T size
     );
 
     SIZE_T write_process_memory(const HANDLE& process, LPVOID address, LPCVOID buffer, SIZE_T size);
 
+    std::string get_env_var(const std::string& key);
 }

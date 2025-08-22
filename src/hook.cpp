@@ -8,38 +8,46 @@
 #include "koalabox/util.hpp"
 #include "koalabox/win_util.hpp"
 
-namespace koalabox::hook {
+namespace {
+    auto& get_address_map() {
+        static std::map<std::string, uintptr_t> address_map;
+        return address_map;
+    }
 
-    namespace fs = std::filesystem;
-
-    class PolyhookLogger : public PLH::Logger {
+    class PolyhookLogger final : public PLH::Logger {
         bool print_info;
 
-      public:
-        explicit PolyhookLogger(bool print_info) : print_info(print_info) {};
+    public:
+        explicit PolyhookLogger(const bool print_info) : print_info(print_info) {}
 
-        void log_impl(const std::string& msg, PLH::ErrorLevel level) const {
-            if (level == PLH::ErrorLevel::INFO && print_info) {
-                LOG_DEBUG("[Polyhook] {}", msg);
-            } else if (level == PLH::ErrorLevel::WARN) {
-                LOG_WARN("[Polyhook] {}", msg);
-            } else if (level == PLH::ErrorLevel::SEV) {
-                LOG_ERROR("[Polyhook] {}", msg);
+        void log_impl(const std::string& msg, const PLH::ErrorLevel level) const {
+            if(level == PLH::ErrorLevel::INFO && print_info) {
+                LOG_DEBUG("[PLH] {}", msg);
+            } else if(level == PLH::ErrorLevel::WARN) {
+                LOG_WARN("[PLH] {}", msg);
+            } else if(level == PLH::ErrorLevel::SEV) {
+                LOG_ERROR("[PLH] {}", msg);
             }
         }
 
-        void log(const std::string& msg, PLH::ErrorLevel level) override {
+        void log(const std::string& msg, const PLH::ErrorLevel level) override {
             log_impl(msg, level);
         }
     };
 
-    std::vector<PLH::IHook*> hooks;               // NOLINT(cert-err58-cpp)
-    std::map<std::string, uintptr_t> address_map; // NOLINT(cert-err58-cpp)
+    std::vector<PLH::IHook*> hooks;
+    auto& address_map = get_address_map();
+}
+
+namespace koalabox::hook {
+    namespace fs = std::filesystem;
 
     void detour_or_throw(
-        const uintptr_t address, const std::string& function_name, const uintptr_t callback_function
+        const uintptr_t address,
+        const std::string& function_name,
+        const uintptr_t callback_function
     ) {
-        if (address == callback_function) {
+        if(address == callback_function) {
             LOG_DEBUG("Function '{}' is already hooked. Skipping detour.", function_name);
         }
 
@@ -52,7 +60,7 @@ namespace koalabox::hook {
 #ifdef _WIN64
         detour->setDetourScheme(PLH::x64Detour::ALL);
 #endif
-        if (detour->hook() || trampoline == 0) {
+        if(detour->hook() || trampoline == 0) {
             hooks.push_back(detour);
             address_map[function_name] = trampoline;
         } else {
@@ -61,69 +69,82 @@ namespace koalabox::hook {
     }
 
     void detour_or_throw(
-        const HMODULE& module_handle, const std::string& function_name,
+        const HMODULE& module_handle,
+        const std::string& function_name,
         const uintptr_t callback_function
     ) {
-        const auto address = reinterpret_cast<uintptr_t>(
-            win_util::get_proc_address_or_throw(module_handle, function_name.c_str())
-        );
+        const auto address = reinterpret_cast<uintptr_t>(win_util::get_proc_address_or_throw(
+            module_handle,
+            function_name.c_str()
+        ));
 
         detour_or_throw(address, function_name, callback_function);
     }
 
     void detour_or_warn(
-        const uintptr_t address, const std::string& function_name, const uintptr_t callback_function
+        const uintptr_t address,
+        const std::string& function_name,
+        const uintptr_t callback_function
     ) {
         try {
-            hook::detour_or_throw(address, function_name, callback_function);
-        } catch (const std::exception& ex) {
+            detour_or_throw(address, function_name, callback_function);
+        } catch(const std::exception& ex) {
             LOG_WARN("Detour error: {}", ex.what());
         }
     }
 
     void detour_or_warn(
-        const HMODULE& module_handle, const std::string& function_name,
+        const HMODULE& module_handle,
+        const std::string& function_name,
         const uintptr_t callback_function
     ) {
         try {
-            hook::detour_or_throw(module_handle, function_name, callback_function);
-        } catch (const std::exception& ex) {
+            detour_or_throw(module_handle, function_name, callback_function);
+        } catch(const std::exception& ex) {
             LOG_WARN("Detour error: {}", ex.what());
         }
     }
 
     void detour(
-        const uintptr_t address, const std::string& function_name, const uintptr_t callback_function
+        const uintptr_t address,
+        const std::string& function_name,
+        const uintptr_t callback_function
     ) {
         try {
             detour_or_throw(address, function_name, callback_function);
-        } catch (const std::exception& ex) {
+        } catch(const std::exception& ex) {
             util::panic("Failed to hook function {} via Detour: {}", function_name, ex.what());
         }
     }
 
     void detour(
-        const HMODULE& module_handle, const std::string& function_name,
+        const HMODULE& module_handle,
+        const std::string& function_name,
         const uintptr_t callback_function
     ) {
         try {
             detour_or_throw(module_handle, function_name, callback_function);
-        } catch (const std::exception& ex) {
+        } catch(const std::exception& ex) {
             util::panic("Failed to hook function {} via Detour: {}", function_name, ex.what());
         }
     }
 
     void eat_hook_or_throw(
-        const HMODULE& module_handle, const std::string& function_name, uintptr_t callback_function
+        const HMODULE& module_handle,
+        const std::string& function_name,
+        const uintptr_t callback_function
     ) {
         LOG_DEBUG("Hooking '{}' via EAT", function_name);
 
         uint64_t orig_function_address = 0;
         auto* const eat_hook = new PLH::EatHook(
-            function_name, module_handle, callback_function, &orig_function_address
+            function_name,
+            module_handle,
+            callback_function,
+            &orig_function_address
         );
 
-        if (eat_hook->hook()) {
+        if(eat_hook->hook()) {
             address_map[function_name] = orig_function_address;
 
             hooks.push_back(eat_hook);
@@ -135,43 +156,52 @@ namespace koalabox::hook {
     }
 
     void eat_hook_or_warn(
-        const HMODULE& module_handle, const std::string& function_name, uintptr_t callback_function
+        const HMODULE& module_handle,
+        const std::string& function_name,
+        uintptr_t callback_function
     ) {
         try {
-            hook::eat_hook_or_throw(module_handle, function_name, callback_function);
-        } catch (const std::exception& ex) {
+            eat_hook_or_throw(module_handle, function_name, callback_function);
+        } catch(const std::exception& ex) {
             LOG_WARN("Detour error: {}", ex.what());
         }
     }
 
     void swap_virtual_func_or_throw(
-        const void* instance, const std::string& function_name, const int ordinal,
+        const void* instance,
+        const std::string& function_name,
+        const int ordinal,
         uintptr_t callback_function
     ) {
-        if (instance) {
-            const auto* vtable = *(uintptr_t**)instance;
+        if(instance) {
+            // TODO: Use
+            //   struct clazz {
+            //       uintptr_t vtable[];
+            //   };
+            const auto* vtable = *(uintptr_t**) instance;
 
-            if (const auto target_func = vtable[ordinal]; target_func == callback_function) {
+            if(const auto target_func = vtable[ordinal]; target_func == callback_function) {
                 LOG_DEBUG(
-                    "Function '{}' is already hooked. Skipping virtual function swap", function_name
+                    "Function '{}' is already hooked. Skipping virtual function swap",
+                    function_name
                 );
                 return;
             }
         }
 
         LOG_DEBUG(
-            "Hooking '{}' at [[{}]+0x{:X}] via virtual function swap", function_name, instance,
+            "Hooking '{}' at [[{}]+0x{:X}] via virtual function swap",
+            function_name,
+            instance,
             ordinal * sizeof(void*)
         );
 
-        const PLH::VFuncMap redirect = {
-            {ordinal, callback_function},
-        };
+        const PLH::VFuncMap redirect = {{ordinal, callback_function},};
 
         PLH::VFuncMap original_functions;
-        auto* const swap = new PLH::VFuncSwapHook((char*)instance, redirect, &original_functions);
+        auto* const swap = new PLH::VFuncSwapHook((char*) instance, redirect, &original_functions);
 
-        if (swap->hook()) {
+        if(swap->hook()) {
             address_map[function_name] = original_functions[ordinal];
 
             hooks.push_back(swap);
@@ -181,26 +211,31 @@ namespace koalabox::hook {
     }
 
     void swap_virtual_func(
-        const void* instance, const std::string& function_name, const int ordinal,
+        const void* instance,
+        const std::string& function_name,
+        const int ordinal,
         uintptr_t callback_function
     ) {
         try {
             swap_virtual_func_or_throw(instance, function_name, ordinal, callback_function);
-        } catch (const std::exception& ex) {
+        } catch(const std::exception& ex) {
             util::panic(
-                "Failed to hook function {} via virtual function swap: {}", function_name, ex.what()
+                "Failed to hook function {} via virtual function swap: {}",
+                function_name,
+                ex.what()
             );
         }
     }
 
     uintptr_t get_original_function(const HMODULE& library, const std::string& function_name) {
-        return reinterpret_cast<uintptr_t>(
-            win_util::get_proc_address(library, function_name.c_str())
-        );
+        return reinterpret_cast<uintptr_t>(win_util::get_proc_address(
+            library,
+            function_name.c_str()
+        ));
     }
 
     uintptr_t get_original_address(const std::string& function_name) {
-        if (not address_map.contains(function_name)) {
+        if(not address_map.contains(function_name)) {
             util::panic("Address map does not contain function: {}", function_name);
         }
 

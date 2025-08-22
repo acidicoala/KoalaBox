@@ -12,15 +12,17 @@ namespace {
     };
 
     std::vector<query_entry_impl> query_impl(
-        const std::regex& selector, //
-        const ts::Node& node,       //
+        const std::regex& selector,
+        //
+        const ts::Node& node,
+        //
         const std::string& parent_path = ""
     ) {
         std::vector<query_entry_impl> results{};
 
         const auto current_path = std::format("{}/{}", parent_path, node.getType());
 
-        if (std::regex_match(current_path, selector)) {
+        if(std::regex_match(current_path, selector)) {
             results.emplace_back(
                 query_entry_impl{
                     .path = current_path,
@@ -31,13 +33,19 @@ namespace {
             return results;
         }
 
-        for (auto i = 0U, count = node.getNumNamedChildren(); i < count; ++i) {
-            if (const auto child = node.getNamedChild(i); not child.isNull()) {
+        for(auto i = 0U, count = node.getNumNamedChildren(); i < count; ++i) {
+            if(const auto child = node.getNamedChild(i); not child
+            
+            .
+            isNull()
+            )
+            {
                 const auto child_results = query_impl(selector, child, current_path);
 
                 // Move child results to current results
                 results.insert(
-                    results.end(), //
+                    results.end(),
+                    //
                     std::make_move_iterator(child_results.begin()),
                     std::make_move_iterator(child_results.end())
                 );
@@ -49,7 +57,6 @@ namespace {
 }
 
 namespace koalabox::parser {
-
     ts::Tree parse_source(const std::string_view& buffer) {
         const auto language = ts::Language(tree_sitter_cpp());
         auto parser = ts::Parser(language);
@@ -62,7 +69,7 @@ namespace koalabox::parser {
         const auto node_results = query_impl(selector, root.getRootNode());
 
         std::vector<query_entry> string_results;
-        for (const auto& [path, node] : node_results) {
+        for(const auto& [path, node] : node_results) {
             string_results.emplace_back(
                 query_entry{
                     .path = path,
@@ -74,17 +81,22 @@ namespace koalabox::parser {
         return string_results;
     }
 
-    void walk(const ts::Node& root, const std::function<visit_result(const ts::Node&)>& visit) {
+    void walk(const ts::Node& root, const std::function<visit_result(const ts::Node &)>& visit) {
         // DFS traversal
         std::deque<ts::Node> queue;
         queue.push_back(root);
         auto first_visit = true;
 
-        while (not queue.empty()) {
+        while(not queue
+        
+        .
+        empty()
+        )
+        {
             const auto node = queue.front();
             queue.pop_front();
 
-            switch (first_visit ? visit_result::Continue : visit(node)) {
+            switch(first_visit ? visit_result::Continue : visit(node)) {
             case visit_result::Continue:
                 break;
             case visit_result::SkipChildren:
@@ -93,8 +105,13 @@ namespace koalabox::parser {
                 return;
             }
 
-            for (uint32_t i = 0, count = node.getNumNamedChildren(); i < count; ++i) {
-                if (const auto child = node.getNamedChild(i); not child.isNull()) {
+            for(uint32_t i = 0, count = node.getNumNamedChildren(); i < count; ++i) {
+                if(const auto child = node.getNamedChild(i); not child
+                
+                .
+                isNull()
+                )
+                {
                     queue.push_back(child);
                 }
             }
