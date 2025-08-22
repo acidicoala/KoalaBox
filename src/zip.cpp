@@ -5,9 +5,8 @@
 #include <string>
 
 #include <miniz.h>
-#include <miniz_zip.h>
 
-#include <koalabox/zip.hpp>
+#include "koalabox/zip.hpp"
 
 namespace koalabox::zip {
 
@@ -15,7 +14,7 @@ namespace koalabox::zip {
         const fs::path& zip_path,
         const std::function<fs::path(const std::string& name, bool is_dir)>& predicate
     ) {
-        mz_zip_archive zip = {};
+        mz_zip_archive zip{};
 
         if (!mz_zip_reader_init_file(&zip, zip_path.string().c_str(), 0)) {
             throw std::runtime_error("mz_zip_reader_init_file() failed for: " + zip_path.string());
@@ -88,7 +87,7 @@ namespace koalabox::zip {
                     );
                 }
                 output_stream.write(
-                    static_cast<const char*>(p), static_cast<std::streamsize>(uncompressed_size)
+                    static_cast<const char*>(p), uncompressed_size
                 );
                 output_stream.close();
                 mz_free(p);

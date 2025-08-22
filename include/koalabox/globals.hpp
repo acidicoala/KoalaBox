@@ -1,16 +1,16 @@
 #pragma once
 
-#include <koalabox/core.hpp>
+#include <string>
 
 namespace koalabox::globals {
 
     /**
      * @return A handle representing the project DLL. Usually obtained from DllMain.
      */
-    KOALABOX_API(HMODULE) get_self_handle();
+    HMODULE get_self_handle();
 
-    KOALABOX_API(String) get_project_name(bool validate = true);
+    std::string get_project_name();
 
-    KOALABOX_API(void) init_globals(HMODULE handle, String name);
+    void init_globals(HMODULE handle, const std::string& name);
 
 }

@@ -1,19 +1,20 @@
-#include <koalabox/globals.hpp>
-#include <koalabox/logger.hpp>
-#include <koalabox/util.hpp>
-#include <koalabox/win_util.hpp>
-#include <koalabox/str.hpp>
+#include "koalabox/util.hpp"
+#include "koalabox/globals.hpp"
+#include "koalabox/logger.hpp"
+#include "koalabox/str.hpp"
+#include "koalabox/win_util.hpp"
 
 namespace koalabox::util {
 
-    KOALABOX_API(void) error_box(const String& title, const String& message) {
+    void error_box(const std::string& title, const std::string& message) {
         ::MessageBox(
-            nullptr, str::to_wstr(message).c_str(), str::to_wstr(title).c_str(), MB_OK | MB_ICONERROR
+            nullptr, str::to_wstr(message).c_str(), str::to_wstr(title).c_str(),
+            MB_OK | MB_ICONERROR
         );
     }
 
-    [[noreturn]] KOALABOX_API(void) panic(String message) {
-        const auto title = std::format("[{}] Panic!", globals::get_project_name(false));
+    [[noreturn]] void panic(std::string message) {
+        const auto title = std::format("[{}] Panic!", globals::get_project_name());
 
         OutputDebugString(str::to_wstr(message).c_str());
 
@@ -34,7 +35,7 @@ namespace koalabox::util {
     }
 
     // Source: https://guidedhacking.com/threads/testing-if-pointer-is-invalid.13222/post-77709
-    KOALABOX_API(bool) is_valid_pointer(const void* pointer) {
+    bool is_valid_pointer(const void* pointer) {
         const auto mbi_opt = win_util::virtual_query(pointer);
 
         if (mbi_opt) {

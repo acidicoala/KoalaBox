@@ -1,17 +1,17 @@
 #include <regex>
 
-#include <koalabox/loader.hpp>
-#include <koalabox/str.hpp>
-#include <koalabox/util.hpp>
-#include <koalabox/win_util.hpp>
-#include <koalabox/logger.hpp>
+#include "koalabox/loader.hpp"
+#include "koalabox/logger.hpp"
+#include "koalabox/str.hpp"
+#include "koalabox/util.hpp"
+#include "koalabox/win_util.hpp"
 
 namespace koalabox::loader {
 
-    KOALABOX_API(Path) get_module_dir(const HMODULE& handle) {
+    fs::path get_module_dir(const HMODULE& handle) {
         const auto file_name = win_util::get_module_file_name(handle);
 
-        const auto module_path = Path(str::to_wstr(file_name));
+        const auto module_path = fs::path(str::to_wstr(file_name));
 
         return module_path.parent_path();
     }
@@ -19,10 +19,10 @@ namespace koalabox::loader {
     /**
      * Key is undecorated name, value is decorated name, if `undecorate` is set
      */
-    KOALABOX_API(Map<String, String>) get_export_map(const HMODULE& library, bool undecorate) {
+    std::map<std::string, std::string> get_export_map(const HMODULE& library, bool undecorate) {
         // Adapted from: https://github.com/mborne/dll2def/blob/master/dll2def.cpp
 
-        auto exported_functions = Map<String, String>();
+        auto exported_functions = std::map<std::string, std::string>();
 
         auto* dos_header = reinterpret_cast<PIMAGE_DOS_HEADER>(library);
 
@@ -30,7 +30,7 @@ namespace koalabox::loader {
             util::panic("e_magic  != IMAGE_DOS_SIGNATURE");
         }
 
-        auto* header = reinterpret_cast<PIMAGE_NT_HEADERS>((BYTE*) library + dos_header->e_lfanew );
+        auto* header = reinterpret_cast<PIMAGE_NT_HEADERS>((BYTE*)library + dos_header->e_lfanew);
 
         if (header->Signature != IMAGE_NT_SIGNATURE) {
             util::panic("header->Signature != IMAGE_NT_SIGNATURE");
@@ -41,16 +41,17 @@ namespace koalabox::loader {
         }
 
         const auto& data_dir = header->OptionalHeader.DataDirectory[IMAGE_DIRECTORY_ENTRY_EXPORT];
-        auto* exports = reinterpret_cast<PIMAGE_EXPORT_DIRECTORY>((BYTE*) library + data_dir.VirtualAddress);
+        auto* exports =
+            reinterpret_cast<PIMAGE_EXPORT_DIRECTORY>((BYTE*)library + data_dir.VirtualAddress);
 
-        PVOID names = (BYTE*) library + exports->AddressOfNames;
+        PVOID names = (BYTE*)library + exports->AddressOfNames;
 
         // Iterate over the names and add them to the vector
         for (unsigned int i = 0; i < exports->NumberOfNames; i++) {
-            String exported_name = (char*) library + ((DWORD*) names)[i];
+            std::string exported_name = (char*)library + ((DWORD*)names)[i];
 
             if (undecorate) {
-                String undecorated_function = exported_name; // fallback value
+                std::string undecorated_function = exported_name; // fallback value
 
                 // Extract function name from decorated name
                 static const std::regex expression(R"((?:^_)?(\w+)(?:@\d+$)?)");
@@ -75,12 +76,11 @@ namespace koalabox::loader {
         return exported_functions;
     }
 
-    KOALABOX_API(String) get_decorated_function(const HMODULE& library, const String& function_name) {
+    std::string get_decorated_function(const HMODULE& library, const std::string& function_name) {
 #ifdef _WIN64
-        SUPPRESS_UNUSED(library)
         return function_name;
 #else
-        static Map<HMODULE, Map<String, String>> undecorated_function_maps;
+        static std::map<HMODULE, std::map<std::string, std::string>> undecorated_function_maps;
 
         if (not undecorated_function_maps.contains(library)) {
             undecorated_function_maps[library] = get_export_map(library, true);
@@ -90,7 +90,7 @@ namespace koalabox::loader {
 #endif
     }
 
-    KOALABOX_API(HMODULE) load_original_library(const Path& self_path, const String& orig_library_name) {
+    HMODULE load_original_library(const fs::path& self_path, const std::string& orig_library_name) {
         const auto original_module_path = self_path / (orig_library_name + "_o.dll");
 
         auto* const original_module = win_util::load_library(original_module_path);

@@ -3,9 +3,10 @@
 #include <ios>
 #include <sstream>
 
-#include <koalabox/str.hpp>
+#include "koalabox/str.hpp"
 
 namespace koalabox::str {
+
     std::string_view trim(const std::string_view& s) {
         const auto start = std::ranges::find_if_not(
             s, //

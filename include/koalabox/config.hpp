@@ -1,34 +1,34 @@
 #pragma once
 
-#include <koalabox/core.hpp>
-#include <koalabox/io.hpp>
-#include <koalabox/logger.hpp>
-#include <koalabox/paths.hpp>
-#include <koalabox/util.hpp>
+#include <nlohmann/json.hpp>
+
+#include "koalabox/io.hpp"
+#include "koalabox/logger.hpp"
+#include "koalabox/paths.hpp"
+#include "koalabox/util.hpp"
 
 namespace koalabox::config {
+    namespace fs = std::filesystem;
 
-    template<class Config>
-    KOALABOX_API(Config) parse(Path config_path) {
-        if (not exists(config_path)) {
+    template <class Config> Config parse(const fs::path& config_path) {
+        if (not fs::exists(config_path)) {
             return Config();
         }
 
         try {
             const auto config_str = io::read_file(config_path);
 
-            const auto config = Json::parse(config_str).get<Config>();
+            const auto config = nlohmann::json::parse(config_str).get<Config>();
 
-            LOG_DEBUG("Parsed config:\n{}", Json(config).dump(2));
+            LOG_DEBUG("Parsed config:\n{}", nlohmann::json(config).dump(2));
 
             return config;
-        } catch (const Exception& e) {
+        } catch (const std::exception& e) {
             util::panic("Error parsing config file: {}", e.what());
         }
     }
 
-    template<class Config>
-    KOALABOX_API(Config) parse() {
+    template <class Config> Config parse() {
         return parse<Config>(paths::get_config_path());
     }
 }

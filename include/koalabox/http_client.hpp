@@ -1,15 +1,17 @@
 #pragma once
 
-#include <koalabox/core.hpp>
+#include <nlohmann/json.hpp>
 
 namespace koalabox::http_client {
 
-    KOALABOX_API(Json) get_json(const String& url);
+    namespace fs = std::filesystem;
 
-    KOALABOX_API(Json) post_json(const String& url, Json json);
+    nlohmann::json get_json(const std::string& url);
 
-    KOALABOX_API(String) head_etag(const String& url);
+    nlohmann::json post_json(const std::string& url, nlohmann::json json);
 
-    KOALABOX_API(String) download_file(const String& url, const Path& destination);
+    std::string head_etag(const std::string& url);
+
+    std::string download_file(const std::string& url, const fs::path& destination);
 
 }

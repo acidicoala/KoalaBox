@@ -1,16 +1,22 @@
 #pragma once
 
-#include <koalabox/core.hpp>
+#include <filesystem>
+#include <string>
 
 namespace koalabox::io {
 
-    String read_file(const Path& file_path);
+    namespace fs = std::filesystem;
+
+    /**
+     * @throws exception on file read error
+     */
+    std::string read_file(const fs::path& file_path);
 
     /**
      * Write a string to file at the given path.
      * @return `true` if operation was successful, `false` otherwise
      */
-    bool write_file(const Path& file_path, const String& contents) noexcept;
+    bool write_file(const fs::path& file_path, const std::string& contents) noexcept;
 
     bool is_local_port_in_use(int port);
 }

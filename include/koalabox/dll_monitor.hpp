@@ -1,11 +1,14 @@
 #pragma once
 
-#include <koalabox/core.hpp>
+#include <functional>
+#include <string>
+#include <vector>
 
 /**
  * DLL Monitor starts a DLL load listener and calls the provided callback function
  * to notify of the load events that match the provided library name(s).
  */
+// TODO: Rename to `dll`
 namespace koalabox::dll_monitor {
 
     void init_listener(

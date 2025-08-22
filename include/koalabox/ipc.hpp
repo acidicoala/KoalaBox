@@ -1,27 +1,27 @@
 #pragma once
 
-#include <koalabox/core.hpp>
+#include <nlohmann/json.hpp>
 
 namespace koalabox::ipc {
 
     struct Request {
-        String name;
-        Json::object_t args;
+        std::string name;
+        nlohmann::json::object_t args;
 
         NLOHMANN_DEFINE_TYPE_INTRUSIVE(Request, name, args);
     };
 
     struct Response {
         bool success = false;
-        Json::object_t data;
+        nlohmann::json::object_t data;
 
         NLOHMANN_DEFINE_TYPE_INTRUSIVE(Response, success, data);
     };
 
     /// Note: This function is intended to be called from a new thread, in a try-catch block.
-    KOALABOX_API(void) init_pipe_server(
-        const String& pipe_id,
-        const Function<Response(const Request& request)>& callback
+    void
+    init_pipe_server(
+        const std::string& pipe_id, const std::function<Response(const Request& request)>& callback
     );
 
 }

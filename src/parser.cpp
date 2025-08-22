@@ -1,7 +1,7 @@
 #include <deque>
 
-#include <koalabox/logger.hpp>
-#include <koalabox/parser.hpp>
+#include "koalabox/logger.hpp"
+#include "koalabox/parser.hpp"
 
 extern "C" const TSLanguage* tree_sitter_cpp();
 

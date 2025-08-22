@@ -1,11 +1,14 @@
 #pragma once
 
-#include <koalabox/core.hpp>
+#include <filesystem>
+#include <string>
+#include <vector>
 
 namespace koalabox::crypto {
+    namespace fs = std::filesystem;
 
-    Vector<uint8_t> decode_hex_string(const String& hex_str);
+    std::vector<uint8_t> decode_hex_string(const std::string& hex_str);
 
-    String calculate_md5(const Path& file_path);
+    std::string calculate_md5(const fs::path& file_path);
 
 }

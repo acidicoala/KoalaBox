@@ -1,27 +1,25 @@
 #pragma once
 
-#include <koalabox/core.hpp>
-
 namespace koalabox::patcher {
 
-    KOALABOX_API(uintptr_t) find_pattern_address(
+    uintptr_t find_pattern_address(
         uintptr_t base_address,
         size_t scan_size,
-        const String& name,
-        const String& pattern
+        const std::string& name,
+        const std::string& pattern
     );
 
-    KOALABOX_API(uintptr_t) find_pattern_address(
+    uintptr_t find_pattern_address(
         const MODULEINFO& process_info,
-        const String& name,
-        const String& pattern
+        const std::string& name,
+        const std::string& pattern
     );
 
-    KOALABOX_API(uintptr_t) find_pattern_address(
+    uintptr_t find_pattern_address(
         HMODULE module_handle,
-        const String& section_name,
-        const String& name,
-        const String& pattern
+        const std::string& section_name,
+        const std::string& name,
+        const std::string& pattern
     );
 
 }

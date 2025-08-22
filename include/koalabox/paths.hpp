@@ -1,28 +1,28 @@
 #pragma once
 
-#include <koalabox/core.hpp>
+#include <filesystem>
 
 namespace koalabox::paths {
 
+    namespace fs = std::filesystem;
+
     /**
-     * @return An std::path instance representing the directory containing this DLL
+     * @return std::path instance representing the directory containing this DLL.
      */
-    KOALABOX_API(Path) get_self_path();
+    fs::path get_self_path();
 
-    KOALABOX_API(Path) get_config_path();
+    fs::path get_config_path();
 
-    KOALABOX_API(Path) get_cache_path();
+    fs::path get_cache_path();
 
-    KOALABOX_API(Path) get_log_path();
+    fs::path get_log_path();
 
-    KOALABOX_API(Path) get_ca_key_path();
+    fs::path get_ca_key_path();
 
-    KOALABOX_API(Path) get_ca_cert_path();
+    fs::path get_ca_cert_path();
 
-    KOALABOX_API(Path) get_cache_dir();
+    fs::path get_cache_dir();
 
-    KOALABOX_API(Path) get_user_dir();
+    fs::path get_user_dir();
 
 }
-
-#define TEST_TEST ABC123

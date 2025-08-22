@@ -1,23 +1,24 @@
-#include <koalabox/http_client.hpp>
-#include <koalabox/util.hpp>
-#include <koalabox/logger.hpp>
-
 #include <cpr/cpr.h>
 
+#include "koalabox/http_client.hpp"
+#include "koalabox/logger.hpp"
+#include "koalabox/util.hpp"
 
 namespace koalabox::http_client {
     namespace {
         void validate_ok_response(const cpr::Response& res) {
             if (res.status_code != cpr::status::HTTP_OK) {
-                throw util::exception(
-                    "Status code: {}, Error code: {},\nResponse headers:\n{}\nBody:\n{}",
-                    res.status_code, (int)res.error.code, res.raw_header, res.text
+                throw std::runtime_error(
+                    std::format(
+                        "Status code: {}, Error code: {},\nResponse headers:\n{}\nBody:\n{}",
+                        res.status_code, static_cast<int>(res.error.code), res.raw_header, res.text
+                    )
                 );
             }
         }
     }
 
-    KOALABOX_API(Json) get_json(const String& url) {
+    nlohmann::json get_json(const std::string& url) {
         LOG_DEBUG("GET {}", url);
 
         const auto res = cpr::Get(cpr::Url{url});
@@ -26,15 +27,14 @@ namespace koalabox::http_client {
 
         LOG_TRACE("Response text: \n{}", res.text);
 
-        return Json::parse(res.text);
+        return nlohmann::json::parse(res.text);
     }
 
-    KOALABOX_API(Json) post_json(const String& url, Json payload) {
+    nlohmann::json post_json(const std::string& url, const nlohmann::json& payload) {
         LOG_DEBUG("POST {}", url);
 
         const auto res = cpr::Post(
-            cpr::Url{url},
-            cpr::Header{{"content-type", "application/json"}},
+            cpr::Url{url}, cpr::Header{{"content-type", "application/json"}},
             cpr::Body{payload.dump()}
         );
 
@@ -42,15 +42,15 @@ namespace koalabox::http_client {
 
         LOG_TRACE("Response text: \n{}", res.text);
 
-        return Json::parse(res.text);
+        return nlohmann::json::parse(res.text);
     }
 
-    KOALABOX_API(String) head_etag(const String& url) {
+    std::string head_etag(const std::string& url) {
         const auto res = cpr::Head(cpr::Url{url});
 
         validate_ok_response(res);
 
-        if (res.header.find("etag") != res.header.end()) {
+        if (res.header.contains("etag")) {
             const auto etag = res.header.at("etag");
             LOG_TRACE(R"(Etag for url "{}" = "{}")", url, etag);
             return etag;
@@ -61,7 +61,7 @@ namespace koalabox::http_client {
         return "";
     }
 
-    KOALABOX_API(String) download_file(const String& url, const Path& destination) {
+    std::string download_file(const std::string& url, const fs::path& destination) {
         LOG_DEBUG(R"(Downloading "{}" to "{}")", url, destination.string());
 
         std::ofstream of(destination, std::ios::binary);
@@ -71,7 +71,7 @@ namespace koalabox::http_client {
 
         LOG_DEBUG("Download complete ({} bytes)", res.downloaded_bytes);
 
-        if (res.header.find("etag") != res.header.end()) {
+        if (res.header.contains("etag")) {
             return res.header.at("etag");
         }
 

@@ -1,6 +1,6 @@
 #pragma once
 
-#include <koalabox/core.hpp>
+#include <nlohmann/json.hpp>
 
 /**
  * This namespace contains utility functions for reading from and writing to cache file on disk.
@@ -8,8 +8,8 @@
  */
 namespace koalabox::cache {
 
-    KOALABOX_API(Json) get(const String& key, const Json& value = Json());
+    nlohmann::json get(const std::string& key, const nlohmann::json& fallback = nlohmann::json());
 
-    KOALABOX_API(bool) put(const String& key, const Json& value) noexcept;
+    bool put(const std::string& key, const nlohmann::json& value) noexcept;
 
 }

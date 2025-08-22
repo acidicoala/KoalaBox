@@ -62,6 +62,7 @@ set(BUILD_EXAMPLES OFF)
 kb_add_package(cpr libcpr/cpr 1.12.0)
 
 ## https://github.com/nlohmann/json
+target_compile_definitions(KoalaBox PUBLIC JSON_DIAGNOSTICS=1)
 kb_add_package(nlohmann_json nlohmann/json v3.12.0)
 
 ## https://github.com/stevemk14ebr/PolyHook_2_0
@@ -70,6 +71,10 @@ set(POLYHOOK_FEATURE_EXCEPTION OFF)
 kb_add_package(PolyHook_2 stevemk14ebr/PolyHook_2_0 298d56210b9d9e66cde8f96481d6053925c6ae15)
 
 ## https://github.com/gabime/spdlog
+target_compile_definitions(KoalaBox PUBLIC
+    $<$<CONFIG:Debug>:SPDLOG_ACTIVE_LEVEL=SPDLOG_LEVEL_TRACE>
+    $<$<NOT:$<CONFIG:Debug>>:SPDLOG_ACTIVE_LEVEL=SPDLOG_LEVEL_DEBUG>
+)
 kb_add_package(spdlog gabime/spdlog v1.15.3)
 
 ## WinReg - https://github.com/GiovanniDicanio/WinReg

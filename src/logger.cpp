@@ -1,12 +1,10 @@
 #include <regex>
 
-#include <koalabox/logger.hpp>
-#include <koalabox/paths.hpp>
-
-// It's important to include them after koalabox/logger.hpp
-// to avoid SPDLOG_ACTIVE_LEVEL redefinitions
 #include <spdlog/sinks/basic_file_sink.h>
 #include <spdlog/sinks/stdout_sinks.h>
+
+#include "koalabox/logger.hpp"
+#include "koalabox/paths.hpp"
 
 namespace {
     namespace fs = std::filesystem;
@@ -16,8 +14,8 @@ namespace {
 
         // Potentially useful flags:
         // %P - Process ID
-        // %t - Thread ID
 
+        // %t - Thread ID
         // %s - Basename of the source file
         // %# - Source line
         // %! - Source function
@@ -39,8 +37,9 @@ namespace {
         constexpr auto src_file_name = "%32!s";
         constexpr auto src_line_num = "%-4!#";
         constexpr auto timestamp = "%H:%M:%S.%e";
+        constexpr auto thread_id = "%6!t";
 
-        return std::format("%L|{}|{}:{}|%v", timestamp, src_file_name, src_line_num);
+        return std::format("%L|{}|{}:{}|{}|%v", timestamp, src_file_name, src_line_num, thread_id);
     }
 
     class UsernameFilterFormatter final : public spdlog::formatter {

@@ -1,20 +1,20 @@
-#include <koalabox/cache.hpp>
-#include <koalabox/io.hpp>
-#include <koalabox/logger.hpp>
-#include <koalabox/paths.hpp>
+#include "koalabox/cache.hpp"
+#include "koalabox/io.hpp"
+#include "koalabox/logger.hpp"
+#include "koalabox/paths.hpp"
 
 namespace koalabox::cache {
+    namespace fs = std::filesystem;
+
     namespace {
-        Json read_cache() {
-            return Json::parse(
-                io::read_file(
-                    paths::get_cache_path()
-                )
-            );
+        // TODO: Keep cache in memory instead and flush it on write
+
+        nlohmann::json read_cache() {
+            return nlohmann::json::parse(io::read_file(paths::get_cache_path()));
         }
     }
 
-    KOALABOX_API(Json) get(const String& key, const Json& fallback) {
+    nlohmann::json get(const std::string& key, const nlohmann::json& fallback) {
         const auto cache = read_cache();
 
         LOG_DEBUG("Cache key: \"{}\". Value: \n{}", key, cache.dump(2));
@@ -26,24 +26,27 @@ namespace koalabox::cache {
         return fallback;
     }
 
-    KOALABOX_API(bool) put(const String& key, const Json& value) noexcept {
+    bool put(const std::string& key, const nlohmann::json& value) noexcept {
         try {
-            static Mutex mutex;
-            const MutexLockGuard lock(mutex);
+            static std::mutex section;
+            const std::lock_guard lock(section);
 
-            Json new_cache;
-            try {
-                new_cache = read_cache();
-            } catch (const Exception& e) {
-                LOG_WARN("Failed to read cache from disk: {}", e.what());
+            nlohmann::json new_cache;
+
+            if (fs::exists(paths::get_cache_path())) {
+                try {
+                    new_cache = read_cache();
+                } catch (const std::exception& e) {
+                    LOG_WARN("Failed to read cache from disk: {}", e.what());
+                }
             }
 
             new_cache[key] = value;
 
-            io::write_file(koalabox::paths::get_cache_path(), new_cache.dump(2));
+            io::write_file(paths::get_cache_path(), new_cache.dump(2));
 
             return true;
-        } catch (const Exception& e) {
+        } catch (const std::exception& e) {
             LOG_ERROR("Failed to write cache to disk: {}", e.what());
 
             return false;

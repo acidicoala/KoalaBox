@@ -1,7 +1,7 @@
-#include <deque>
 #include <fstream>
 #include <iostream>
 #include <regex>
+#include <set>
 
 #include <glob/glob.h>
 
@@ -57,7 +57,7 @@ namespace {
         return declared_functions;
     }
 
-    bool parseBoolean(const String& bool_str) {
+    bool parseBoolean(const std::string& bool_str) {
         if (bool_str == "TRUE") {
             return true;
         }
@@ -154,7 +154,7 @@ int wmain(const int argc, const wchar_t* argv[]) { // NOLINT(*-use-internal-link
 
             export_file << line << std::endl;
         }
-    } catch (const Exception& ex) {
+    } catch (const std::exception& ex) {
         LOG_ERROR("Error: {}", ex.what());
         exit(-1);
     }

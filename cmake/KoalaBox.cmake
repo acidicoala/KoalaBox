@@ -80,16 +80,17 @@ endfunction()
 
 function(configure_linker_exports)
     cmake_parse_arguments(
-        ARG "UNDECORATE" "TARGET;FORWARDED_DLL;INPUT_SOURCES_DIR;DLL_FILES_GLOB" "" ${ARGN}
+        ARG "UNDECORATE" "TARGET;HEADER_NAME;FORWARDED_DLL;INPUT_SOURCES_DIR;DLL_FILES_GLOB" "" ${ARGN}
     )
 
-    set(GENERATED_LINKER_EXPORTS "${CMAKE_CURRENT_BINARY_DIR}/linker_exports.h")
+    set(GENERATED_LINKER_EXPORTS "${CMAKE_CURRENT_BINARY_DIR}/${ARG_HEADER_NAME}.h")
     set(GENERATED_LINKER_EXPORTS "${GENERATED_LINKER_EXPORTS}" PARENT_SCOPE)
 
     # Make the linker_exports header available before build
     file(TOUCH ${GENERATED_LINKER_EXPORTS})
 
-    add_custom_target(generate_linker_exports ALL
+    set(GENERATE_LINKER_EXPORTS_TARGET "generate_linker_exports_for_${ARG_HEADER_NAME}")
+    add_custom_target("${GENERATE_LINKER_EXPORTS_TARGET}" ALL
         COMMENT "Generate linkers exports for export address table"
         COMMAND exports_generator # Executable path
         "${ARG_UNDECORATE}" # Undecorate boolean
@@ -101,7 +102,7 @@ function(configure_linker_exports)
         DEPENDS exports_generator
     )
 
-    add_dependencies("${ARG_TARGET}" generate_linker_exports)
+    add_dependencies("${ARG_TARGET}" "${GENERATE_LINKER_EXPORTS_TARGET}")
 endfunction()
 
 function(install_python)
