@@ -227,14 +227,15 @@ namespace koalabox::hook {
         }
     }
 
-    uintptr_t get_original_function(const HMODULE& library, const std::string& function_name) {
-        return reinterpret_cast<uintptr_t>(win_util::get_proc_address(
-            library,
-            function_name.c_str()
-        ));
+    uintptr_t get_module_function_address(
+        const HMODULE& module_handle,
+        const std::string& function_name
+    ) {
+        const auto address = win_util::get_proc_address(module_handle, function_name.c_str());
+        return reinterpret_cast<uintptr_t>(address);
     }
 
-    uintptr_t get_original_address(const std::string& function_name) {
+    uintptr_t get_hooked_function_address(const std::string& function_name) {
         if(not address_map.contains(function_name)) {
             util::panic("Address map does not contain function: {}", function_name);
         }
@@ -246,7 +247,7 @@ namespace koalabox::hook {
         LOG_DEBUG("Hooking initialization");
 
         // Initialize polyhook logger
-        auto polyhook_logger = std::make_shared<PolyhookLogger>(print_info);
+        const auto polyhook_logger = std::make_shared<PolyhookLogger>(print_info);
         PLH::Log::registerLogger(polyhook_logger);
     }
 

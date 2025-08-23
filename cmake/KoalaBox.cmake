@@ -9,8 +9,7 @@ set(CPM_SOURCE_CACHE "${CMAKE_SOURCE_DIR}/build/.cache" CACHE STRING "CPM.cmake 
 include("${CMAKE_CURRENT_LIST_DIR}/get_cpm.cmake")
 
 # Sets the variable ${VAR} with val_for_32 on 32-bit build
-# and appends 64 to val_for_32 on 64-bit build, unless it an optional argument
-# is provided.
+# and appends 64 to val_for_32 on 64-bit build, unless an optional argument is provided.
 function(set_32_and_64 VAR val_for_32)
     if(DEFINED ARGV2)
         set(val_for_64 ${ARGV2})
@@ -26,21 +25,23 @@ function(set_32_and_64 VAR val_for_32)
 endfunction()
 
 ## Generate version resource file
-function(configure_version_resource FILE_DESC)
+function(configure_version_resource TARGET FILE_DESC)
     set(DLL_VERSION_FILE_DESC ${FILE_DESC})
     set(DLL_VERSION_PRODUCT_NAME ${CMAKE_PROJECT_NAME})
     set(DLL_VERSION_INTERNAL_NAME ${CMAKE_PROJECT_NAME})
 
     set(VERSION_RESOURCE "${CMAKE_CURRENT_BINARY_DIR}/version.rc")
-    set(VERSION_RESOURCE ${VERSION_RESOURCE} PARENT_SCOPE)
 
-    configure_file(KoalaBox/res/version.gen.rc ${VERSION_RESOURCE})
+    get_target_property(KOALABOX_SOURCE_DIR KoalaBox SOURCE_DIR)
+    configure_file("${KOALABOX_SOURCE_DIR}/res/version.gen.rc" ${VERSION_RESOURCE})
+    target_sources(${TARGET} PRIVATE ${VERSION_RESOURCE})
 endfunction()
 
 function(configure_build_config)
     set(BUILD_CONFIG_HEADER "${CMAKE_CURRENT_BINARY_DIR}/build_config.h")
 
-    configure_file(KoalaBox/res/build_config.gen.h ${BUILD_CONFIG_HEADER})
+    get_target_property(KOALABOX_SOURCE_DIR KoalaBox SOURCE_DIR)
+    configure_file("${KOALABOX_SOURCE_DIR}/res/build_config.gen.h" ${BUILD_CONFIG_HEADER})
 
     foreach(EXTRA_CONFIG IN LISTS ARGN)
         set(GENERATED_EXTRA_CONFIG ${CMAKE_CURRENT_BINARY_DIR}/${EXTRA_CONFIG}.h)
@@ -71,7 +72,6 @@ function(configure_linker_exports)
     )
 
     set(GENERATED_LINKER_EXPORTS "${CMAKE_CURRENT_BINARY_DIR}/${ARG_HEADER_NAME}.h")
-    set(GENERATED_LINKER_EXPORTS "${GENERATED_LINKER_EXPORTS}" PARENT_SCOPE)
 
     # Make the linker_exports header available before build
     file(TOUCH ${GENERATED_LINKER_EXPORTS})

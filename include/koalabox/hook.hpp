@@ -2,6 +2,12 @@
 
 #include <string>
 
+#define KB_HOOK_GET_MODULE_FN(MODULE, FUNC) koalabox::hook::get_module_function(MODULE, #FUNC, FUNC)
+#define KB_HOOK_GET_HOOKED_FN(MODULE, FUNC) koalabox::hook::get_hooked_function(#FUNC, FUNC)
+
+#define KB_HOOK_DETOUR(FUNC, ADDRESS) \
+    koalabox::hook::detour_or_warn(ADDRESS, #FUNC, reinterpret_cast<uintptr_t>(FUNC));
+
 namespace koalabox::hook {
     void detour_or_throw(
         uintptr_t address,
@@ -65,21 +71,27 @@ namespace koalabox::hook {
         uintptr_t callback_function
     );
 
-    uintptr_t get_original_function(
-        const HMODULE& library,
+    /**
+     * @return address of the exported function in the given module.
+     */
+    uintptr_t get_module_function_address(
+        const HMODULE& module_handle,
         const std::string& function_name
     );
 
-    uintptr_t get_original_address(const std::string& function_name);
-
     template<typename F>
-    F get_original_function(const HMODULE& library, const std::string& function_name, F) {
-        return reinterpret_cast<F>(get_original_function(library, function_name));
+    F get_module_function(const HMODULE& module_handle, const std::string& function_name, F) {
+        return reinterpret_cast<F>(get_module_function_address(module_handle, function_name));
     }
 
+    /**
+     * @return address of the function that was hooked.
+     */
+    uintptr_t get_hooked_function_address(const std::string& function_name);
+
     template<typename F>
-    F get_original_hooked_function(const std::string& function_name, F) {
-        return reinterpret_cast<F>(get_original_address(function_name));
+    F get_hooked_function(const std::string& function_name, F) {
+        return reinterpret_cast<F>(get_hooked_function_address(function_name));
     }
 
     void init(bool print_info = false);
