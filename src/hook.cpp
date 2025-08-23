@@ -9,11 +9,6 @@
 #include "koalabox/win_util.hpp"
 
 namespace {
-    auto& get_address_map() {
-        static std::map<std::string, uintptr_t> address_map;
-        return address_map;
-    }
-
     class PolyhookLogger final : public PLH::Logger {
         bool print_info;
 
@@ -35,12 +30,32 @@ namespace {
         }
     };
 
-    std::vector<PLH::IHook*> hooks;
-    auto& address_map = get_address_map();
+    struct hook_data {
+        std::unique_ptr<PLH::IHook> hook;
+        uintptr_t original_address;
+    };
+
+    // Key is function name
+    std::map<std::string, hook_data> hook_map;
 }
 
 namespace koalabox::hook {
     namespace fs = std::filesystem;
+
+    bool unhook(const std::string& function_name) {
+        static std::mutex section;
+        const std::lock_guard lock(section);
+
+        if(not hook_map.contains(function_name)) {
+            LOG_WARN("Cannot unhook '{}' since it is not found in the hook map");
+            return false;
+        }
+
+        const auto success = hook_map[function_name].hook->unHook();
+        hook_map.erase(function_name);
+
+        return success;
+    }
 
     void detour_or_throw(
         const uintptr_t address,
@@ -60,10 +75,13 @@ namespace koalabox::hook {
 #ifdef _WIN64
         detour->setDetourScheme(PLH::x64Detour::ALL);
 #endif
-        if(detour->hook() || trampoline == 0) {
-            hooks.push_back(detour);
-            address_map[function_name] = trampoline;
+        if(detour->hook()) {
+            hook_map[function_name] = {
+                .hook = std::unique_ptr<PLH::IHook>(detour),
+                .original_address = static_cast<uintptr_t>(trampoline),
+            };
         } else {
+            delete detour;
             throw util::exception("Failed to hook function: {}", function_name);
         }
     }
@@ -73,12 +91,12 @@ namespace koalabox::hook {
         const std::string& function_name,
         const uintptr_t callback_function
     ) {
-        const auto address = reinterpret_cast<uintptr_t>(win_util::get_proc_address_or_throw(
+        const auto address = win_util::get_proc_address_or_throw(
             module_handle,
             function_name.c_str()
-        ));
+        );
 
-        detour_or_throw(address, function_name, callback_function);
+        detour_or_throw(reinterpret_cast<uintptr_t>(address), function_name, callback_function);
     }
 
     void detour_or_warn(
@@ -145,9 +163,10 @@ namespace koalabox::hook {
         );
 
         if(eat_hook->hook()) {
-            address_map[function_name] = orig_function_address;
-
-            hooks.push_back(eat_hook);
+            hook_map[function_name] = {
+                .hook = std::unique_ptr<PLH::IHook>(eat_hook),
+                .original_address = static_cast<uintptr_t>(orig_function_address),
+            };
         } else {
             delete eat_hook;
 
@@ -199,12 +218,17 @@ namespace koalabox::hook {
         const PLH::VFuncMap redirect = {{ordinal, callback_function},};
 
         PLH::VFuncMap original_functions;
-        auto* const swap = new PLH::VFuncSwapHook((char*) instance, redirect, &original_functions);
+        auto* const swap_hook = new PLH::VFuncSwapHook(
+            (char*) instance,
+            redirect,
+            &original_functions
+        );
 
-        if(swap->hook()) {
-            address_map[function_name] = original_functions[ordinal];
-
-            hooks.push_back(swap);
+        if(swap_hook->hook()) {
+            hook_map[function_name] = {
+                .hook = std::unique_ptr<PLH::IHook>(swap_hook),
+                .original_address = static_cast<uintptr_t>(original_functions[ordinal]),
+            };
         } else {
             throw util::exception("Failed to hook function: {}", function_name);
         }
@@ -214,7 +238,7 @@ namespace koalabox::hook {
         const void* instance,
         const std::string& function_name,
         const int ordinal,
-        uintptr_t callback_function
+        const uintptr_t callback_function
     ) {
         try {
             swap_virtual_func_or_throw(instance, function_name, ordinal, callback_function);
@@ -236,11 +260,11 @@ namespace koalabox::hook {
     }
 
     uintptr_t get_hooked_function_address(const std::string& function_name) {
-        if(not address_map.contains(function_name)) {
-            util::panic("Address map does not contain function: {}", function_name);
+        if(not hook_map.contains(function_name)) {
+            util::panic("Hook map does not contain function: {}", function_name);
         }
 
-        return address_map.at(function_name);
+        return hook_map[function_name].original_address;
     }
 
     void init(bool print_info) {

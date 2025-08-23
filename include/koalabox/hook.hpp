@@ -3,12 +3,17 @@
 #include <string>
 
 #define KB_HOOK_GET_MODULE_FN(MODULE, FUNC) koalabox::hook::get_module_function(MODULE, #FUNC, FUNC)
-#define KB_HOOK_GET_HOOKED_FN(MODULE, FUNC) koalabox::hook::get_hooked_function(#FUNC, FUNC)
+#define KB_HOOK_GET_HOOKED_FN(FUNC) koalabox::hook::get_hooked_function(#FUNC, FUNC)
 
-#define KB_HOOK_DETOUR(FUNC, ADDRESS) \
-    koalabox::hook::detour_or_warn(ADDRESS, #FUNC, reinterpret_cast<uintptr_t>(FUNC));
+#define KB_HOOK_DETOUR_ADDRESS(FUNC, ADDRESS) \
+    koalabox::hook::detour_or_warn(ADDRESS, #FUNC, reinterpret_cast<uintptr_t>(FUNC))
+
+#define KB_HOOK_DETOUR_MODULE(FUNC, MODULE) \
+    koalabox::hook::detour_or_warn(MODULE, #FUNC, reinterpret_cast<uintptr_t>(FUNC))
 
 namespace koalabox::hook {
+    bool unhook(const std::string& function_name);
+
     void detour_or_throw(
         uintptr_t address,
         const std::string& function_name,

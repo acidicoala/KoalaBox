@@ -2,14 +2,6 @@
 
 A collection of C++ utilities that comes in handy when developing koality projects.
 
-To use this library as a submodule add the following to the CMake file:
-
-[source,cmake]
-----
-add_subdirectory(KoalaBox EXCLUDE_FROM_ALL)
-target_link_libraries(MyProject PRIVATE KoalaBox)
-----
-
 == 📄 License
 
 This software is licensed under the https://unlicense.org/[Unlicense], terms of which are available in link:UNLICENSE.txt[UNLICENSE.txt]
