@@ -4,9 +4,10 @@
 
 #include "koalabox/hook.hpp"
 #include "koalabox/logger.hpp"
+#include "koalabox/path.hpp"
 #include "koalabox/str.hpp"
 #include "koalabox/util.hpp"
-#include "koalabox/win_util.hpp"
+#include "koalabox/win.hpp"
 
 namespace {
     class PolyhookLogger final : public PLH::Logger {
@@ -32,7 +33,7 @@ namespace {
 
     struct hook_data {
         std::unique_ptr<PLH::IHook> hook;
-        uintptr_t original_address;
+        uintptr_t original_address = 0;
     };
 
     // Key is function name
@@ -40,8 +41,6 @@ namespace {
 }
 
 namespace koalabox::hook {
-    namespace fs = std::filesystem;
-
     bool unhook(const std::string& function_name) {
         static std::mutex section;
         const std::lock_guard lock(section);
@@ -91,7 +90,7 @@ namespace koalabox::hook {
         const std::string& function_name,
         const uintptr_t callback_function
     ) {
-        const auto address = win_util::get_proc_address_or_throw(
+        const auto address = win::get_proc_address_or_throw(
             module_handle,
             function_name.c_str()
         );
@@ -255,7 +254,7 @@ namespace koalabox::hook {
         const HMODULE& module_handle,
         const std::string& function_name
     ) {
-        const auto address = win_util::get_proc_address(module_handle, function_name.c_str());
+        const auto address = win::get_proc_address(module_handle, function_name.c_str());
         return reinterpret_cast<uintptr_t>(address);
     }
 
@@ -276,9 +275,11 @@ namespace koalabox::hook {
     }
 
     bool is_hook_mode(const HMODULE& self_module, const std::string& orig_library_name) {
-        const auto module_path = win_util::get_module_file_name(self_module);
+        // E.g. C:/Library/api.dll
+        const auto module_path = win::get_module_path(self_module);
 
-        const auto self_name = fs::path(module_path).stem().string();
+        // E.g. api
+        const auto self_name = path::to_str(module_path.stem());
 
         return not str::eq(self_name, orig_library_name);
     }

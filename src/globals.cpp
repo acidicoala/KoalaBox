@@ -6,7 +6,10 @@
     if (not initialized) {                                                                         \
         throw std::runtime_error("Koalabox not initialized");                                      \
     }
+#else
+#define VALIDATE_INIT()
 #endif
+
 
 namespace koalabox::globals {
     namespace {

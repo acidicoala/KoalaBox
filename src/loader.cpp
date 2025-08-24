@@ -2,18 +2,11 @@
 
 #include "koalabox/loader.hpp"
 #include "koalabox/logger.hpp"
-#include "koalabox/str.hpp"
+#include "koalabox/path.hpp"
 #include "koalabox/util.hpp"
-#include "koalabox/win_util.hpp"
+#include "koalabox/win.hpp"
 
 namespace koalabox::loader {
-    fs::path get_module_dir(const HMODULE& handle) {
-        const auto file_name = win_util::get_module_file_name(handle);
-
-        const auto module_path = fs::path(str::to_wstr(file_name));
-
-        return module_path.parent_path();
-    }
 
     /**
      * Key is undecorated name, value is decorated name, if `undecorate` is set
@@ -95,9 +88,9 @@ namespace koalabox::loader {
     HMODULE load_original_library(const fs::path& self_path, const std::string& orig_library_name) {
         const auto original_module_path = self_path / (orig_library_name + "_o.dll");
 
-        auto* const original_module = win_util::load_library(original_module_path);
+        auto* const original_module = win::load_library(original_module_path);
 
-        LOG_INFO("Loaded original library from: '{}'", original_module_path.string());
+        LOG_INFO("Loaded original library from: '{}'", path::to_str(original_module_path));
 
         return original_module;
     }

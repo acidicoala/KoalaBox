@@ -4,7 +4,7 @@
 #include "koalabox/logger.hpp"
 #include "koalabox/str.hpp"
 #include "koalabox/util.hpp"
-#include "koalabox/win_util.hpp"
+#include "koalabox/win.hpp"
 
 namespace {
     PVOID cookie = nullptr;
@@ -66,7 +66,7 @@ namespace koalabox::dll_monitor {
                 if(str::eq(library_name + ".dll", base_dll_name)) {
                     LOG_DEBUG("Library '{}' has been loaded", library_name);
 
-                    auto* const loaded_module = win_util::get_module_handle(full_dll_name.c_str());
+                    auto* const loaded_module = win::get_module_handle(full_dll_name.c_str());
 
                     data->callback(loaded_module, library_name);
                 }
@@ -82,8 +82,8 @@ namespace koalabox::dll_monitor {
         };
 
         static const auto LdrRegisterDllNotification =
-            reinterpret_cast<_LdrRegisterDllNotification>(win_util::get_proc_address(
-                win_util::get_module_handle("ntdll"),
+            reinterpret_cast<_LdrRegisterDllNotification>(win::get_proc_address(
+                win::get_module_handle("ntdll"),
                 "LdrRegisterDllNotification"
             ));
 
@@ -113,8 +113,8 @@ namespace koalabox::dll_monitor {
         std::thread(
             [] {
                 static const auto LdrUnregisterDllNotification =
-                    reinterpret_cast<_LdrUnregisterDllNotification>(win_util::get_proc_address(
-                        win_util::get_module_handle("ntdll"),
+                    reinterpret_cast<_LdrUnregisterDllNotification>(win::get_proc_address(
+                        win::get_module_handle("ntdll"),
                         "LdrUnregisterDllNotification"
                     ));
 

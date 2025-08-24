@@ -2,8 +2,7 @@
 
 #include <filesystem>
 
-// TODO: Rename to `win`
-namespace koalabox::win_util {
+namespace koalabox::win {
     namespace fs = std::filesystem;
 
     PROCESS_INFORMATION create_process(
@@ -17,9 +16,10 @@ namespace koalabox::win_util {
 
     std::string get_last_error();
 
-    std::string get_module_file_name_or_throw(const HMODULE& module_handle);
-
-    std::string get_module_file_name(const HMODULE& module_handle);
+    /**
+     * @return Parent directory of the given module
+     */
+    fs::path get_module_path(const HMODULE& handle);
 
     HMODULE get_module_handle_or_throw(LPCSTR module_name);
 

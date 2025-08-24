@@ -1,7 +1,7 @@
 #pragma code_page(65001) // UTF-8
 #include <verrsrc.h>
 
-#define PROJECT_VERSION             ${CMAKE_PROJECT_VERSION_MAJOR},${CMAKE_PROJECT_VERSION_MINOR},${CMAKE_PROJECT_VERSION_PATCH},0
+#define PROJECT_VERSION             ${PROJECT_VERSION_MAJOR},${PROJECT_VERSION_MINOR},${PROJECT_VERSION_PATCH},0
 #define PROJECT_VERSION_STR         "${PROJECT_VERSION}"
 
 #ifdef _DEBUG
@@ -24,12 +24,12 @@ BEGIN
         BLOCK "040904E4"
         BEGIN
             VALUE "CompanyName",      "ʕ •ᴥ•ʔ acidicoala"
-            VALUE "FileDescription",  "${DLL_VERSION_FILE_DESC}"
+            VALUE "FileDescription",  "${DLL_FILE_DESC}"
             VALUE "FileVersion",      PROJECT_VERSION_STR
-            VALUE "InternalName",     "${DLL_VERSION_INTERNAL_NAME}"
+            VALUE "InternalName",     "${PROJECT_NAME}"
             VALUE "LegalCopyright",   "Fuck the copyright 🖕"
-            VALUE "OriginalFilename", "${CMAKE_PROJECT_NAME}.dll"
-            VALUE "ProductName",      "${DLL_VERSION_PRODUCT_NAME}"
+            VALUE "OriginalFilename", "${DLL_ORIG_NAME}.dll"
+            VALUE "ProductName",      "${PROJECT_NAME}"
             VALUE "ProductVersion",   PROJECT_VERSION_STR
         END
     END

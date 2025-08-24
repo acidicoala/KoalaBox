@@ -25,16 +25,17 @@ function(set_32_and_64 VAR val_for_32)
 endfunction()
 
 ## Generate version resource file
-function(configure_version_resource TARGET FILE_DESC)
-    set(DLL_VERSION_FILE_DESC ${FILE_DESC})
-    set(DLL_VERSION_PRODUCT_NAME ${CMAKE_PROJECT_NAME})
-    set(DLL_VERSION_INTERNAL_NAME ${CMAKE_PROJECT_NAME})
-
+function(configure_version_resource)
+    cmake_parse_arguments(
+        arg "" "TARGET;FILE_DESC;ORIG_NAME" "" ${ARGN}
+    )
+    set(DLL_FILE_DESC ${arg_FILE_DESC})
+    set(DLL_ORIG_NAME ${arg_ORIG_NAME})
     set(VERSION_RESOURCE "${CMAKE_CURRENT_BINARY_DIR}/version.rc")
 
     get_target_property(KOALABOX_SOURCE_DIR KoalaBox SOURCE_DIR)
     configure_file("${KOALABOX_SOURCE_DIR}/res/version.gen.rc" ${VERSION_RESOURCE})
-    target_sources(${TARGET} PRIVATE ${VERSION_RESOURCE})
+    target_sources(${arg_TARGET} PRIVATE ${VERSION_RESOURCE})
 endfunction()
 
 function(configure_build_config)

@@ -49,4 +49,8 @@ namespace koalabox::str {
      * Target output: <code>"D4 06 93 7A"</code>
      */
     std::string from_little_endian(uint32_t number);
+
+    std::wstring to_wstr(const std::u16string& u16str);
+
+    std::u16string to_u16str(const std::wstring& wstr);
 }

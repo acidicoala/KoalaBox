@@ -4,11 +4,9 @@
 #include <spdlog/sinks/stdout_sinks.h>
 
 #include "koalabox/logger.hpp"
-#include "koalabox/paths.hpp"
+#include "koalabox/path.hpp"
 
 namespace {
-    namespace fs = std::filesystem;
-
     std::string get_logger_pattern() {
         // See https://github.com/gabime/spdlog/wiki/Custom-formatting
 
@@ -44,6 +42,7 @@ namespace {
 
     class UsernameFilterFormatter final : public spdlog::formatter {
     public:
+        // Redact usernames
         void format(const spdlog::details::log_msg& msg, spdlog::memory_buf_t& dest) override {
             static const std::regex username_regex(
                 R"(\w:[/\\]Users[/\\]([^/\\]+))",
@@ -58,7 +57,7 @@ namespace {
             fmt::format_to(std::back_inserter(dest), "{}", filtered_msg);
         }
 
-        std::unique_ptr<formatter> clone() const override {
+        [[nodiscard]] std::unique_ptr<formatter> clone() const override {
             return spdlog::details::make_unique<UsernameFilterFormatter>();
         }
     };
@@ -77,8 +76,9 @@ namespace {
 namespace koalabox::logger {
     void init_file_logger(const fs::path& path) {
         fs::create_directories(path.parent_path());
+        const auto path_wstr = path::to_wstr(path);
 
-        const auto logger = spdlog::basic_logger_mt("file", path.string(), true);
+        const auto logger = spdlog::basic_logger_mt("file", path_wstr, true);
         configure_logger(logger);
     }
 

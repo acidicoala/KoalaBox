@@ -2,7 +2,7 @@
 #include "koalabox/logger.hpp"
 #include "koalabox/str.hpp"
 #include "koalabox/util.hpp"
-#include "koalabox/win_util.hpp"
+#include "koalabox/win.hpp"
 
 namespace koalabox::ipc {
     constexpr auto BUFFER_SIZE = 32 * 1024; // 32Kb
@@ -42,7 +42,7 @@ namespace koalabox::ipc {
                 LOG_ERROR(
                     "{} -> Error creating a named pipe. Last error: {}",
                     __func__,
-                    koalabox::win_util::get_last_error()
+                    koalabox::win::get_last_error()
                 );
 
                 break;
@@ -81,7 +81,7 @@ namespace koalabox::ipc {
                         LOG_ERROR(
                             "{} -> ReadFile error: {}",
                             __func__,
-                            koalabox::win_util::get_last_error()
+                            koalabox::win::get_last_error()
                         );
                     }
                     return;
@@ -125,7 +125,7 @@ namespace koalabox::ipc {
                     LOG_ERROR(
                         "{} -> Error writing file. Last error: {}",
                         __func__,
-                        koalabox::win_util::get_last_error()
+                        koalabox::win::get_last_error()
                     );
                     return;
                 }

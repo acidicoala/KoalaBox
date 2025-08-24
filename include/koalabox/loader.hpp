@@ -6,8 +6,6 @@
 namespace koalabox::loader {
     namespace fs = std::filesystem;
 
-    fs::path get_module_dir(const HMODULE& handle);
-
     std::map<std::string, std::string> get_export_map(
         const HMODULE& library,
         bool undecorate = false

@@ -7,8 +7,8 @@ project(
     DESCRIPTION "A box of koality tools"
 )
 
-set(
-    KOALABOX_HEADERS
+# TODO: Do we need to define those?
+set(KOALABOX_HEADERS
     include/koalabox/cache.hpp
     include/koalabox/config.hpp
     include/koalabox/core.hpp
@@ -23,14 +23,15 @@ set(
     include/koalabox/loader.hpp
     include/koalabox/parser.hpp
     include/koalabox/patcher.hpp
+    include/koalabox/path.hpp
     include/koalabox/paths.hpp
     include/koalabox/str.hpp
     include/koalabox/util.hpp
-    include/koalabox/win_util.hpp
+    include/koalabox/win.hpp
     include/koalabox/zip.hpp
 )
 
-add_library(KoalaBox OBJECT
+set(KOALABOX_SOURCES
     src/cache.cpp
     src/crypto.cpp
     src/dll_monitor.cpp
@@ -43,12 +44,26 @@ add_library(KoalaBox OBJECT
     src/loader.cpp
     src/parser.cpp
     src/patcher.cpp
+    src/path.cpp
     src/paths.cpp
     src/str.cpp
     src/util.cpp
-    src/win_util.cpp
+    src/win.cpp
     src/zip.cpp
 )
+
+add_library(KoalaBox OBJECT ${KOALABOX_SOURCES})
+target_compile_options(KoalaBox PUBLIC /std:c++latest)
+
+### Setup KoalaBox exports
+
+target_include_directories(KoalaBox PUBLIC "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>")
+target_include_directories(KoalaBox PRIVATE "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/src>")
+
+set(PCH_PATH ${CMAKE_CURRENT_SOURCE_DIR}/src/pch.hpp)
+target_precompile_headers(KoalaBox PUBLIC "$<$<COMPILE_LANGUAGE:CXX>:${PCH_PATH}>")
+
+add_subdirectory(tools)
 
 ### Configure dependencies
 
@@ -91,7 +106,13 @@ target_compile_definitions(KoalaBox PUBLIC
     $<$<CONFIG:Debug>:SPDLOG_ACTIVE_LEVEL=SPDLOG_LEVEL_TRACE>
     $<$<NOT:$<CONFIG:Debug>>:SPDLOG_ACTIVE_LEVEL=SPDLOG_LEVEL_DEBUG>
 )
-CPMAddPackage("gh:gabime/spdlog@1.15.3")
+CPMAddPackage(
+    URI "gh:gabime/spdlog@1.15.3"
+    OPTIONS
+    "SPDLOG_WCHAR_SUPPORT ON"
+    "SPDLOG_WCHAR_FILENAMES ON"
+    "SPDLOG_WCHAR_CONSOLE ON"
+)
 target_link_libraries(KoalaBox PUBLIC spdlog)
 
 ## C++ parser - https://github.com/nsumner/cpp-tree-sitter
@@ -109,12 +130,18 @@ add_grammar_from_repo(
 
 target_link_libraries(KoalaBox PUBLIC cpp-tree-sitter tree-sitter-cpp)
 
-### Setup KoalaBox exports
+## Cross-platform Unicode support
 
-target_include_directories(KoalaBox PUBLIC "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>")
-target_include_directories(KoalaBox PRIVATE "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/src>")
+CPMAddPackage("gh:nemtrif/utfcpp@4.0.6")
+target_compile_definitions(KoalaBox PUBLIC UTF_CPP_CPLUSPLUS=202002L)
+target_link_libraries(KoalaBox PUBLIC utf8cpp)
 
-set(PCH_PATH ${CMAKE_CURRENT_SOURCE_DIR}/src/pch.hpp)
-target_precompile_headers(KoalaBox PUBLIC "$<$<COMPILE_LANGUAGE:CXX>:${PCH_PATH}>")
+## WinAPI wrappers
 
-add_subdirectory(tools)
+CPMAddPackage(
+    URI "gh:microsoft/wil@1.0.250325.1"
+    OPTIONS
+    "WIL_BUILD_TESTS OFF"
+    "WIL_BUILD_PACKAGING OFF"
+)
+target_link_libraries(KoalaBox PUBLIC WIL)

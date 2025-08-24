@@ -130,4 +130,15 @@ namespace koalabox::str {
         }
         return oss.str();
     }
+
+    std::wstring to_wstr(const std::u16string& u16str) {
+        // See warning not in to_u16
+        return {u16str.begin(), u16str.end()};
+    }
+
+    std::u16string to_u16str(const std::wstring& wstr) {
+        // This works only for windows. See https://stackoverflow.com/a/42734882/31250678
+        // But then again, we're in a namespace for windows utils anyway ¯\_(ツ)_/¯
+        return {wstr.begin(), wstr.end()};
+    }
 }

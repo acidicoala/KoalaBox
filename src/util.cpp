@@ -2,7 +2,7 @@
 #include "koalabox/globals.hpp"
 #include "koalabox/logger.hpp"
 #include "koalabox/str.hpp"
-#include "koalabox/win_util.hpp"
+#include "koalabox/win.hpp"
 
 namespace koalabox::util {
     void error_box(const std::string& title, const std::string& message) {
@@ -24,7 +24,7 @@ namespace koalabox::util {
             message += std::format(
                 "\n———————— Windows Last Error ————————\nCode: {}\nMessage: {}",
                 last_error,
-                win_util::format_message(last_error)
+                win::format_message(last_error)
             );
         }
 
@@ -38,7 +38,7 @@ namespace koalabox::util {
 
     // Source: https://guidedhacking.com/threads/testing-if-pointer-is-invalid.13222/post-77709
     bool is_valid_pointer(const void* pointer) {
-        const auto mbi_opt = win_util::virtual_query(pointer);
+        const auto mbi_opt = win::virtual_query(pointer);
 
         if(mbi_opt) {
             const auto is_rwe =

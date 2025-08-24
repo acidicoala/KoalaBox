@@ -4,7 +4,7 @@
 
 #include "koalabox/logger.hpp"
 #include "koalabox/patcher.hpp"
-#include "koalabox/win_util.hpp"
+#include "koalabox/win.hpp"
 
 namespace koalabox::patcher {
     struct pattern_mask {
@@ -152,7 +152,7 @@ namespace koalabox::patcher {
         const std::string& name,
         const std::string& pattern
     ) {
-        const auto* section = win_util::get_pe_section_or_throw(module_handle, section_name);
+        const auto* section = win::get_pe_section_or_throw(module_handle, section_name);
 
         const auto* section_address =
             reinterpret_cast<uint8_t*>(module_handle) + section->PointerToRawData;

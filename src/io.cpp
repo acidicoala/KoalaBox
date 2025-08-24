@@ -4,6 +4,7 @@
 
 #include "koalabox/io.hpp"
 #include "koalabox/logger.hpp"
+#include "koalabox/path.hpp"
 
 namespace koalabox::io {
     std::string read_file(const fs::path& file_path) {
@@ -23,13 +24,13 @@ namespace koalabox::io {
             if(output_stream.good()) {
                 output_stream << contents;
 
-                LOG_DEBUG(R"(Writing file to disk: "{}")", file_path.string());
+                LOG_DEBUG(R"(Writing file to disk: "{}")", path::to_str(file_path));
                 return true;
             }
 
             LOG_ERROR(
                 R"(Error opening output stream: "{}". Flags: {})",
-                file_path.string(),
+                path::to_str(file_path),
                 output_stream.flags()
             );
             return false;

@@ -1,10 +1,9 @@
 #include <ShlObj.h>
 
 #include "koalabox/globals.hpp"
-#include "koalabox/loader.hpp"
 #include "koalabox/paths.hpp"
 #include "koalabox/util.hpp"
-#include "koalabox/win_util.hpp"
+#include "koalabox/win.hpp"
 
 namespace koalabox::paths {
     namespace {
@@ -13,41 +12,41 @@ namespace koalabox::paths {
         }
     }
 
-    fs::path get_self_path() {
+    fs::path get_self_dir() {
         static auto* const self_handle = globals::get_self_handle();
-        static const auto self_path = loader::get_module_dir(self_handle);
-        return self_path;
+        static const auto self_path = win::get_module_path(self_handle);
+        return self_path.parent_path();
     }
 
     fs::path get_config_path() {
-        static const auto path = get_self_path() / get_file_name(".config.json");
+        static const auto path = get_self_dir() / get_file_name(".config.json");
         return path;
     }
 
     fs::path get_cache_path() {
-        static const auto path = get_self_path() / get_file_name(".cache.json");
+        static const auto path = get_self_dir() / get_file_name(".cache.json");
         return path;
     }
 
     fs::path get_log_path() {
-        static const auto path = get_self_path() / get_file_name(".log.log");
+        static const auto path = get_self_dir() / get_file_name(".log.log");
         return path;
     }
 
     fs::path get_ca_key_path() {
         static const auto project_name = globals::get_project_name();
-        static const auto path = get_self_path() / (project_name + ".ca.key");
+        static const auto path = get_self_dir() / (project_name + ".ca.key");
         return path;
     }
 
     fs::path get_ca_cert_path() {
         static const auto project_name = globals::get_project_name();
-        static const auto path = get_self_path() / (project_name + ".ca.crt");
+        static const auto path = get_self_dir() / (project_name + ".ca.crt");
         return path;
     }
 
     fs::path get_cache_dir() {
-        static const auto path = get_self_path() / "cache";
+        static const auto path = get_self_dir() / "cache";
         create_directories(path);
         return path;
     }
@@ -60,7 +59,7 @@ namespace koalabox::paths {
         }
 
         throw std::runtime_error(
-            std::format("Error retrieving user directory: {}", win_util::get_last_error())
+            std::format("Error retrieving user directory: {}", win::get_last_error())
         );
     }
 }

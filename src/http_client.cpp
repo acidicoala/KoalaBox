@@ -2,7 +2,7 @@
 
 #include "koalabox/http_client.hpp"
 #include "koalabox/logger.hpp"
-#include "koalabox/util.hpp"
+#include "koalabox/path.hpp"
 
 namespace koalabox::http_client {
     namespace {
@@ -66,7 +66,7 @@ namespace koalabox::http_client {
     }
 
     std::string download_file(const std::string& url, const fs::path& destination) {
-        LOG_DEBUG(R"(Downloading "{}" to "{}")", url, destination.string());
+        LOG_DEBUG(R"(Downloading "{}" to "{}")", url, path::to_str(destination));
 
         std::ofstream of(destination, std::ios::binary);
         cpr::Response res = cpr::Download(of, cpr::Url{url});

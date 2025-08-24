@@ -8,10 +8,10 @@
 #include <koalabox/io.hpp>
 #include <koalabox/loader.hpp>
 #include <koalabox/logger.hpp>
+#include <koalabox/path.hpp>
 #include <koalabox/parser.hpp>
 #include <koalabox/str.hpp>
-#include <koalabox/util.hpp>
-#include <koalabox/win_util.hpp>
+#include <koalabox/win.hpp>
 
 namespace {
     namespace kb = koalabox;
@@ -35,7 +35,7 @@ namespace {
                 continue;
             }
 
-            LOG_DEBUG("Processing source file: {}", file_path.string());
+            LOG_DEBUG("Processing source file: {}", kb::path::to_str(file_path));
 
             const auto file_content = koalabox::io::read_file(file_path);
 
@@ -80,7 +80,7 @@ namespace {
                 continue;
             }
 
-            auto* const library = kb::win_util::load_library_or_throw(dll_path);
+            auto* const library = kb::win::load_library_or_throw(dll_path);
             const auto lib_exports = kb::loader::get_export_map(library, undecorate);
 
             dll_exports.insert(lib_exports.begin(), lib_exports.end());
@@ -117,10 +117,10 @@ int wmain(const int argc, const wchar_t* argv[]) { // NOLINT(*-use-internal-link
         const auto undecorate = parseBoolean(kb::str::to_str(argv[1]));
         const auto forwarded_dll_name = kb::str::to_str(argv[2]);
         const auto input_dll_glob = kb::str::to_str(argv[3]);
-        const auto header_output_path = fs::path(argv[4]);
+        const auto header_output_path = fs::path(kb::str::to_str(argv[4]));
 
         // Input sources are optional because Koaloader doesn't have them.
-        const auto sources_input_path = fs::path(argc == 6 ? argv[5] : L"");
+        const auto sources_input_path = fs::path(argc == 6 ? kb::str::to_str(argv[5]) : "");
 
         const auto defined_functions = sources_input_path.empty()
                                            ? std::set<std::string>()
@@ -157,7 +157,7 @@ int wmain(const int argc, const wchar_t* argv[]) { // NOLINT(*-use-internal-link
             export_file << line << std::endl;
         }
 
-        LOG_INFO("Finished generating {}", header_output_path.string());
+        LOG_INFO("Finished generating {}", kb::path::to_str(header_output_path));
     } catch(const std::exception& ex) {
         LOG_ERROR("Error: {}", ex.what());
         exit(-1);

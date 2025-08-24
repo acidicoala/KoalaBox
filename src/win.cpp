@@ -1,5 +1,10 @@
-#include "koalabox/win_util.hpp"
+#include <utf8.h>
+#include <wil/stl.h>
+#include <wil/win32_helpers.h>
+
+#include "koalabox/win.hpp"
 #include "koalabox/logger.hpp"
+#include "koalabox/path.hpp"
 #include "koalabox/str.hpp"
 #include "koalabox/util.hpp"
 
@@ -10,13 +15,17 @@
  * initialized yet. All errors must be reported via exceptions, which will be then displayed to user
  * via logs or message boxes depending on the circumstance.
  */
-namespace koalabox::win_util {
+namespace koalabox::win {
     namespace {
-        std::vector<uint8_t> get_file_version_info_or_throw(const HMODULE& module_handle) {
-            const auto file_name = str::to_wstr(get_module_file_name_or_throw(module_handle));
+        std::vector<uint8_t> get_module_version_info_or_throw(const HMODULE& module_handle) {
+            const auto module_path = get_module_path(module_handle);
+            const auto module_path_wstr = path::to_wstr(module_path);
 
             DWORD version_handle = 0;
-            const DWORD version_size = GetFileVersionInfoSize(file_name.c_str(), &version_handle);
+            const DWORD version_size = GetFileVersionInfoSize(
+                module_path_wstr.c_str(),
+                &version_handle
+            );
 
             if(not version_size) {
                 throw util::exception(
@@ -28,7 +37,7 @@ namespace koalabox::win_util {
             std::vector<uint8_t> version_data(version_size);
 
             if(not GetFileVersionInfo(
-                file_name.c_str(),
+                module_path_wstr.c_str(),
                 version_handle,
                 version_size,
                 version_data.data()
@@ -42,7 +51,7 @@ namespace koalabox::win_util {
 
 #define PANIC_ON_CATCH(FUNC, ...)                                                                  \
     try {                                                                                          \
-        return FUNC##_or_throw(__VA_ARGS__);                                                       \
+        return FUNC(__VA_ARGS__);                                                                  \
     } catch (const std::exception& ex) {                                                           \
         util::panic(ex.what());                                                                    \
     }
@@ -53,6 +62,8 @@ namespace koalabox::win_util {
         const fs::path& working_dir,
         const bool show_window
     ) {
+        const auto working_dir_wstr = path::to_wstr(working_dir);
+
         PROCESS_INFORMATION process_info{};
         STARTUPINFO startup_info{};
 
@@ -68,7 +79,7 @@ namespace koalabox::win_util {
                                  NULL,
                                  show_window ? 0 : CREATE_NO_WINDOW,
                                  nullptr,
-                                 working_dir.wstring().c_str(),
+                                 working_dir_wstr.c_str(),
                                  &startup_info,
                                  &process_info
                              ) != 0;
@@ -77,13 +88,15 @@ namespace koalabox::win_util {
             DWORD exit_code = 0;
             GetExitCodeProcess(process_info.hProcess, &exit_code);
 
-            throw util::exception(
-                R"(Error creating process "{}" with args "{}" at "{}". Last error: {}, Exit code: {})",
-                app_name,
-                args,
-                working_dir.string(),
-                get_last_error(),
-                exit_code
+            throw std::runtime_error(
+                std::format(
+                    R"(Error creating process "{}" with args "{}" at "{}". Last error: {}, Exit code: {})",
+                    app_name,
+                    args,
+                    path::to_str(working_dir),
+                    get_last_error(),
+                    exit_code
+                )
             );
         }
 
@@ -109,27 +122,12 @@ namespace koalabox::win_util {
     }
 
     std::string get_last_error() {
-        return fmt::format("0x{0:x}", GetLastError());
+        return std::format("0x{0:x}", GetLastError());
     }
 
-    std::string get_module_file_name_or_throw(const HMODULE& module_handle) {
-        constexpr auto buffer_size = 1024;
-        TCHAR buffer[buffer_size];
-        const auto length = ::GetModuleFileName(module_handle, buffer, buffer_size);
-
-        return (length > 0
-                and length < buffer_size
-               )
-                   ? str::to_str(buffer)
-                   : throw util::exception(
-                       "Failed to get a file name of the given module handle: {}. Length: {}",
-                       fmt::ptr(module_handle),
-                       length
-                   );
-    }
-
-    std::string get_module_file_name(const HMODULE& module_handle) {
-        PANIC_ON_CATCH(get_module_file_name, module_handle)
+    fs::path get_module_path(const HMODULE& handle) {
+        const auto wstr_path = wil::GetModuleFileNameW<std::wstring>(handle);
+        return path::from_wstr(wstr_path);
     }
 
     HMODULE get_module_handle_or_throw(LPCSTR module_name) {
@@ -146,7 +144,7 @@ namespace koalabox::win_util {
     }
 
     HMODULE get_module_handle(LPCSTR module_name) {
-        PANIC_ON_CATCH(get_module_handle, module_name)
+        PANIC_ON_CATCH(get_module_handle_or_throw, module_name)
     }
 
     MODULEINFO get_module_info_or_throw(const HMODULE& module_handle) {
@@ -167,7 +165,7 @@ namespace koalabox::win_util {
     }
 
     MODULEINFO get_module_info(const HMODULE& module_handle) {
-        PANIC_ON_CATCH(get_module_info, module_handle)
+        PANIC_ON_CATCH(get_module_info_or_throw, module_handle)
     }
 
     std::string get_module_manifest(const HMODULE& module_handle) {
@@ -178,14 +176,14 @@ namespace koalabox::win_util {
 
         // Return TRUE to continue enumeration or FALSE to stop enumeration.
         const auto callback = [](
-            HMODULE hModule,
-            LPCTSTR lpType,
-            LPTSTR lpName,
-            LONG_PTR lParam
+            const HMODULE hModule,
+            const LPCTSTR lpType,
+            const LPTSTR lpName,
+            const LONG_PTR lParam
         ) -> BOOL {
-            const auto response = [&](bool success, std::string manifest_or_error) {
+            const auto response = [&](const bool success, std::string manifest_or_error) {
                 try {
-                    auto* response = (Response*) lParam;
+                    auto* res = reinterpret_cast<Response*>(lParam);
 
                     if(!success) {
                         manifest_or_error = fmt::format(
@@ -195,8 +193,8 @@ namespace koalabox::win_util {
                         );
                     }
 
-                    response->success = success;
-                    response->manifest_or_error = manifest_or_error;
+                    res->success = success;
+                    res->manifest_or_error = manifest_or_error;
 
                     return TRUE;
                 } catch(const std::exception& e) {
@@ -226,11 +224,16 @@ namespace koalabox::win_util {
                 return response(false, "Resource data is null.");
             }
 
-            return response(true, (char*) resource_data);
+            return response(true, static_cast<const char*>(resource_data));
         };
 
         Response response;
-        if(not EnumResourceNames(module_handle, RT_MANIFEST, callback, (LONG_PTR) &response)) {
+        if(not EnumResourceNames(
+            module_handle,
+            RT_MANIFEST,
+            callback,
+            reinterpret_cast<LONG_PTR>(&response)
+        )) {
             throw util::exception("EnumResourceNames call error. Last error: {}", get_last_error());
         }
 
@@ -242,14 +245,14 @@ namespace koalabox::win_util {
     }
 
     std::string get_module_version_or_throw(const HMODULE& module_handle) {
-        const auto version_data = get_file_version_info_or_throw(module_handle);
+        const auto version_data = get_module_version_info_or_throw(module_handle);
 
         UINT size = 0;
         VS_FIXEDFILEINFO* version_info = nullptr;
         if(not VerQueryValue(
                 version_data.data(),
                 TEXT("\\"),
-                (VOID FAR * FAR *) &version_info,
+                reinterpret_cast<void* *>(&version_info),
                 &size
             )
         ) {
@@ -287,7 +290,8 @@ namespace koalabox::win_util {
         }
 
         auto* const nt_header =
-            (PIMAGE_NT_HEADERS) ((uint8_t*) module_handle + (dos_header->e_lfanew));
+            reinterpret_cast<PIMAGE_NT_HEADERS>(
+                reinterpret_cast<uint8_t*>(module_handle) + dos_header->e_lfanew);
 
         if(nt_header->Signature != IMAGE_NT_SIGNATURE) {
             throw util::exception("Invalid NT signature");
@@ -295,7 +299,7 @@ namespace koalabox::win_util {
 
         auto* section = IMAGE_FIRST_SECTION(nt_header);
         for(int i = 0; i < nt_header->FileHeader.NumberOfSections; i++, section++) {
-            auto name = std::string((char*) section->Name, 8);
+            auto name = std::string(reinterpret_cast<char*>(section->Name), 8);
             name = name.substr(0, name.find('\0')); // strip null padding
 
             if(name != section_name) {
@@ -320,7 +324,7 @@ namespace koalabox::win_util {
     }
 
     std::string get_pe_section_data(const HMODULE& module_handle, const std::string& section_name) {
-        PANIC_ON_CATCH(get_pe_section_data, module_handle, section_name)
+        PANIC_ON_CATCH(get_pe_section_data_or_throw, module_handle, section_name)
     }
 
     FARPROC get_proc_address_or_throw(const HMODULE& handle, LPCSTR procedure_name) {
@@ -335,7 +339,7 @@ namespace koalabox::win_util {
     }
 
     FARPROC get_proc_address(const HMODULE& handle, LPCSTR procedure_name) {
-        PANIC_ON_CATCH(get_proc_address, handle, procedure_name)
+        PANIC_ON_CATCH(get_proc_address_or_throw, handle, procedure_name)
     }
 
     fs::path get_system_directory_or_throw() {
@@ -358,14 +362,16 @@ namespace koalabox::win_util {
     }
 
     fs::path get_system_directory() {
-        PANIC_ON_CATCH(get_system_directory)
+        PANIC_ON_CATCH(get_system_directory_or_throw)
     }
 
     void free_library_or_throw(const HMODULE& module_handle) {
         if(not FreeLibrary(module_handle)) {
-            throw util::exception(
-                "Failed to free a library with the given module handle: {}",
-                (void*) module_handle
+            throw std::runtime_error(
+                std::format(
+                    "Failed to free a library with the given module handle: {}",
+                    static_cast<void*>(module_handle)
+                )
             );
         }
     }
@@ -384,25 +390,28 @@ namespace koalabox::win_util {
     }
 
     HMODULE load_library_or_throw(const fs::path& module_path) {
-        auto* const module_handle = ::LoadLibrary(module_path.wstring().c_str());
+        const auto module_path_wstr = path::to_wstr(module_path);
+        auto* const module_handle = LoadLibrary(module_path_wstr.c_str());
 
         return module_handle
                    ? module_handle
-                   : throw util::exception(
-                       "Failed to load the module at path: '{}'",
-                       module_path.string()
+                   : throw std::runtime_error(
+                       std::format(
+                           "Failed to load the module at path: '{}'",
+                           str::to_str(module_path_wstr)
+                       )
                    );
     }
 
     HMODULE load_library(const fs::path& module_path) {
-        PANIC_ON_CATCH(load_library, module_path)
+        PANIC_ON_CATCH(load_library_or_throw, module_path)
     }
 
     void register_application_restart() {
-        const auto result = RegisterApplicationRestart(nullptr, 0);
-
-        if(result != S_OK) {
-            throw util::exception("Failed to register application restart. Result: {}", result);
+        if(const auto result = RegisterApplicationRestart(nullptr, 0); result != S_OK) {
+            throw std::runtime_error(
+                std::format("Failed to register application restart. Result: {}", result)
+            );
         }
     }
 
@@ -418,9 +427,9 @@ namespace koalabox::win_util {
 
     SIZE_T write_process_memory_or_throw(
         const HANDLE& process,
-        LPVOID address,
-        LPCVOID buffer,
-        SIZE_T size
+        const LPVOID address,
+        const LPCVOID buffer,
+        const SIZE_T size
     ) {
         SIZE_T bytes_written = 0;
 
@@ -434,11 +443,11 @@ namespace koalabox::win_util {
 
     SIZE_T write_process_memory(
         const HANDLE& process,
-        LPVOID address,
-        LPCVOID buffer,
-        SIZE_T size
+        const LPVOID address,
+        const LPCVOID buffer,
+        const SIZE_T size
     ) {
-        PANIC_ON_CATCH(write_process_memory, process, address, buffer, size)
+        PANIC_ON_CATCH(write_process_memory_or_throw, process, address, buffer, size)
     }
 
     std::string get_env_var(const std::string& key) {
@@ -448,7 +457,6 @@ namespace koalabox::win_util {
         TCHAR buffer[32 * 1024];
         const auto bytes_read = GetEnvironmentVariable(wide_key.c_str(), buffer, sizeof(buffer));
 
-        const std::wstring wide_value(buffer, bytes_read);
-        return str::to_str(wide_value);
+        return str::to_str({buffer, bytes_read});
     }
 }

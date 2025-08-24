@@ -6,17 +6,21 @@
 
 #include <miniz.h>
 
+#include "koalabox/path.hpp"
 #include "koalabox/zip.hpp"
 
 namespace koalabox::zip {
     void extract_files(
         const fs::path& zip_path,
-        const std::function<fs::path(const std::string & name, bool is_dir)>& predicate
+        const std::function<fs::path(const std::string& name, bool is_dir)>& predicate
     ) {
         mz_zip_archive zip{};
 
-        if(!mz_zip_reader_init_file(&zip, zip_path.string().c_str(), 0)) {
-            throw std::runtime_error("mz_zip_reader_init_file() failed for: " + zip_path.string());
+        const auto zip_path_str = path::to_str(zip_path);
+        if(!mz_zip_reader_init_file(&zip, zip_path_str.c_str(), 0)) {
+            throw std::runtime_error(
+                "mz_zip_reader_init_file() failed for: " + path::to_str(zip_path)
+            );
         }
 
         [[maybe_unused]] auto guard = [&zip] {
@@ -49,13 +53,18 @@ namespace koalabox::zip {
                     continue;
                 }
 
+                const auto out_path_str = path::to_str(out_path);
+
                 if(is_dir) {
                     fs::create_directories(out_path, ec);
                     if(ec) {
                         mz_zip_reader_end(&zip);
                         throw std::runtime_error(
-                            "Failed to create directory: " + out_path.string() + " (" +
-                            ec.message() + ")"
+                            std::format(
+                                "Failed to create directory: {}. Reason: {}",
+                                out_path_str,
+                                ec.message()
+                            )
                         );
                     }
                     continue;
@@ -66,8 +75,11 @@ namespace koalabox::zip {
                 if(ec) {
                     mz_zip_reader_end(&zip);
                     throw std::runtime_error(
-                        "Failed to create parent directories for: " + out_path.string() + " (" +
-                        ec.message() + ")"
+                        std::format(
+                            "Failed to create parent directories for: {}. Reason: {}",
+                            out_path_str,
+                            ec.message()
+                        )
                     );
                 }
 
@@ -84,7 +96,7 @@ namespace koalabox::zip {
                     mz_free(p);
                     mz_zip_reader_end(&zip);
                     throw std::runtime_error(
-                        "Failed to open output file for writing: " + out_path.string()
+                        "Failed to open output file for writing: " + out_path_str
                     );
                 }
                 output_stream.write(
@@ -96,7 +108,7 @@ namespace koalabox::zip {
 
                 if(!output_stream) {
                     mz_zip_reader_end(&zip);
-                    throw std::runtime_error("Failed to write output file: " + out_path.string());
+                    throw std::runtime_error("Failed to write output file: " + out_path_str);
                 }
             }
 

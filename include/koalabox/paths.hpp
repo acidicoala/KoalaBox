@@ -8,7 +8,7 @@ namespace koalabox::paths {
     /**
      * @return std::path instance representing the directory containing this DLL.
      */
-    fs::path get_self_path();
+    fs::path get_self_dir();
 
     fs::path get_config_path();
 
