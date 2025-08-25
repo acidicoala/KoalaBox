@@ -1,5 +1,6 @@
 #pragma once
 
+#include <functional>
 #include <regex>
 #include <string>
 
@@ -34,5 +35,5 @@ namespace koalabox::parser {
      * Walks through the AST tree and calls the `visit` function on each node.
      * Cam be used for writing custom parsing logic that significantly speeds up analysis.
      */
-    void walk(const ts::Node& root, const std::function<visit_result(const ts::Node &)>& visit);
+    void walk(const ts::Node& root, const std::function<visit_result(const ts::Node&)>& visit);
 }

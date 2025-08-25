@@ -12,7 +12,6 @@
 #define VALIDATE_INIT()
 #endif
 
-
 namespace koalabox::globals {
     namespace {
         bool initialized = false;

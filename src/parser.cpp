@@ -13,9 +13,7 @@ namespace {
 
     std::vector<query_entry_impl> query_impl(
         const std::regex& selector,
-        //
         const ts::Node& node,
-        //
         const std::string& parent_path = ""
     ) {
         std::vector<query_entry_impl> results{};
@@ -34,18 +32,12 @@ namespace {
         }
 
         for(auto i = 0U, count = node.getNumNamedChildren(); i < count; ++i) {
-            if(const auto child = node.getNamedChild(i); not child
-            
-            .
-            isNull()
-            )
-            {
+            if(const auto child = node.getNamedChild(i); not child.isNull()) {
                 const auto child_results = query_impl(selector, child, current_path);
 
                 // Move child results to current results
                 results.insert(
                     results.end(),
-                    //
                     std::make_move_iterator(child_results.begin()),
                     std::make_move_iterator(child_results.end())
                 );
@@ -81,18 +73,13 @@ namespace koalabox::parser {
         return string_results;
     }
 
-    void walk(const ts::Node& root, const std::function<visit_result(const ts::Node &)>& visit) {
+    void walk(const ts::Node& root, const std::function<visit_result(const ts::Node&)>& visit) {
         // DFS traversal
         std::deque<ts::Node> queue;
         queue.push_back(root);
         auto first_visit = true;
 
-        while(not queue
-        
-        .
-        empty()
-        )
-        {
+        while(not queue.empty()) {
             const auto node = queue.front();
             queue.pop_front();
 
@@ -106,12 +93,7 @@ namespace koalabox::parser {
             }
 
             for(uint32_t i = 0, count = node.getNumNamedChildren(); i < count; ++i) {
-                if(const auto child = node.getNamedChild(i); not child
-                
-                .
-                isNull()
-                )
-                {
+                if(const auto child = node.getNamedChild(i); not child.isNull()) {
                     queue.push_back(child);
                 }
             }
