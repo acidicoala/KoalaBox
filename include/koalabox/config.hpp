@@ -25,7 +25,7 @@ namespace koalabox::config {
 
             return config;
         } catch(const std::exception& e) {
-            util::panic("Error parsing config file: {}", e.what());
+            util::panic(std::format("Error parsing config file: {}", e.what()));
         }
     }
 

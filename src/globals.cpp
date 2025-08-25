@@ -1,3 +1,5 @@
+#include <stdexcept>
+
 #include "koalabox/globals.hpp"
 #include "koalabox/util.hpp"
 

@@ -23,7 +23,7 @@ BEGIN
     BEGIN
         BLOCK "040904E4"
         BEGIN
-            VALUE "CompanyName",      "ʕ •ᴥ•ʔ acidicoala"
+            VALUE "CompanyName",      "acidicoala ʕ •ᴥ•ʔ"
             VALUE "FileDescription",  "${DLL_FILE_DESC}"
             VALUE "FileVersion",      PROJECT_VERSION_STR
             VALUE "InternalName",     "${PROJECT_NAME}"

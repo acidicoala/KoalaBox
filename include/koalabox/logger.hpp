@@ -20,5 +20,3 @@ namespace koalabox::logger {
 #define LOG_INFO(...) SPDLOG_INFO(__VA_ARGS__)
 #define LOG_ERROR(...) SPDLOG_ERROR(__VA_ARGS__)
 #define LOG_CRITICAL(...) SPDLOG_CRITICAL(__VA_ARGS__)
-
-// TODO: Extend LOG_ERROR & LOG_CRITICAL with OutputDebugString

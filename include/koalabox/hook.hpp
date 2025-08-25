@@ -12,6 +12,8 @@
     koalabox::hook::detour_or_warn(MODULE, #FUNC, reinterpret_cast<uintptr_t>(FUNC))
 
 namespace koalabox::hook {
+    bool is_hooked(const  std::string& function_name);
+
     bool unhook(const std::string& function_name);
 
     void detour_or_throw(

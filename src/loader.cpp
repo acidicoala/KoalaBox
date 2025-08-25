@@ -7,7 +7,6 @@
 #include "koalabox/win.hpp"
 
 namespace koalabox::loader {
-
     /**
      * Key is undecorated name, value is decorated name, if `undecorate` is set
      */
@@ -22,7 +21,9 @@ namespace koalabox::loader {
             util::panic("e_magic  != IMAGE_DOS_SIGNATURE");
         }
 
-        auto* header = reinterpret_cast<PIMAGE_NT_HEADERS>((BYTE*) library + dos_header->e_lfanew);
+        const auto* header = reinterpret_cast<PIMAGE_NT_HEADERS>(
+            reinterpret_cast<BYTE*>(library) + dos_header->e_lfanew
+        );
 
         if(header->Signature != IMAGE_NT_SIGNATURE) {
             util::panic("header->Signature != IMAGE_NT_SIGNATURE");
@@ -33,14 +34,16 @@ namespace koalabox::loader {
         }
 
         const auto& data_dir = header->OptionalHeader.DataDirectory[IMAGE_DIRECTORY_ENTRY_EXPORT];
-        auto* exports =
-            reinterpret_cast<PIMAGE_EXPORT_DIRECTORY>((BYTE*) library + data_dir.VirtualAddress);
+        const auto* exports =
+            reinterpret_cast<PIMAGE_EXPORT_DIRECTORY>(
+                reinterpret_cast<BYTE*>(library) + data_dir.VirtualAddress);
 
-        PVOID names = (BYTE*) library + exports->AddressOfNames;
+        const PVOID names = reinterpret_cast<BYTE*>(library) + exports->AddressOfNames;
 
         // Iterate over the names and add them to the vector
         for(unsigned int i = 0; i < exports->NumberOfNames; i++) {
-            std::string exported_name = (char*) library + ((DWORD*) names)[i];
+            std::string exported_name = reinterpret_cast<char*>(library) + static_cast<DWORD*>(
+                                            names)[i];
 
             if(undecorate) {
                 std::string undecorated_function = exported_name; // fallback value
@@ -76,8 +79,7 @@ namespace koalabox::loader {
 
         if(not
             undecorated_function_maps.contains(library)
-        )
-        {
+        ) {
             undecorated_function_maps[library] = get_export_map(library, true);
         }
 

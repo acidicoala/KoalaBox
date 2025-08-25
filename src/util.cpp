@@ -14,23 +14,25 @@ namespace koalabox::util {
         );
     }
 
-    [[noreturn]] void panic(std::string message) {
+    [[noreturn]] void panic(const std::string& message) {
         const auto title = std::format("[{}] Panic!", globals::get_project_name());
 
         OutputDebugString(str::to_wstr(message).c_str());
 
+        auto extended_message = message;
+
         const auto last_error = GetLastError();
         if(last_error != 0) {
-            message += std::format(
+            extended_message += std::format(
                 "\n———————— Windows Last Error ————————\nCode: {}\nMessage: {}",
                 last_error,
                 win::format_message(last_error)
             );
         }
 
-        LOG_CRITICAL("{}", message);
+        LOG_CRITICAL("{}", extended_message);
 
-        error_box(title, message);
+        error_box(title, extended_message);
 
         logger::shutdown();
         exit(static_cast<int>(last_error));
@@ -38,9 +40,7 @@ namespace koalabox::util {
 
     // Source: https://guidedhacking.com/threads/testing-if-pointer-is-invalid.13222/post-77709
     bool is_valid_pointer(const void* pointer) {
-        const auto mbi_opt = win::virtual_query(pointer);
-
-        if(mbi_opt) {
+        if(const auto mbi_opt = win::virtual_query(pointer)) {
             const auto is_rwe =
                 mbi_opt->Protect &
                 (PAGE_READONLY | PAGE_READWRITE | PAGE_WRITECOPY | PAGE_EXECUTE_READ |

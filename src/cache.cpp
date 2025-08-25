@@ -7,8 +7,6 @@ namespace koalabox::cache {
     namespace fs = std::filesystem;
 
     namespace {
-        // TODO: Keep cache in memory instead and flush it on write
-
         nlohmann::json read_cache() {
             return nlohmann::json::parse(io::read_file(paths::get_cache_path()));
         }

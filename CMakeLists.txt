@@ -7,30 +7,6 @@ project(
     DESCRIPTION "A box of koality tools"
 )
 
-# TODO: Do we need to define those?
-set(KOALABOX_HEADERS
-    include/koalabox/cache.hpp
-    include/koalabox/config.hpp
-    include/koalabox/core.hpp
-    include/koalabox/crypto.hpp
-    include/koalabox/dll_monitor.hpp
-    include/koalabox/globals.hpp
-    include/koalabox/logger.hpp
-    include/koalabox/hook.hpp
-    include/koalabox/http_client.hpp
-    include/koalabox/io.hpp
-    include/koalabox/ipc.hpp
-    include/koalabox/loader.hpp
-    include/koalabox/parser.hpp
-    include/koalabox/patcher.hpp
-    include/koalabox/path.hpp
-    include/koalabox/paths.hpp
-    include/koalabox/str.hpp
-    include/koalabox/util.hpp
-    include/koalabox/win.hpp
-    include/koalabox/zip.hpp
-)
-
 set(KOALABOX_SOURCES
     src/cache.cpp
     src/crypto.cpp
@@ -70,7 +46,7 @@ add_subdirectory(tools)
 # Note: Dependencies should be linked to KoalaBox using PUBLIC scope
 # to avoid inconsistent flags/definitions.
 
-## Miniz - https://github.com/richgel999/miniz
+## https://github.com/richgel999/miniz
 CPMAddPackage("gh:richgel999/miniz#c883286f1a6443720e7705450f59e579a4bbb8e2")
 target_link_libraries(KoalaBox PUBLIC miniz)
 
@@ -85,14 +61,14 @@ CPMAddPackage(
 )
 target_link_libraries(KoalaBox PUBLIC cpr)
 
-## JSON - https://github.com/nlohmann/json
+## https://github.com/nlohmann/json
 CPMAddPackage(
     URI "gh:nlohmann/json@3.12.0"
     OPTIONS "JSON_Diagnostics ON"
 )
 target_link_libraries(KoalaBox PUBLIC nlohmann_json)
 
-## PolyHook 2 - https://github.com/stevemk14ebr/PolyHook_2_0
+## https://github.com/stevemk14ebr/PolyHook_2_0
 CPMAddPackage(
     URI "gh:stevemk14ebr/PolyHook_2_0#298d56210b9d9e66cde8f96481d6053925c6ae15"
     OPTIONS
@@ -101,7 +77,7 @@ CPMAddPackage(
 )
 target_link_libraries(KoalaBox PUBLIC PolyHook_2)
 
-## Logging - https://github.com/gabime/spdlog
+## https://github.com/gabime/spdlog
 target_compile_definitions(KoalaBox PUBLIC
     $<$<CONFIG:Debug>:SPDLOG_ACTIVE_LEVEL=SPDLOG_LEVEL_TRACE>
     $<$<NOT:$<CONFIG:Debug>>:SPDLOG_ACTIVE_LEVEL=SPDLOG_LEVEL_DEBUG>
@@ -115,7 +91,7 @@ CPMAddPackage(
 )
 target_link_libraries(KoalaBox PUBLIC spdlog)
 
-## C++ parser - https://github.com/nsumner/cpp-tree-sitter
+## https://github.com/nsumner/cpp-tree-sitter
 # The latest commit includes a fix for MSVC, which is not present in the latest release
 CPMAddPackage("gh:nsumner/cpp-tree-sitter#9cd7f3c9de9fc6d19bc982c6772fcd7a39e5797a")
 
@@ -127,17 +103,14 @@ add_grammar_from_repo(
     https://github.com/tree-sitter/tree-sitter-cpp.git # Repository URL
     0.23.4 # Version tag
 )
-
 target_link_libraries(KoalaBox PUBLIC cpp-tree-sitter tree-sitter-cpp)
 
-## Cross-platform Unicode support
-
+## https://github.com/nemtrif/utfcpp
 CPMAddPackage("gh:nemtrif/utfcpp@4.0.6")
 target_compile_definitions(KoalaBox PUBLIC UTF_CPP_CPLUSPLUS=202002L)
 target_link_libraries(KoalaBox PUBLIC utf8cpp)
 
-## WinAPI wrappers
-
+## https://github.com/microsoft/wil
 CPMAddPackage(
     URI "gh:microsoft/wil@1.0.250325.1"
     OPTIONS

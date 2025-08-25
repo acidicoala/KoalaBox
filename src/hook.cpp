@@ -41,6 +41,10 @@ namespace {
 }
 
 namespace koalabox::hook {
+    bool is_hooked(const std::string& function_name) {
+        return hook_map.contains(function_name);
+    }
+
     bool unhook(const std::string& function_name) {
         static std::mutex section;
         const std::lock_guard lock(section);
@@ -81,7 +85,7 @@ namespace koalabox::hook {
             };
         } else {
             delete detour;
-            throw util::exception("Failed to hook function: {}", function_name);
+            throw std::runtime_error(std::format("Failed to hook function: {}", function_name));
         }
     }
 
@@ -130,7 +134,9 @@ namespace koalabox::hook {
         try {
             detour_or_throw(address, function_name, callback_function);
         } catch(const std::exception& ex) {
-            util::panic("Failed to hook function {} via Detour: {}", function_name, ex.what());
+            util::panic(
+                std::format("Failed to hook function {} via Detour: {}", function_name, ex.what())
+            );
         }
     }
 
@@ -142,7 +148,9 @@ namespace koalabox::hook {
         try {
             detour_or_throw(module_handle, function_name, callback_function);
         } catch(const std::exception& ex) {
-            util::panic("Failed to hook function {} via Detour: {}", function_name, ex.what());
+            util::panic(
+                std::format("Failed to hook function {} via Detour: {}", function_name, ex.what())
+            );
         }
     }
 
@@ -169,7 +177,7 @@ namespace koalabox::hook {
         } else {
             delete eat_hook;
 
-            throw util::exception("Failed to hook function: '{}'", function_name);
+            throw std::runtime_error(std::format("Failed to hook function: '{}'", function_name));
         }
     }
 
@@ -191,20 +199,18 @@ namespace koalabox::hook {
         const int ordinal,
         uintptr_t callback_function
     ) {
-        if(instance) {
-            // TODO: Use
-            //   struct clazz {
-            //       uintptr_t vtable[];
-            //   };
-            const auto* vtable = *(uintptr_t**) instance;
+        struct clazz {
+            uintptr_t vtable[];
+        };
 
-            if(const auto target_func = vtable[ordinal]; target_func == callback_function) {
-                LOG_DEBUG(
-                    "Function '{}' is already hooked. Skipping virtual function swap",
-                    function_name
-                );
-                return;
-            }
+        const auto* cls = static_cast<const clazz*>(instance);
+
+        if(const auto target_func = cls->vtable[ordinal]; target_func == callback_function) {
+            LOG_DEBUG(
+                "Function '{}' is already hooked. Skipping virtual function swap",
+                function_name
+            );
+            return;
         }
 
         LOG_DEBUG(
@@ -214,11 +220,11 @@ namespace koalabox::hook {
             ordinal * sizeof(void*)
         );
 
-        const PLH::VFuncMap redirect = {{ordinal, callback_function},};
+        const PLH::VFuncMap redirect = {{ordinal, callback_function}};
 
         PLH::VFuncMap original_functions;
         auto* const swap_hook = new PLH::VFuncSwapHook(
-            (char*) instance,
+            static_cast<const char*>(instance),
             redirect,
             &original_functions
         );
@@ -229,7 +235,7 @@ namespace koalabox::hook {
                 .original_address = static_cast<uintptr_t>(original_functions[ordinal]),
             };
         } else {
-            throw util::exception("Failed to hook function: {}", function_name);
+            throw std::runtime_error(std::format("Failed to hook function: {}", function_name));
         }
     }
 
@@ -243,9 +249,11 @@ namespace koalabox::hook {
             swap_virtual_func_or_throw(instance, function_name, ordinal, callback_function);
         } catch(const std::exception& ex) {
             util::panic(
-                "Failed to hook function {} via virtual function swap: {}",
-                function_name,
-                ex.what()
+                std::format(
+                    "Failed to hook function {} via virtual function swap: {}",
+                    function_name,
+                    ex.what()
+                )
             );
         }
     }
@@ -260,7 +268,7 @@ namespace koalabox::hook {
 
     uintptr_t get_hooked_function_address(const std::string& function_name) {
         if(not hook_map.contains(function_name)) {
-            util::panic("Hook map does not contain function: {}", function_name);
+            util::panic(std::format("Hook map does not contain function: {}", function_name));
         }
 
         return hook_map[function_name].original_address;

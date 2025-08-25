@@ -28,9 +28,11 @@ namespace koalabox::win {
             );
 
             if(not version_size) {
-                throw util::exception(
-                    "Failed to GetFileVersionInfoSize. Error: {}",
-                    get_last_error()
+                throw std::runtime_error(
+                    std::format(
+                        "Failed to GetFileVersionInfoSize. Error: {}",
+                        get_last_error()
+                    )
                 );
             }
 
@@ -42,7 +44,9 @@ namespace koalabox::win {
                 version_size,
                 version_data.data()
             )) {
-                throw util::exception("Failed to GetFileVersionInfo. Error: {}", get_last_error());
+                throw std::runtime_error(
+                    std::format("Failed to GetFileVersionInfo. Error: {}", get_last_error())
+                );
             }
 
             return version_data;
@@ -137,9 +141,8 @@ namespace koalabox::win {
 
         return handle
                    ? handle
-                   : throw util::exception(
-                       "Failed to get a handle of the module: '{}'",
-                       module_name
+                   : throw std::runtime_error(
+                       std::format("Failed to get a handle of the module: '{}'", module_name)
                    );
     }
 
@@ -158,9 +161,11 @@ namespace koalabox::win {
 
         return success
                    ? module_info
-                   : throw util::exception(
-                       "Failed to get module info of the given module handle: {}",
-                       fmt::ptr(module_handle)
+                   : throw std::runtime_error(
+                       std::format(
+                           "Failed to get module info of the given module handle: {}",
+                           fmt::ptr(module_handle)
+                       )
                    );
     }
 
@@ -234,11 +239,13 @@ namespace koalabox::win {
             callback,
             reinterpret_cast<LONG_PTR>(&response)
         )) {
-            throw util::exception("EnumResourceNames call error. Last error: {}", get_last_error());
+            throw std::runtime_error(
+                std::format("EnumResourceNames call error. Last error: {}", get_last_error())
+            );
         }
 
         if(!response.success) {
-            throw util::exception("{}", response.manifest_or_error);
+            throw std::runtime_error(response.manifest_or_error);
         }
 
         return response.manifest_or_error;
@@ -256,17 +263,23 @@ namespace koalabox::win {
                 &size
             )
         ) {
-            throw util::exception("Failed to VerQueryValue. Error: {}", get_last_error());
+            throw std::runtime_error(
+                std::format("Failed to VerQueryValue. Error: {}", get_last_error())
+            );
         }
 
         if(not size) {
-            throw util::exception("Failed to VerQueryValue. Error: {}", get_last_error());
+            throw std::runtime_error(
+                std::format("Failed to VerQueryValue. Error: {}", get_last_error())
+            );
         }
 
         if(version_info->dwSignature != 0xfeef04bd) {
-            throw util::exception(
-                "VerQueryValue signature mismatch. Signature: 0x{0:x}",
-                version_info->dwSignature
+            throw std::runtime_error(
+                std::format(
+                    "VerQueryValue signature mismatch. Signature: 0x{0:x}",
+                    version_info->dwSignature
+                )
             );
         }
 
@@ -286,7 +299,7 @@ namespace koalabox::win {
         auto* const dos_header = reinterpret_cast<PIMAGE_DOS_HEADER>(module_handle);
 
         if(dos_header->e_magic != IMAGE_DOS_SIGNATURE) {
-            throw util::exception("Invalid DOS file");
+            throw std::runtime_error("Invalid DOS file");
         }
 
         auto* const nt_header =
@@ -294,7 +307,7 @@ namespace koalabox::win {
                 reinterpret_cast<uint8_t*>(module_handle) + dos_header->e_lfanew);
 
         if(nt_header->Signature != IMAGE_NT_SIGNATURE) {
-            throw util::exception("Invalid NT signature");
+            throw std::runtime_error("Invalid NT signature");
         }
 
         auto* section = IMAGE_FIRST_SECTION(nt_header);
@@ -309,7 +322,7 @@ namespace koalabox::win {
             return section;
         }
 
-        throw util::exception("Section '{}' not found", section_name);
+        throw std::runtime_error(std::format("Section '{}' not found", section_name));
     }
 
     std::string get_pe_section_data_or_throw(
@@ -332,9 +345,11 @@ namespace koalabox::win {
 
         return address
                    ? address
-                   : throw util::exception(
-                       "Failed to get the address of the procedure: '{}'",
-                       procedure_name
+                   : throw std::runtime_error(
+                       std::format(
+                           "Failed to get the address of the procedure: '{}'",
+                           procedure_name
+                       )
                    );
     }
 
@@ -347,10 +362,12 @@ namespace koalabox::win {
         const auto result = GetSystemDirectory(path, MAX_PATH);
 
         if(result > MAX_PATH) {
-            throw util::exception(
-                "GetSystemDirectory path length ({}) is greater than MAX_PATH ({})",
-                result,
-                MAX_PATH
+            throw std::runtime_error(
+                std::format(
+                    "GetSystemDirectory path length ({}) is greater than MAX_PATH ({})",
+                    result,
+                    MAX_PATH
+                )
             );
         }
 
@@ -435,9 +452,11 @@ namespace koalabox::win {
 
         return WriteProcessMemory(process, address, buffer, size, &bytes_written)
                    ? bytes_written
-                   : throw util::exception(
-                       "Failed to write process memory at address: '{}'",
-                       fmt::ptr(address)
+                   : throw std::runtime_error(
+                       std::format(
+                           "Failed to write process memory at address: '{}'",
+                           fmt::ptr(address)
+                       )
                    );
     }
 
