@@ -40,12 +40,9 @@ jobs:
 
     steps:
       - name: Check out repository code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v5
         with:
           submodules: recursive
-
-      - name: Install and cache the latest CMake
-        uses: lukka/get-cmake@latest
 
       - name: Setup Developer Command Prompt for Microsoft Visual C++.
         uses: ilammy/msvc-dev-cmd@v1
@@ -62,7 +59,7 @@ jobs:
         run: cmake --build ${{ env.BUILD_DIR }} --config ${{ inputs.config }}
 
       - name: Upload binaries
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: ${{ matrix.module }}-${{ matrix.arch }}
           path: ${{ env.BUILD_DIR }}\${{ inputs.config }}\*.dll
@@ -89,10 +86,10 @@ jobs:
           sudo apt install zip tree
 
       - name: Check out repository code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v5
 
       - name: Download all workflow run artifacts
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v5
         with:
           path: artifacts
 
@@ -103,7 +100,7 @@ jobs:
         run: ${{ inputs.zip_command }}
 
       - name: Create a release draft
-        uses: softprops/action-gh-release@v1
+        uses: softprops/action-gh-release@v2
         with:
           body: '# 📑 Changelog'
           draft: true
