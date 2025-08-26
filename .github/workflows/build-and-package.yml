@@ -21,7 +21,7 @@ on:
 jobs:
   build-project:
     name: Build ${{ matrix.module }} for ${{ matrix.arch }}-bit architecture
-    runs-on: windows-2022
+    runs-on: windows-2025
     strategy:
       matrix:
         module: ${{ fromJson(inputs.modules) }}
