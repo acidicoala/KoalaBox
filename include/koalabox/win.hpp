@@ -33,17 +33,21 @@ namespace koalabox::win {
 
     std::string get_module_version_or_throw(const HMODULE& module_handle);
 
-    PIMAGE_SECTION_HEADER get_pe_section_or_throw(
+    PIMAGE_SECTION_HEADER get_pe_section_header_or_throw(
         const HMODULE& module_handle,
         const std::string& section_name
     );
 
-    std::string get_pe_section_data_or_throw(
+    struct pe_section {
+        uintptr_t start_address;
+        uintptr_t end_address;
+        DWORD size;
+    };
+
+    pe_section get_pe_section_or_throw(
         const HMODULE& module_handle,
         const std::string& section_name
     );
-
-    std::string get_pe_section_data(const HMODULE& module_handle, const std::string& section_name);
 
     FARPROC get_proc_address_or_throw(const HMODULE& module_handle, LPCSTR procedure_name);
 

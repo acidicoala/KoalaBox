@@ -8,6 +8,4 @@ namespace koalabox::util {
     void error_box(const std::string& title, const std::string& message);
 
     [[noreturn]] void panic(const std::string& message);
-
-    bool is_valid_pointer(const void* pointer);
 }

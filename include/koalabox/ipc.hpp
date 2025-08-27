@@ -7,14 +7,14 @@ namespace koalabox::ipc {
         std::string name;
         nlohmann::json::object_t args;
 
-        NLOHMANN_DEFINE_TYPE_INTRUSIVE(Request, name, args);
+        NLOHMANN_DEFINE_TYPE_INTRUSIVE_WITH_DEFAULT(Request, name, args);
     };
 
     struct Response {
         bool success = false;
         nlohmann::json::object_t data;
 
-        NLOHMANN_DEFINE_TYPE_INTRUSIVE(Response, success, data);
+        NLOHMANN_DEFINE_TYPE_INTRUSIVE_WITH_DEFAULT(Response, success, data);
     };
 
     /// Note: This function is intended to be called from a new thread, in a try-catch block.

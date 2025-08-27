@@ -292,11 +292,11 @@ namespace koalabox::win {
         );
     }
 
-    PIMAGE_SECTION_HEADER get_pe_section_or_throw(
+    PIMAGE_SECTION_HEADER get_pe_section_header_or_throw(
         const HMODULE& module_handle,
         const std::string& section_name
     ) {
-        auto* const dos_header = reinterpret_cast<PIMAGE_DOS_HEADER>(module_handle);
+        const auto* const dos_header = reinterpret_cast<PIMAGE_DOS_HEADER>(module_handle);
 
         if(dos_header->e_magic != IMAGE_DOS_SIGNATURE) {
             throw std::runtime_error("Invalid DOS file");
@@ -325,23 +325,22 @@ namespace koalabox::win {
         throw std::runtime_error(std::format("Section '{}' not found", section_name));
     }
 
-    std::string get_pe_section_data_or_throw(
+    pe_section get_pe_section_or_throw(
         const HMODULE& module_handle,
         const std::string& section_name
     ) {
-        const auto* section = get_pe_section_or_throw(module_handle, section_name);
+        const auto section = get_pe_section_header_or_throw(module_handle, section_name);
+        const auto section_start = reinterpret_cast<uintptr_t>(module_handle)
+                                   + section->PointerToRawData;
         return {
-            reinterpret_cast<char*>(module_handle) + section->PointerToRawData,
-            section->SizeOfRawData
+            .start_address = reinterpret_cast<uintptr_t>(module_handle) + section->PointerToRawData,
+            .end_address = section_start + section->SizeOfRawData,
+            .size = section->SizeOfRawData,
         };
     }
 
-    std::string get_pe_section_data(const HMODULE& module_handle, const std::string& section_name) {
-        PANIC_ON_CATCH(get_pe_section_data_or_throw, module_handle, section_name)
-    }
-
-    FARPROC get_proc_address_or_throw(const HMODULE& handle, LPCSTR procedure_name) {
-        const auto address = GetProcAddress(handle, procedure_name);
+    FARPROC get_proc_address_or_throw(const HMODULE& module_handle, LPCSTR procedure_name) {
+        const auto address = GetProcAddress(module_handle, procedure_name);
 
         return address
                    ? address
@@ -353,8 +352,8 @@ namespace koalabox::win {
                    );
     }
 
-    FARPROC get_proc_address(const HMODULE& handle, LPCSTR procedure_name) {
-        PANIC_ON_CATCH(get_proc_address_or_throw, handle, procedure_name)
+    FARPROC get_proc_address(const HMODULE& module_handle, const LPCSTR procedure_name) {
+        PANIC_ON_CATCH(get_proc_address_or_throw, module_handle, procedure_name)
     }
 
     fs::path get_system_directory_or_throw() {

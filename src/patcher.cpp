@@ -2,8 +2,8 @@
 #include <cstring>
 #include <regex>
 
-#include "koalabox/logger.hpp"
 #include "koalabox/patcher.hpp"
+#include "koalabox/logger.hpp"
 #include "koalabox/win.hpp"
 
 namespace koalabox::patcher {
@@ -109,7 +109,7 @@ namespace koalabox::patcher {
 
     uintptr_t find_pattern_address(
         const uintptr_t base_address,
-        size_t scan_size,
+        const size_t scan_size,
         const std::string& name,
         const std::string& pattern
     ) {
@@ -123,7 +123,7 @@ namespace koalabox::patcher {
             LOG_DEBUG(
                 "'{}' address: {}. Search time: {:.2f} ms",
                 name,
-                (void*) address,
+                reinterpret_cast<void*>(address),
                 elapsed_time
             );
         } else {
@@ -131,38 +131,5 @@ namespace koalabox::patcher {
         }
 
         return address;
-    }
-
-    uintptr_t find_pattern_address(
-        const MODULEINFO& process_info,
-        const std::string& name,
-        const std::string& pattern
-    ) {
-        return find_pattern_address(
-            reinterpret_cast<uintptr_t>(process_info.lpBaseOfDll),
-            process_info.SizeOfImage,
-            name,
-            pattern
-        );
-    }
-
-    uintptr_t find_pattern_address(
-        const HMODULE module_handle,
-        const std::string& section_name,
-        const std::string& name,
-        const std::string& pattern
-    ) {
-        const auto* section = win::get_pe_section_or_throw(module_handle, section_name);
-
-        const auto* section_address =
-            reinterpret_cast<uint8_t*>(module_handle) + section->PointerToRawData;
-
-        // First find the string in the .rdata section
-        return find_pattern_address(
-            reinterpret_cast<uintptr_t>(section_address),
-            section->SizeOfRawData,
-            name,
-            pattern
-        );
     }
 }
