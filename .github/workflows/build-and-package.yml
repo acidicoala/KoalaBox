@@ -33,8 +33,8 @@ jobs:
         arch: ${{ fromJson(inputs.arch) }}
     env:
       BUILD_DIR: ${{ github.workspace }}\build\${{ matrix.arch }}\${{ matrix.module }}
-      PLATFORM: ${{ matrix.arch == 32 && 'Win32' || 'x64' }}
-      TERM: ${{ matrix.arch == 32 && 'amd64_x86' || 'amd64' }}
+      CMAKE_ARCH: ${{ matrix.arch == 32 && 'Win32' || 'x64' }}
+      CMD_ARCH: ${{ matrix.arch == 32 && 'amd64_x86' || 'amd64' }}
     steps:
       - name: Check out repository code
         uses: actions/checkout@v5
@@ -44,13 +44,13 @@ jobs:
       - name: Setup Developer Command Prompt for Microsoft Visual C++.
         uses: ilammy/msvc-dev-cmd@v1
         with:
-          arch: ${{ env.TERM }}
+          arch: ${{ env.CMD_ARCH }}
 
       - name: Print build directory tree
         run: tree /f ${{ env.BUILD_DIR }}
 
       - name: Generate build files
-        run: cmake -G "Visual Studio 17 2022" -A "${{ env.PLATFORM }}" -B "${{ env.BUILD_DIR }}" -DMODULE=${{ matrix.module }}
+        run: cmake -G "Visual Studio 17 2022" -A "${{ env.CMAKE_ARCH }}" -B "${{ env.BUILD_DIR }}" -DMODULE=${{ matrix.module }}
 
       - name: Build the project
         run: cmake --build ${{ env.BUILD_DIR }} --config ${{ inputs.config }}

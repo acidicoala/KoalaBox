@@ -19,7 +19,7 @@ namespace {
         void log_impl(const std::string& msg, const PLH::ErrorLevel level) const {
             const auto trimmed_message_view = std::string_view(
                 msg.data(),
-                std::max(0ULL, msg.size() - 1)
+                msg.empty() ? 0 : msg.size() - 1
             );
 
             if(level == PLH::ErrorLevel::INFO && print_info) {
