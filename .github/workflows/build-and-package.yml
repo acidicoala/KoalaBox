@@ -2,8 +2,13 @@ name: Build and Package
 on:
   workflow_call:
     inputs:
+      arch:
+        description: 'Stringified JSON array listing architectures to target. Can be 32, 64, or both.'
+        required: true
+        type: string
+
       modules:
-        description: 'Stringified JSON object listing modules to build'
+        description: 'Stringified JSON array listing modules to build'
         required: true
         type: string
 
@@ -25,7 +30,7 @@ jobs:
     strategy:
       matrix:
         module: ${{ fromJson(inputs.modules) }}
-        arch: [ 32, 64 ]
+        arch: ${{ fromJson(inputs.arch) }}
         include:
           - arch: 32
             platform: Win32
