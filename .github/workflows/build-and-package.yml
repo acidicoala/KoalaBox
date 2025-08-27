@@ -31,18 +31,10 @@ jobs:
       matrix:
         module: ${{ fromJson(inputs.modules) }}
         arch: ${{ fromJson(inputs.arch) }}
-        include:
-          - arch: 32
-            platform: Win32
-            term: amd64_x86
-
-          - arch: 64
-            platform: x64
-            term: amd64
-
     env:
       BUILD_DIR: ${{ github.workspace }}\build\${{ matrix.arch }}\${{ matrix.module }}
-
+      PLATFORM: ${{ matrix.arch == 32 && 'Win32' || 'x64' }}
+      TERM: ${{ matrix.arch == 32 && 'amd64_x86' || 'amd64' }}
     steps:
       - name: Check out repository code
         uses: actions/checkout@v5
@@ -52,13 +44,13 @@ jobs:
       - name: Setup Developer Command Prompt for Microsoft Visual C++.
         uses: ilammy/msvc-dev-cmd@v1
         with:
-          arch: ${{ matrix.term }}
+          arch: ${{ env.TERM }}
 
       - name: Print build directory tree
         run: tree /f ${{ env.BUILD_DIR }}
 
       - name: Generate build files
-        run: cmake -G "Visual Studio 17 2022" -A "${{ matrix.platform }}" -B "${{ env.BUILD_DIR }}" -DMODULE=${{ matrix.module }}
+        run: cmake -G "Visual Studio 17 2022" -A "${{ env.PLATFORM }}" -B "${{ env.BUILD_DIR }}" -DMODULE=${{ matrix.module }}
 
       - name: Build the project
         run: cmake --build ${{ env.BUILD_DIR }} --config ${{ inputs.config }}

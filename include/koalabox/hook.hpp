@@ -67,14 +67,14 @@ namespace koalabox::hook {
     void swap_virtual_func_or_throw(
         const void* instance,
         const std::string& function_name,
-        int ordinal,
+        uint16_t ordinal,
         uintptr_t callback_function
     );
 
     void swap_virtual_func(
         const void* instance,
         const std::string& function_name,
-        int ordinal,
+        uint16_t ordinal,
         uintptr_t callback_function
     );
 

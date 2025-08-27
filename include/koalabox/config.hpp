@@ -21,8 +21,6 @@ namespace koalabox::config {
 
             const auto config = nlohmann::json::parse(config_str).get<Config>();
 
-            LOG_DEBUG("Parsed config:\n{}", nlohmann::json(config).dump(2));
-
             return config;
         } catch(const std::exception& e) {
             util::panic(std::format("Error parsing config file: {}", e.what()));

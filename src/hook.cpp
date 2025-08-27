@@ -17,12 +17,17 @@ namespace {
         explicit PolyhookLogger(const bool print_info) : print_info(print_info) {}
 
         void log_impl(const std::string& msg, const PLH::ErrorLevel level) const {
+            const auto trimmed_message_view = std::string_view(
+                msg.data(),
+                std::max(0ULL, msg.size() - 1)
+            );
+
             if(level == PLH::ErrorLevel::INFO && print_info) {
-                LOG_DEBUG("[PLH] {}", msg);
+                LOG_DEBUG("[PLH] {}", trimmed_message_view);
             } else if(level == PLH::ErrorLevel::WARN) {
-                LOG_WARN("[PLH] {}", msg);
+                LOG_WARN("[PLH] {}", trimmed_message_view);
             } else if(level == PLH::ErrorLevel::SEV) {
-                LOG_ERROR("[PLH] {}", msg);
+                LOG_ERROR("[PLH] {}", trimmed_message_view);
             }
         }
 
@@ -196,7 +201,7 @@ namespace koalabox::hook {
     void swap_virtual_func_or_throw(
         const void* instance,
         const std::string& function_name,
-        const int ordinal,
+        const uint16_t ordinal,
         uintptr_t callback_function
     ) {
         struct clazz {
@@ -214,7 +219,7 @@ namespace koalabox::hook {
         }
 
         LOG_DEBUG(
-            "Hooking '{}' at [[{}]+0x{:X}] via virtual function swap",
+            "Hooking '{}' @ [[{}]+0x{:X}] via virtual function swap",
             function_name,
             instance,
             ordinal * sizeof(void*)
@@ -242,7 +247,7 @@ namespace koalabox::hook {
     void swap_virtual_func(
         const void* instance,
         const std::string& function_name,
-        const int ordinal,
+        const uint16_t ordinal,
         const uintptr_t callback_function
     ) {
         try {

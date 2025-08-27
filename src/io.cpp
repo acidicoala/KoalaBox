@@ -24,7 +24,7 @@ namespace koalabox::io {
             if(output_stream.good()) {
                 output_stream << contents;
 
-                LOG_DEBUG(R"(Writing file to disk: "{}")", path::to_str(file_path));
+                LOG_TRACE(R"(Writing file to disk: "{}")", path::to_str(file_path));
                 return true;
             }
 

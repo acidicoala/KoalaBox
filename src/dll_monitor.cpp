@@ -43,6 +43,21 @@ namespace {
             }
         ).detach();
     }
+
+    void process_module(
+        callback_context* context,
+        const HMODULE loaded_module,
+        const std::string& dll_name
+    ) {
+        context->callback(loaded_module, dll_name);
+        context->remaining_modules.erase(dll_name);
+
+        if(context->remaining_modules.empty()) {
+            LOG_DEBUG("Shutting down dll monitor");
+
+            shutdown_listener(context);
+        }
+    }
 }
 
 namespace koalabox::dll_monitor {
@@ -61,7 +76,7 @@ namespace koalabox::dll_monitor {
 
         // Pre-process the notification
         const auto notification_listener = [](
-            ULONG NotificationReason,
+            const ULONG NotificationReason,
             // ReSharper disable once CppParameterMayBeConstPtrOrRef
             LDR_DLL_NOTIFICATION_DATA* NotificationData,
             void* raw_context
@@ -87,30 +102,25 @@ namespace koalabox::dll_monitor {
 
                 auto* const loaded_module = win::get_module_handle(full_dll_name.c_str());
 
-                context->callback(loaded_module, dll_name);
-                context->remaining_modules.erase(dll_name);
-
-                if(context->remaining_modules.empty()) {
-                    LOG_TRACE("Shutting down dll monitor");
-
-                    shutdown_listener(context);
-                }
+                process_module(context, loaded_module, dll_name);
             }
         };
 
-        // Map library names to lowercase with extension
+        // Map library names to lowercase
         std::set<std::string> filter;
         for(const auto& name : target_library_names) {
             filter.insert(str::to_lower(name));
         }
 
+        auto* initial_context = new callback_context{
+            .remaining_modules = filter,
+            .callback = callback,
+        };
+
         const auto status = CALL_NT_DLL(LdrRegisterDllNotification)(
             0,
             notification_listener,
-            new callback_context{
-                .remaining_modules = filter,
-                .callback = callback,
-            },
+            initial_context,
             &cookie
         );
 
@@ -121,7 +131,7 @@ namespace koalabox::dll_monitor {
         LOG_DEBUG("DLL monitor was successfully initialized");
 
         // Then check if the target dll is already loaded
-        for(const auto& library_name : target_library_names) {
+        for(const auto& library_name : filter) {
             auto* module_handle = GetModuleHandle(str::to_wstr(library_name).c_str());
 
             if(not module_handle) {
@@ -130,7 +140,7 @@ namespace koalabox::dll_monitor {
 
             LOG_DEBUG("Library is already loaded: '{}'", library_name);
 
-            callback(module_handle, library_name);
+            process_module(initial_context, module_handle, library_name);
         }
     }
 }
