@@ -10,6 +10,12 @@ namespace koalabox::path {
         return {u8str};
     }
 
+    fs::path from_str(const std::string& str) {
+        const auto u8str = std::u8string(str.begin(), str.end());
+        return {u8str};
+    }
+
+
     std::wstring to_wstr(const fs::path& path) {
         const auto u8str = path.generic_u8string();
         const auto u16str = utf8::utf8to16(u8str);

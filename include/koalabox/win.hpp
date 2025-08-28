@@ -19,9 +19,6 @@ namespace koalabox::win {
 
     std::string get_last_error();
 
-    /**
-     * @return Parent directory of the given module
-     */
     fs::path get_module_path(const HMODULE& handle);
 
     HMODULE get_module_handle_or_throw(LPCSTR module_name);
