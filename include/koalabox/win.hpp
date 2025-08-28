@@ -2,6 +2,9 @@
 
 #include <filesystem>
 
+#define KB_WIN_GET_PROC(MODULE, PROC_NAME) \
+    koalabox::win::get_proc(MODULE, #PROC_NAME, PROC_NAME)
+
 namespace koalabox::win {
     namespace fs = std::filesystem;
 
@@ -52,6 +55,11 @@ namespace koalabox::win {
     FARPROC get_proc_address_or_throw(const HMODULE& module_handle, LPCSTR procedure_name);
 
     FARPROC get_proc_address(const HMODULE& module_handle, LPCSTR procedure_name);
+
+    template<typename F>
+    F get_proc(const HMODULE& module_handle, const LPCSTR procedure_name, F) {
+        return reinterpret_cast<F>(get_proc_address(module_handle, procedure_name));
+    }
 
     fs::path get_system_directory_or_throw();
 

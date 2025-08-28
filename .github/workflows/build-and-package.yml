@@ -84,6 +84,8 @@ jobs:
 
       - name: Check out repository code
         uses: actions/checkout@v5
+        with:
+          submodules: recursive
 
       - name: Download all workflow run artifacts
         uses: actions/download-artifact@v5
