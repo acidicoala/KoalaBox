@@ -3,6 +3,7 @@
 #include <polyhook2/Virtuals/VFuncSwapHook.hpp>
 
 #include "koalabox/hook.hpp"
+#include "koalabox/globals.hpp"
 #include "koalabox/logger.hpp"
 #include "koalabox/path.hpp"
 #include "koalabox/str.hpp"
@@ -10,6 +11,8 @@
 #include "koalabox/win.hpp"
 
 namespace {
+    namespace kb = koalabox;
+
     class PolyhookLogger final : public PLH::Logger {
         bool print_info;
 
@@ -41,13 +44,57 @@ namespace {
         void* orig_func_ptr = nullptr;
     };
 
-    // Key is function name
+    // Used for vtable swap hooks. Key is class pointer.
     using function_to_hook_data_map = std::map<std::string, hook_data>;
-
-    // Key is class name
     std::map<const void*, function_to_hook_data_map> class_map;
 
+    // Used as a fallback mechanism when functions from different classes
+    // end up being hooked with the same function. Normally we would use
+    // the class_map to get the class pointer first, but it may be missing
+    // in cases like late injection/hooking. Hence, as a last-resort method,
+    // we could try using the last known class pointer in the hopes that it
+    // may be compatible. Key is function name.
+    std::map<std::string, const void*> reverse_class_map;
+
+    // Used for detours/eat hooks. Key is function name.
     function_to_hook_data_map hook_map;
+
+    const function_to_hook_data_map& find_function_map(
+        const void* class_ptr,
+        const std::string& function_name
+    ) {
+        if(class_map.contains(class_ptr)) {
+            return class_map.at(class_ptr);
+        }
+
+        LOG_ERROR(
+            "Hook map does not contain class pointer: {}.\n"
+            "Falling back to last known class pointer of {}.\n"
+            "Most likely cause: {} has been loaded too late.",
+            class_ptr,
+            function_name,
+            kb::globals::get_project_name()
+        );
+
+        if(reverse_class_map.contains(function_name)) {
+            const auto* fallback_class_ptr = reverse_class_map.at(function_name);
+
+            if(class_map.contains(fallback_class_ptr)) {
+                return class_map.at(fallback_class_ptr);
+            }
+
+            kb::util::panic(
+                std::format(
+                    "Fallback class pointer '{}' was not found in the class map",
+                    fallback_class_ptr
+                )
+            );
+        }
+
+        kb::util::panic(
+            std::format("Function '{}' was not found in the reverse class map", function_name)
+        );
+    }
 }
 
 namespace koalabox::hook {
@@ -92,7 +139,9 @@ namespace koalabox::hook {
         }
 
         const auto success = function_map.at(function_name).hook->unHook();
+
         function_map.erase(function_name);
+        reverse_class_map.erase(function_name);
 
         return success;
     }
@@ -276,6 +325,7 @@ namespace koalabox::hook {
                 .hook = std::unique_ptr<PLH::IHook>(swap_hook),
                 .orig_func_ptr = reinterpret_cast<void*>(original_functions[ordinal]),
             };
+            reverse_class_map[function_name] = class_ptr;
         } else {
             throw std::runtime_error(std::format("Failed to hook function: {}", function_name));
         }
@@ -319,13 +369,7 @@ namespace koalabox::hook {
         const void* class_ptr,
         const std::string& function_name
     ) {
-        if(not class_map.contains(class_ptr)) {
-            util::panic(
-                std::format("Class hook map does not contain class: {}", class_ptr)
-            );
-        }
-
-        const auto& function_map = class_map.at(class_ptr);
+        const auto& function_map = find_function_map(class_ptr, function_name);
 
         if(not function_map.contains(function_name)) {
             util::panic(

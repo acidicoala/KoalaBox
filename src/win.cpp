@@ -346,7 +346,7 @@ namespace koalabox::win {
                    ? address
                    : throw std::runtime_error(
                        std::format(
-                           "Failed to get the address of the procedure: '{}'",
+                           "Failed to get an address of the procedure: '{}'",
                            procedure_name
                        )
                    );
