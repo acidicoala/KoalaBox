@@ -31,7 +31,14 @@ namespace {
         const auto& [cookie] = *callback_context;
         auto& callbacks = cookie_callbacks.at(cookie);
         const auto& callback = callbacks.at(dll_name);
-        const auto needs_erasing = callback(module_handle);
+
+        bool needs_erasing;
+        try {
+            needs_erasing = callback(module_handle);
+        } catch(const std::exception& e) {
+            LOG_ERROR("{} -> Exception raised during callback invocation: {}", dll_name, e.what());
+            needs_erasing = false;
+        }
 
         if(not needs_erasing) { return; }
 
@@ -46,7 +53,7 @@ namespace {
         }
     }
 
-    void notification_listener(
+    void __stdcall notification_listener(
         const ULONG NotificationReason,
         const LDR_DLL_NOTIFICATION_DATA* NotificationData,
         const void* context
@@ -100,7 +107,7 @@ namespace {
 
 namespace koalabox::dll_monitor {
     const callback_context_t* init_listener(const callbacks_t& callbacks) {
-        LOG_DEBUG("Initializing DLL monitor with ");
+        LOG_DEBUG("Initializing DLL monitor");
 
         auto* context = new callback_context_t{};
         const auto status_code = CALL_NT_DLL(LdrRegisterDllNotification)(
