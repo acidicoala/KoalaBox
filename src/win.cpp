@@ -134,20 +134,24 @@ namespace koalabox::win {
         return path::from_wstr(wstr_path);
     }
 
-    HMODULE get_module_handle_or_throw(LPCSTR module_name) {
-        auto* const handle = module_name
-                                 ? ::GetModuleHandle(str::to_wstr(module_name).c_str())
-                                 : ::GetModuleHandle(nullptr);
+    HMODULE get_module_handle_or_throw(const std::string& module_name) {
+        auto* const handle = GetModuleHandle(str::to_wstr(module_name).c_str());
 
-        return handle
-                   ? handle
-                   : throw std::runtime_error(
-                       std::format("Failed to get a handle of the module: '{}'", module_name)
-                   );
+        if(not handle) {
+            throw std::runtime_error(
+                std::format("Failed to get a handle of the module: '{}'", module_name)
+            );
+        }
+
+        return handle;
     }
 
-    HMODULE get_module_handle(LPCSTR module_name) {
+    HMODULE get_module_handle(const std::string& module_name) {
         PANIC_ON_CATCH(get_module_handle_or_throw, module_name)
+    }
+
+    HMODULE get_process_handle() {
+        return GetModuleHandle(nullptr);
     }
 
     MODULEINFO get_module_info_or_throw(const HMODULE& module_handle) {
@@ -352,7 +356,7 @@ namespace koalabox::win {
                    );
     }
 
-    FARPROC get_proc_address(const HMODULE& module_handle, const LPCSTR procedure_name) {
+    FARPROC get_proc_address(const HMODULE& module_handle, const LPCSTR procedure_name) noexcept {
         PANIC_ON_CATCH(get_proc_address_or_throw, module_handle, procedure_name)
     }
 

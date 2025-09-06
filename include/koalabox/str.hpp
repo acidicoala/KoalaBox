@@ -2,6 +2,12 @@
 
 #include <string>
 
+#ifdef UNICODE
+#define STRING std::wstring
+#else
+#define STRING std::string
+#endif
+
 namespace koalabox::str {
     /**
      * @return A new string_view with leading and trailing spaces removed

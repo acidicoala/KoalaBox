@@ -5,6 +5,7 @@
 #define KB_WIN_GET_PROC(MODULE, PROC_NAME) \
     koalabox::win::get_proc(MODULE, #PROC_NAME, PROC_NAME)
 
+// TODO: Replace *_or_throw functions with a utility function
 namespace koalabox::win {
     namespace fs = std::filesystem;
 
@@ -21,12 +22,12 @@ namespace koalabox::win {
 
     fs::path get_module_path(const HMODULE& handle);
 
-    HMODULE get_module_handle_or_throw(LPCSTR module_name);
+    HMODULE get_module_handle_or_throw(const std::string& module_name);
+    HMODULE get_module_handle(const std::string& module_name);
 
-    HMODULE get_module_handle(LPCSTR module_name);
+    HMODULE get_process_handle();
 
     MODULEINFO get_module_info_or_throw(const HMODULE& module_handle);
-
     MODULEINFO get_module_info(const HMODULE& module_handle);
 
     std::string get_module_manifest(const HMODULE& module_handle);
@@ -42,6 +43,10 @@ namespace koalabox::win {
         uintptr_t start_address;
         uintptr_t end_address;
         DWORD size;
+
+        std::string to_string() const {
+            return {reinterpret_cast<char*>(start_address), size};
+        }
     };
 
     pe_section get_pe_section_or_throw(
@@ -51,7 +56,7 @@ namespace koalabox::win {
 
     FARPROC get_proc_address_or_throw(const HMODULE& module_handle, LPCSTR procedure_name);
 
-    FARPROC get_proc_address(const HMODULE& module_handle, LPCSTR procedure_name);
+    FARPROC get_proc_address(const HMODULE& module_handle, LPCSTR procedure_name) noexcept;
 
     template<typename F>
     F get_proc(const HMODULE& module_handle, const LPCSTR procedure_name, F) {

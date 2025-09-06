@@ -53,17 +53,17 @@ typedef union _LDR_DLL_NOTIFICATION_DATA {
 
 
 typedef VOID (CALLBACK *PLDR_DLL_NOTIFICATION_FUNCTION)(
-	_In_     ULONG                       NotificationReason,
-	_In_     PLDR_DLL_NOTIFICATION_DATA NotificationData,
-	_In_opt_ PVOID                       Context
+	_In_           ULONG                      NotificationReason,
+	_In_     const LDR_DLL_NOTIFICATION_DATA* NotificationData,
+	_In_opt_ const void*                      Context
 );
 
 
 typedef NTSTATUS (NTAPI *_LdrRegisterDllNotification)(
-	_In_     ULONG                          Flags,
-	_In_     PLDR_DLL_NOTIFICATION_FUNCTION NotificationFunction,
-	_In_opt_ PVOID                          Context,
-	_Out_    PVOID                          *Cookie
+	_In_           ULONG                          Flags,
+	_In_           PLDR_DLL_NOTIFICATION_FUNCTION NotificationFunction,
+	_In_opt_ const void*                          Context,
+	_Out_          PVOID                          *Cookie
 );
 
 typedef NTSTATUS (NTAPI *_LdrUnregisterDllNotification)(

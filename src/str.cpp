@@ -32,6 +32,10 @@ namespace koalabox::str {
         return std::string(trim(std::string_view(s)));
     }
 
+    bool eq(const std::string& s1, const std::string& s2) {
+        return to_lower(s1) == to_lower(s2);
+    }
+
     std::string to_lower(const std::string& str) {
         std::string result;
         result.resize(str.size());
@@ -46,10 +50,6 @@ namespace koalabox::str {
         );
 
         return result;
-    }
-
-    bool eq(const std::string& s1, const std::string& s2) {
-        return to_lower(s1) == to_lower(s2);
     }
 
     std::string to_str(const std::wstring& wstr) {

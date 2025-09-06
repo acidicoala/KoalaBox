@@ -3,6 +3,9 @@
 #include <polyhook2/Virtuals/VFuncSwapHook.hpp>
 
 #include "koalabox/hook.hpp"
+
+#include <ranges>
+
 #include "koalabox/globals.hpp"
 #include "koalabox/logger.hpp"
 #include "koalabox/path.hpp"
@@ -39,13 +42,16 @@ namespace {
         }
     };
 
-    struct hook_data {
-        std::unique_ptr<PLH::IHook> hook;
+    struct hook_data_t {
         void* orig_func_ptr = nullptr;
+        // ReSharper disable once CppDeclaratorNeverUsed
+        std::unique_ptr<PLH::VFuncMap> vfunc_map; // We need to save this to support unhooking
+        std::unique_ptr<PLH::IHook> hook;
     };
 
+    // Key is function name.
+    using function_to_hook_data_map = std::map<std::string, hook_data_t>;
     // Used for vtable swap hooks. Key is class pointer.
-    using function_to_hook_data_map = std::map<std::string, hook_data>;
     std::map<const void*, function_to_hook_data_map> class_map;
 
     // Used as a fallback mechanism when functions from different classes
@@ -119,6 +125,8 @@ namespace koalabox::hook {
         const auto success = hook_map.at(function_name).hook->unHook();
         hook_map.erase(function_name);
 
+        LOG_DEBUG("{} -> Unhooked '{}'", __func__, function_name);
+
         return success;
     }
 
@@ -143,7 +151,26 @@ namespace koalabox::hook {
         function_map.erase(function_name);
         reverse_class_map.erase(function_name);
 
+        LOG_DEBUG("{} -> Unhooked '{}' from {}", __func__, function_name, class_ptr);
+
         return success;
+    }
+
+    bool unhook_vt_all(const void* class_ptr) {
+        static std::mutex section;
+        const std::lock_guard lock(section);
+
+        if(not class_map.contains(class_ptr)) {
+            LOG_ERROR("Unhooking error. Class pointer not found: {}", class_ptr)
+            return false;
+        }
+
+        // This should call the destructor of hooked functions, which will unhook them.
+        class_map.erase(class_ptr);
+
+        LOG_DEBUG("{} -> Unhooked all functions from {}", __func__, class_ptr);
+
+        return true;
     }
 
     void detour_or_throw(
@@ -170,8 +197,8 @@ namespace koalabox::hook {
 #endif
         if(detour->hook()) {
             hook_map[function_name] = {
-                .hook = std::unique_ptr<PLH::IHook>(detour),
                 .orig_func_ptr = reinterpret_cast<void*>(trampoline),
+                .hook = std::unique_ptr<PLH::IHook>(detour),
             };
         } else {
             delete detour;
@@ -262,8 +289,8 @@ namespace koalabox::hook {
 
         if(eat_hook->hook()) {
             hook_map[function_name] = {
-                .hook = std::unique_ptr<PLH::IHook>(eat_hook),
                 .orig_func_ptr = reinterpret_cast<void*>(orig_function_address),
+                .hook = std::unique_ptr<PLH::IHook>(eat_hook),
             };
         } else {
             delete eat_hook;
@@ -312,18 +339,19 @@ namespace koalabox::hook {
 
         const PLH::VFuncMap redirect = {{ordinal, reinterpret_cast<uint64_t>(callback_function)}};
 
-        PLH::VFuncMap original_functions;
+        auto original_functions = std::make_unique<PLH::VFuncMap>();
 
         auto* const swap_hook = new PLH::VFuncSwapHook(
             static_cast<const char*>(class_ptr),
             redirect,
-            &original_functions
+            original_functions.get()
         );
 
         if(swap_hook->hook()) {
             class_map[class_ptr][function_name] = {
+                .orig_func_ptr = reinterpret_cast<void*>((*original_functions)[ordinal]),
+                .vfunc_map = std::move(original_functions),
                 .hook = std::unique_ptr<PLH::IHook>(swap_hook),
-                .orig_func_ptr = reinterpret_cast<void*>(original_functions[ordinal]),
             };
             reverse_class_map[function_name] = class_ptr;
         } else {

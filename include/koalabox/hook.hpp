@@ -16,6 +16,7 @@ namespace koalabox::hook {
     bool is_vt_hooked(const void* class_ptr, const std::string& function_name);
     bool unhook(const std::string& function_name);
     bool unhook_vt(const void* class_ptr, const std::string& function_name);
+    bool unhook_vt_all(const void* class_ptr);
 
     void detour_or_throw(
         const void* address,

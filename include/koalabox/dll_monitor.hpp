@@ -1,21 +1,26 @@
 #pragma once
 
 #include <functional>
-#include <set>
+#include <map>
 #include <string>
 
 /**
- * DLL Monitor starts a DLL load listener and calls the provided callback function
- * to notify of the load events that match the provided library name(s).
+ * DLL Monitor starts listening to DLL load events and invoked corresponding callbacks when target DLL is loaded.
  */
 namespace koalabox::dll_monitor {
-    using callback_multi_t = void(const HMODULE& module_handle, const std::string& library_name);
+    /** DLL name without extension. */
+    using dll_name_t = std::string;
+    /** @returns boolean indicating if the callback should be removed.*/
+    using callback_t = std::function<bool(HMODULE module_handle)>;
+    using callbacks_t = std::map<dll_name_t, callback_t>;
 
-    /**
-     * Invokes the callback when DLL matching one of target_library_names is loaded
-     */
-    void init_listener(
-        const std::set<std::string>& target_library_names,
-        const std::function<callback_multi_t>& callback
-    );
+    struct callback_context_t {
+        void* cookie;
+    };
+
+    /** @throws runtime_error if there was an initialization error from kernel. */
+    const callback_context_t* init_listener(const callbacks_t& callbacks);
+
+    /** Unregisters DLL listener and frees the callback context. */
+    void shutdown_listener(const callback_context_t* context);
 }

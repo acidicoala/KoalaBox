@@ -23,6 +23,7 @@ on:
         type: string
         default: Release
 
+# TODO: Add caching
 jobs:
   build-project:
     name: ${{ matrix.arch }}-bit build for ${{ matrix.module }}
