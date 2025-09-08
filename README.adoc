@@ -15,6 +15,11 @@ A collection of C++ utilities that comes in handy when developing koality projec
 * https://github.com/microsoft/wil[microsoft/wil]
 * https://github.com/p-ranav/glob[p-ranav/glob]
 
+== ❓Trivia
+
+The name of this project is inspired by https://en.wikipedia.org/wiki/BusyBox[BusyBox], which provides several Unix utilities.
+In a similar fashion, KoalaBox provides utilities for developing koality projects, hence the name.
+
 == 📄 License
 
 This software is licensed under the https://unlicense.org/[Unlicense], terms of which are available in link:UNLICENSE.txt[UNLICENSE.txt]

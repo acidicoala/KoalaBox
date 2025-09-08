@@ -30,3 +30,13 @@ Groups are separated by a single new line. Example:
 Additionally, includes for libraries outside the current project should be using angle brackets
 (e.g. `#include <string>`), whereas includes for project files (including generated) should use
 double quotes (`#include "dllmain.hpp"`).
+
+## Code style
+
+Projects should use the style stored in IDE, specifically
+[acidicoala.xml](https://github.com/acidicoala/acidicoala/blob/main/idea-configs/style/acidicoala.xml).
+
+## Code inspections
+
+Projects should use the inspections stored in IDE, specifically
+[acidicoala.xml](https://github.com/acidicoala/acidicoala/blob/main/idea-configs/inspections/acidicoala.xml).

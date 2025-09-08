@@ -31,7 +31,7 @@ function(configure_version_resource)
     )
     set(DLL_FILE_DESC ${arg_FILE_DESC})
     set(DLL_ORIG_NAME ${arg_ORIG_NAME})
-    set(VERSION_RESOURCE "${CMAKE_CURRENT_BINARY_DIR}/version.rc")
+    set(VERSION_RESOURCE "${CMAKE_CURRENT_BINARY_DIR}/generated/version.rc")
 
     get_target_property(KOALABOX_SOURCE_DIR KoalaBox SOURCE_DIR)
     configure_file("${KOALABOX_SOURCE_DIR}/res/version.gen.rc" ${VERSION_RESOURCE})
@@ -39,13 +39,13 @@ function(configure_version_resource)
 endfunction()
 
 function(configure_build_config)
-    set(BUILD_CONFIG_HEADER "${CMAKE_CURRENT_BINARY_DIR}/build_config.h")
+    set(BUILD_CONFIG_HEADER "${CMAKE_CURRENT_BINARY_DIR}/generated/build_config.h")
 
     get_target_property(KOALABOX_SOURCE_DIR KoalaBox SOURCE_DIR)
     configure_file("${KOALABOX_SOURCE_DIR}/res/build_config.gen.h" ${BUILD_CONFIG_HEADER})
 
     foreach(EXTRA_CONFIG IN LISTS ARGN)
-        set(GENERATED_EXTRA_CONFIG ${CMAKE_CURRENT_BINARY_DIR}/${EXTRA_CONFIG}.h)
+        set(GENERATED_EXTRA_CONFIG "${CMAKE_CURRENT_BINARY_DIR}/generated/${EXTRA_CONFIG}.h")
 
         file(TOUCH ${GENERATED_EXTRA_CONFIG})
         configure_file(${CMAKE_CURRENT_SOURCE_DIR}/res/${EXTRA_CONFIG}.gen.h ${GENERATED_EXTRA_CONFIG})
@@ -63,7 +63,7 @@ endfunction()
 function(configure_include_directories)
     target_include_directories(${CMAKE_PROJECT_NAME} PRIVATE
         "${CMAKE_CURRENT_SOURCE_DIR}/src"
-        "${CMAKE_CURRENT_BINARY_DIR}"
+        "${CMAKE_CURRENT_BINARY_DIR}/generated"
         "${ARGN}")
 endfunction()
 
@@ -72,7 +72,7 @@ function(configure_linker_exports)
         ARG "UNDECORATE" "TARGET;HEADER_NAME;FORWARDED_DLL;INPUT_SOURCES_DIR;DLL_FILES_GLOB" "" ${ARGN}
     )
 
-    set(GENERATED_LINKER_EXPORTS "${CMAKE_CURRENT_BINARY_DIR}/${ARG_HEADER_NAME}.h")
+    set(GENERATED_LINKER_EXPORTS "${CMAKE_CURRENT_BINARY_DIR}/generated/${ARG_HEADER_NAME}.h")
 
     # Make the linker_exports header available before build
     file(TOUCH ${GENERATED_LINKER_EXPORTS})

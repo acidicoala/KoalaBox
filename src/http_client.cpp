@@ -8,13 +8,13 @@ namespace koalabox::http_client {
     namespace {
         void validate_ok_response(const cpr::Response& res) {
             if(res.status_code != cpr::status::HTTP_OK) {
+                LOG_TRACE("Response headers:\n{}", res.raw_header);
+                LOG_TRACE("Response body:\n{}", res.text);
+
                 throw std::runtime_error(
                     std::format(
-                        "Status code: {}, Error code: {},\nResponse headers:\n{}\nBody:\n{}",
-                        res.status_code,
-                        static_cast<int>(res.error.code),
-                        res.raw_header,
-                        res.text
+                        "Status code: {}, Error code: {}",
+                        res.status_code, static_cast<int>(res.error.code)
                     )
                 );
             }
@@ -33,12 +33,19 @@ namespace koalabox::http_client {
         return nlohmann::json::parse(res.text);
     }
 
-    nlohmann::json post_json(const std::string& url, const nlohmann::json& payload) {
+    nlohmann::json post_json(
+        const std::string& url,
+        const nlohmann::json& payload,
+        const std::map<std::string, std::string>& headers
+    ) {
         LOG_DEBUG("POST {}", url);
+
+        auto cpr_headers = cpr::Header{{"content-type", "application/json"}};
+        cpr_headers.insert(headers.begin(), headers.end());
 
         const auto res = cpr::Post(
             cpr::Url{url},
-            cpr::Header{{"content-type", "application/json"}},
+            cpr_headers,
             cpr::Body{payload.dump()}
         );
 

@@ -7,7 +7,11 @@ namespace koalabox::http_client {
 
     nlohmann::json get_json(const std::string& url);
 
-    nlohmann::json post_json(const std::string& url, nlohmann::json json);
+    nlohmann::json post_json(
+        const std::string& url,
+        const nlohmann::json& payload,
+        const std::map<std::string, std::string>& headers = {}
+    );
 
     std::string head_etag(const std::string& url);
 

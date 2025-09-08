@@ -1,11 +1,10 @@
+#include <ranges>
+
 #include <polyhook2/Detour/NatDetour.hpp>
 #include <polyhook2/PE/EatHook.hpp>
 #include <polyhook2/Virtuals/VFuncSwapHook.hpp>
 
 #include "koalabox/hook.hpp"
-
-#include <ranges>
-
 #include "koalabox/globals.hpp"
 #include "koalabox/logger.hpp"
 #include "koalabox/path.hpp"

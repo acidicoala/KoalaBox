@@ -5,6 +5,8 @@
 #define KB_WIN_GET_PROC(MODULE, PROC_NAME) \
     koalabox::win::get_proc(MODULE, #PROC_NAME, PROC_NAME)
 
+EXTERN_C BOOLEAN WINAPI DllMain(HMODULE handle, DWORD reason, LPVOID reserved);
+
 // TODO: Replace *_or_throw functions with a utility function
 namespace koalabox::win {
     namespace fs = std::filesystem;

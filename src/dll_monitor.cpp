@@ -122,6 +122,7 @@ namespace koalabox::dll_monitor {
         }
 
         // Map library names to lowercase
+        // TODO: Implement like cpr::Header
         callbacks_t lowercase_callbacks;
         for(const auto& [dll_name, callback] : callbacks) {
             lowercase_callbacks[str::to_lower(dll_name)] = callback;

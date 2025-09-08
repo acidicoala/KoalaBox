@@ -1,5 +1,7 @@
 #include <regex>
 
+#include <nlohmann/json.hpp>
+
 #include "koalabox/loader.hpp"
 #include "koalabox/logger.hpp"
 #include "koalabox/path.hpp"
@@ -10,12 +12,12 @@ namespace koalabox::loader {
     /**
      * Key is undecorated name, value is decorated name, if `undecorate` is set
      */
-    std::map<std::string, std::string> get_export_map(const HMODULE& library, bool undecorate) {
+    std::map<std::string, std::string> get_export_map(const HMODULE& library, const bool undecorate) {
         // Adapted from: https://github.com/mborne/dll2def/blob/master/dll2def.cpp
 
         auto exported_functions = std::map<std::string, std::string>();
 
-        auto* dos_header = reinterpret_cast<PIMAGE_DOS_HEADER>(library);
+        const auto* dos_header = reinterpret_cast<PIMAGE_DOS_HEADER>(library);
 
         if(dos_header->e_magic != IMAGE_DOS_SIGNATURE) {
             util::panic("e_magic  != IMAGE_DOS_SIGNATURE");
@@ -42,8 +44,8 @@ namespace koalabox::loader {
 
         // Iterate over the names and add them to the vector
         for(unsigned int i = 0; i < exports->NumberOfNames; i++) {
-            std::string exported_name = reinterpret_cast<char*>(library) + static_cast<DWORD*>(
-                                            names)[i];
+            std::string exported_name = reinterpret_cast<char*>(library) +
+                                        static_cast<DWORD*>(names)[i];
 
             if(undecorate) {
                 std::string undecorated_function = exported_name; // fallback value
@@ -51,8 +53,7 @@ namespace koalabox::loader {
                 // Extract function name from decorated name
                 static const std::regex expression(R"((?:^_)?(\w+)(?:@\d+$)?)");
 
-                std::smatch matches;
-                if(std::regex_match(exported_name, matches, expression)) {
+                if(std::smatch matches; std::regex_match(exported_name, matches, expression)) {
                     if(matches.size() == 2) {
                         undecorated_function = matches[1];
                     } else {
@@ -77,22 +78,32 @@ namespace koalabox::loader {
 #else
         static std::map<HMODULE, std::map<std::string, std::string>> undecorated_function_maps;
 
-        if(not
-            undecorated_function_maps.contains(library)
-        ) {
+        if(not undecorated_function_maps.contains(library)) {
             undecorated_function_maps[library] = get_export_map(library, true);
+            LOG_DEBUG(
+                "Populated export map of {} with {} entries",
+                static_cast<void*>(library), undecorated_function_maps.at(library).size()
+            );
+            LOG_TRACE("Export map:\n{}", nlohmann::json(undecorated_function_maps[library]).dump(2));
         }
 
-        return undecorated_function_maps[library][function_name];
+        try {
+            return undecorated_function_maps.at(library).at(function_name);
+        } catch(const std::exception&) {
+            LOG_WARN("Function '{}' not found in export map of {}", function_name, static_cast<void*>(library));
+            return function_name;
+        }
 #endif
     }
 
     HMODULE load_original_library(const fs::path& self_path, const std::string& orig_library_name) {
-        const auto original_module_path = self_path / (orig_library_name + "_o.dll");
+        const auto full_original_library_name = orig_library_name + "_o.dll";
+        const auto original_module_path = self_path / full_original_library_name;
 
         auto* const original_module = win::load_library(original_module_path);
 
-        LOG_INFO("Loaded original library from: '{}'", path::to_str(original_module_path));
+        LOG_INFO("Loaded original library: '{}'", full_original_library_name);
+        LOG_TRACE("Loaded original library from: '{}'", path::to_str(original_module_path));
 
         return original_module;
     }
