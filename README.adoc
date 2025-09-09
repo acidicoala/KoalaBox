@@ -14,6 +14,7 @@ A collection of C++ utilities that comes in handy when developing koality projec
 * https://github.com/nemtrif/utfcpp[nemtrif/utfcpp]
 * https://github.com/microsoft/wil[microsoft/wil]
 * https://github.com/p-ranav/glob[p-ranav/glob]
+* https://github.com/pantor/inja[pantor/inja]
 
 == ❓Trivia
 
