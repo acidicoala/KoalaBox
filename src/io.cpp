@@ -20,7 +20,8 @@ namespace koalabox::io {
                 std::filesystem::create_directories(file_path.parent_path());
             }
 
-            std::ofstream output_stream(file_path);
+            // Use binary mode to prevent windows from writing \n as CRLF
+            std::ofstream output_stream(file_path, std::ios::binary);
             if(output_stream.good()) {
                 output_stream << contents;
 

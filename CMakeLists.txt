@@ -39,12 +39,20 @@ target_include_directories(KoalaBox PRIVATE "$<BUILD_INTERFACE:${CMAKE_CURRENT_S
 set(PCH_PATH ${CMAKE_CURRENT_SOURCE_DIR}/src/pch.hpp)
 target_precompile_headers(KoalaBox PUBLIC "$<$<COMPILE_LANGUAGE:CXX>:${PCH_PATH}>")
 
-add_subdirectory(tools)
 
 ### Configure dependencies
 
 # Note: Dependencies should be linked to KoalaBox using PUBLIC scope
 # to avoid inconsistent flags/definitions.
+
+## https://github.com/nlohmann/json
+CPMAddPackage(
+    URI "gh:nlohmann/json@3.12.0"
+    OPTIONS "JSON_Diagnostics ON"
+)
+#set(nlohmann_json_DIR ${json_BINARY_DIR})
+#find_package(nlohmann_json REQUIRED)
+target_link_libraries(KoalaBox PUBLIC nlohmann_json::nlohmann_json)
 
 ## https://github.com/richgel999/miniz
 CPMAddPackage("gh:richgel999/miniz#c883286f1a6443720e7705450f59e579a4bbb8e2")
@@ -60,13 +68,6 @@ CPMAddPackage(
     "BUILD_EXAMPLES OFF"
 )
 target_link_libraries(KoalaBox PUBLIC cpr)
-
-## https://github.com/nlohmann/json
-CPMAddPackage(
-    URI "gh:nlohmann/json@3.12.0"
-    OPTIONS "JSON_Diagnostics ON"
-)
-target_link_libraries(KoalaBox PUBLIC nlohmann_json)
 
 ## https://github.com/stevemk14ebr/PolyHook_2_0
 CPMAddPackage(
@@ -118,3 +119,5 @@ CPMAddPackage(
     "WIL_BUILD_PACKAGING OFF"
 )
 target_link_libraries(KoalaBox PUBLIC WIL)
+
+add_subdirectory(tools)

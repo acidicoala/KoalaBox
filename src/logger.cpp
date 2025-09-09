@@ -17,7 +17,7 @@ namespace {
         // %s - Basename of the source file
         // %# - Source line
         // %! - Source function
-        // %H - Hours in 24 format 00-23
+        // %T - ISO 8601 time format (HH:MM:SS)
         // %M - Minutes 00-59
         // %S - Seconds 00-59
         // %e - Millisecond part of the current second 000-999
@@ -34,7 +34,7 @@ namespace {
 
         constexpr auto src_file_name = "%32!s";
         constexpr auto src_line_num = "%-4!#";
-        constexpr auto timestamp = "%H:%M:%S.%e";
+        constexpr auto timestamp = "%T.%e";
         constexpr auto thread_id = "%6!t";
 
         return std::format("%L|{}|{}:{}|{}|%v", timestamp, src_file_name, src_line_num, thread_id);
