@@ -19,8 +19,8 @@ namespace config {
     }); // @formatter:on
 
     struct TextTask {
-        TaskType type = TaskType::Text;
     private:
+        TaskType type = TaskType::Text;
         std::string template_file;
         std::string destination_dir;
         std::string file_name;
@@ -29,15 +29,16 @@ namespace config {
             TextTask,
             type, template_file, destination_dir, file_name
         );
+
     public:
-        std::string get_template_file() const;
-        std::string get_destination_dir() const;
-        std::string get_file_name() const;
+        [[nodiscard]] std::string get_template_file() const;
+        [[nodiscard]] std::string get_destination_dir() const;
+        [[nodiscard]] std::string get_file_name() const;
     };
 
     struct JsonTask {
-        TaskType type = TaskType::Json;
     private:
+        TaskType type = TaskType::Json;
         std::string schema_file;
         std::string destination_file;
 
@@ -45,32 +46,29 @@ namespace config {
             JsonTask,
             type, schema_file, destination_file
         );
+
     public:
-        std::string get_schema_file() const;
-        std::string get_destination_file() const;
+        [[nodiscard]] std::string get_schema_file() const;
+        [[nodiscard]] std::string get_destination_file() const;
     };
 
-    struct MarkdownTask {
-        TaskType type = TaskType::Markdown;
-        std::string file_path;
-
-        NLOHMANN_DEFINE_TYPE_INTRUSIVE_WITH_DEFAULT(
-            MarkdownTask,
-            type, file_path
-        );
-    };
-
-    using Task = std::variant<TextTask, JsonTask, MarkdownTask>;
+    using Task = std::variant<TextTask, JsonTask>;
 
     struct Config {
+    private:
+        nlohmann::json variables;
+        nlohmann::ordered_json resolved_variables;
+
+    public:
         std::string templates_dir;
-        std::map<std::string, std::string> variables;
         std::vector<Task> tasks;
 
         NLOHMANN_DEFINE_TYPE_INTRUSIVE_WITH_DEFAULT(
             Config,
             templates_dir, variables, tasks
         );
+
+        [[nodiscard]] const nlohmann::json& get_variables() const;
     };
 
     extern Config options;
@@ -89,8 +87,6 @@ struct nlohmann::adl_serializer<config::Task> {
             generator = config::TextTask(j);
         } else if(type == config::TaskType::Json) {
             generator = config::JsonTask(j);
-        } else if(type == config::TaskType::Markdown) {
-            generator = config::MarkdownTask(j);
         }
     }
 
@@ -99,8 +95,6 @@ struct nlohmann::adl_serializer<config::Task> {
             j = std::get<config::TextTask>(generator);
         } else if(std::holds_alternative<config::JsonTask>(generator)) {
             j = std::get<config::JsonTask>(generator);
-        } else {
-            j = std::get<config::MarkdownTask>(generator);
         }
     }
 };

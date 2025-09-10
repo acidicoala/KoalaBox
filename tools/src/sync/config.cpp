@@ -1,10 +1,10 @@
-#include "config.hpp"
-
 #include <inja/inja.hpp>
+
+#include "config.hpp"
 
 namespace {
     std::string replace_variables(const std::string& str) {
-        return inja::render(str, config::options.variables);
+        return inja::render(str, config::options.get_variables());
     }
 }
 
@@ -27,6 +27,10 @@ namespace config {
 
     std::string JsonTask::get_destination_file() const {
         return replace_variables(destination_file);
+    }
+
+    const nlohmann::json& Config::get_variables() const {
+        return variables;
     }
 
     Config options;

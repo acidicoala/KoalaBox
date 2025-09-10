@@ -14,9 +14,10 @@
 namespace {
     namespace kb = koalabox;
 
-    std::string read_file_safely(const fs::path& file_path) {
+    // ReSharper disable once CppDFAUnreachableFunctionCall
+    std::string read_file_or_exit(const fs::path& file_path) {
         if(!fs::exists(file_path) || fs::is_directory(file_path)) {
-            LOG_ERROR("template_file not found: '{}'", kb::path::to_str(file_path));
+            LOG_ERROR("File not found: '{}'", kb::path::to_str(file_path));
             exit(1);
         }
 
@@ -28,17 +29,78 @@ namespace {
         }
     }
 
-    void generate_text(const config::TextTask& task) {
-        const auto template_path = kb::path::from_str(config::options.templates_dir) / task.get_template_file();
-        const auto template_str = read_file_safely(template_path);
+    std::string jsonSchemaToConfigTable(const std::string& json_schema_path, bool advanced) {
+        auto json_schema_ifs = std::ifstream(json_schema_path);
+        const auto json_schema = nlohmann::ordered_json::parse(json_schema_ifs);
 
-        std::string rendered_str;
-        try {
-            rendered_str = inja::render(template_str, config::options.variables);
-        } catch(const std::exception& e) {
-            LOG_ERROR("Error parsing template {}: {}", task.get_template_file(), e.what());
-            exit(1);
+        std::ostringstream output;
+        for(const auto& [name, prop] : json_schema["properties"].items()) {
+            // == here acts as an XNOR operator
+            if(advanced == (name[0] != '$')) {
+                continue;
+            }
+
+            std::string type = prop.at("type");
+            type[0] = std::toupper(type[0]);
+
+            const nlohmann::json def = prop.contains("x-default")
+                                     ? prop.at("x-default")
+                                     : prop.contains("const") // NOLINT(*-avoid-nested-conditional-operator)
+                                     ? prop.at("const")
+                                     : prop.at("default");
+
+            // Option | Description | Type | Default | Valid values
+            std::vector<std::string> columns;
+
+            output << std::format("| `{}` ", name);
+            output << std::format("| {}", prop.at("description").get<std::string>());
+            output << std::format("| {}", type);
+            output << std::format("| `{}`", def.dump());
+            columns.emplace_back("Valid values");
+
+            std::ostringstream row;
+            std::ranges::copy(columns, std::ostream_iterator<std::string>(row, " | "));
+
+            output << " |\n";
         }
+
+        return output.str();
+    }
+
+    // ReSharper disable once CppDFAUnreachableFunctionCall
+    inja::Environment get_inja_env() {
+        inja::Environment env;
+
+        // inja uses ## by default for line statements, which leads to crashes in markdown templates.
+        // Hence, we add a prefix to avoid such crashes.
+        env.set_line_statement("inja::##");
+        env.set_lstrip_blocks(true);
+        // env.set_trim_blocks(true);
+
+        // useful for filtering advanced properties in json schema
+        env.add_callback(
+            "startsWith", 2, [](const inja::Arguments& args) {
+                const auto& value = args.at(0)->get<std::string>();
+                const auto& prefix = args.at(1)->get<std::string>();
+                return value.starts_with(prefix);
+            }
+        );
+
+        // generating table rows within inja template is quite cumbersome, hence we do it here instead.
+        env.add_callback(
+            "jsonSchemaToConfigTable", 2, [](const inja::Arguments& args) {
+                const auto& json_schema_path = args.at(0)->get<std::string>();
+                const auto& advanced = args.at(1)->get<bool>();
+                return jsonSchemaToConfigTable(json_schema_path, advanced);
+            }
+        );
+
+        return env;
+    }
+
+    void generate_text(const config::TextTask& task) {
+        auto env = get_inja_env();
+        const auto rendered_str = env.render_file(task.get_template_file(), config::options.get_variables());
 
         const auto output_dir = fs::absolute(
             kb::path::from_str(task.get_destination_dir().empty() ? "." : task.get_destination_dir())
@@ -51,7 +113,7 @@ namespace {
     }
 
     void generate_json(const config::JsonTask& task) {
-        const auto schema_str = read_file_safely(task.get_schema_file());
+        const auto schema_str = read_file_or_exit(task.get_schema_file());
         const auto schema_json = nlohmann::ordered_json::parse(schema_str);
 
         nlohmann::ordered_json output;
@@ -76,13 +138,8 @@ namespace {
             }
         }
 
-        const auto output_path = fs::absolute(".") / kb::path::from_str(task.get_destination_file());
+        const auto output_path = fs::absolute(kb::path::from_str(task.get_destination_file()));
         kb::io::write_file(output_path, output.dump(2) + "\n");
-    }
-
-    void generate_markdown(const config::MarkdownTask& task) {
-        // TODO:
-        LOG_INFO("{} -> NOT IMPLEMENTED", __func__);
     }
 }
 
@@ -92,9 +149,10 @@ int wmain([[maybe_unused]] const int argc, [[maybe_unused]] const wchar_t* argv[
 
     LOG_DEBUG("Running in: {}", kb::path::to_str(fs::current_path()));
 
-    const auto config_path = fs::current_path() / "sync.json";
+    const std::string config_name = "sync.json";
+    const auto config_path = fs::current_path() / config_name;
     if(!fs::exists(config_path)) {
-        LOG_ERROR("Missing config file `sync.json` in current working directory.")
+        LOG_ERROR("Missing config file `{}` in current working directory.", config_name);
         exit(1);
     }
     const auto config_str = kb::io::read_file(config_path);
@@ -105,14 +163,19 @@ int wmain([[maybe_unused]] const int argc, [[maybe_unused]] const wchar_t* argv[
             [&]<typename T>(const T& t) {
                 LOG_DEBUG("Processing: {}", nlohmann::json(t).dump());
 
-                if constexpr(std::is_same_v<std::decay_t<T>, config::TextTask>) {
-                    generate_text(t);
-                } else if constexpr(std::is_same_v<std::decay_t<T>, config::JsonTask>) {
-                    generate_json(t);
-                } else if constexpr(std::is_same_v<std::decay_t<T>, config::MarkdownTask>) {
-                    generate_markdown(t);
+                try {
+                    if constexpr(std::is_same_v<std::decay_t<T>, config::TextTask>) {
+                        generate_text(t);
+                    } else if constexpr(std::is_same_v<std::decay_t<T>, config::JsonTask>) {
+                        generate_json(t);
+                    }
+                } catch(const std::exception& e) {
+                    LOG_ERROR("Uncaught exception: {}", e.what());
+                    exit(1);
                 }
             }, task
         );
     }
+
+    kb::logger::shutdown();
 }
