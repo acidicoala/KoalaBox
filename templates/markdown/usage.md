@@ -25,7 +25,7 @@ Once installed, {{ project_name }} is automatically loaded by a game every time 
 - **Advantages**:
     - Guaranteed to load
 - **Disadvantages**:
-    - Might need reinstallation if Steam updates affected DLL files
+    - Might need reinstallation aftera game update
 
 My advice is to try installing the unlocker in hook mode first.
 If it doesn't work, try installing it in proxy mode instead.

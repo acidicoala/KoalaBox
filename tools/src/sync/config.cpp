@@ -29,6 +29,10 @@ namespace config {
         return replace_variables(destination_file);
     }
 
+    const std::vector<Task>& Config::get_tasks() const {
+        return tasks;
+    }
+
     const nlohmann::json& Config::get_variables() const {
         return variables;
     }

@@ -6,10 +6,4 @@
 
 {% include "markdown/license.md" %}
 
-[//]: # (Links)
-[latest {{ project_name }} release zip]: {{ github_repo_url }}/releases/latest
 [Koaloader]: https://github.com/acidicoala/Koaloader
-[latest Koaloader release zip]: https://github.com/acidicoala/Koaloader/releases/latest
-[Special K]: https://www.special-k.info
-[custom plugin]: https://wiki.special-k.info/en/SpecialK/Tools#custom-plugin
-[the forum]: https://cs.rin.ru/forum/viewforum.php?f=10

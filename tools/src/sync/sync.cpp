@@ -14,19 +14,12 @@
 namespace {
     namespace kb = koalabox;
 
-    // ReSharper disable once CppDFAUnreachableFunctionCall
-    std::string read_file_or_exit(const fs::path& file_path) {
-        if(!fs::exists(file_path) || fs::is_directory(file_path)) {
-            LOG_ERROR("File not found: '{}'", kb::path::to_str(file_path));
-            exit(1);
-        }
+    std::string jsonSchemaToExample(const std::string& json_schema_path) {
+        // Parse the example for validation purposes
+        auto json_schema_ifs = std::ifstream(json_schema_path);
+        const auto json_schema = nlohmann::ordered_json::parse(json_schema_ifs);
 
-        try {
-            return kb::io::read_file(file_path);
-        } catch(const std::exception& e) {
-            LOG_ERROR("Failed to read file {}. Cause: {}", kb::path::to_str(file_path), e.what());
-            exit(1);
-        }
+        return json_schema["examples"][0].dump(2);
     }
 
     std::string jsonSchemaToConfigTable(const std::string& json_schema_path, bool advanced) {
@@ -34,6 +27,10 @@ namespace {
         const auto json_schema = nlohmann::ordered_json::parse(json_schema_ifs);
 
         std::ostringstream output;
+
+        output << "| Option | Description | Type | Default | Valid values |\n";
+        output << "|--------|-------------|------|---------|--------------|\n";
+
         for(const auto& [name, prop] : json_schema["properties"].items()) {
             // == here acts as an XNOR operator
             if(advanced == (name[0] != '$')) {
@@ -41,27 +38,23 @@ namespace {
             }
 
             std::string type = prop.at("type");
-            type[0] = std::toupper(type[0]);
+            type[0] = static_cast<char>(toupper(type[0]));
 
-            const nlohmann::json def = prop.contains("x-default")
-                                     ? prop.at("x-default")
-                                     : prop.contains("const") // NOLINT(*-avoid-nested-conditional-operator)
-                                     ? prop.at("const")
-                                     : prop.at("default");
+            const std::string default_value = prop.contains("x-default")
+                                                  ? prop.at("x-default").get<std::string>()
+                                                  : prop.contains("const") // NOLINT(*-avoid-nested-conditional-operator)
+                                                  ? std::format("`{}`", prop.at("const").dump())
+                                                  : std::format("`{}`", prop.at("default").dump());
 
-            // Option | Description | Type | Default | Valid values
-            std::vector<std::string> columns;
+            const auto valid_values = prop.at("x-valid-values").get<std::string>();
 
             output << std::format("| `{}` ", name);
-            output << std::format("| {}", prop.at("description").get<std::string>());
-            output << std::format("| {}", type);
-            output << std::format("| `{}`", def.dump());
-            columns.emplace_back("Valid values");
+            output << std::format("| {} ", prop.at("description").get<std::string>());
+            output << std::format("| {} ", type);
+            output << std::format("| {} ", inja::render(default_value, config::options.get_variables()));
+            output << std::format("| {} ", inja::render(valid_values, config::options.get_variables()));
 
-            std::ostringstream row;
-            std::ranges::copy(columns, std::ostream_iterator<std::string>(row, " | "));
-
-            output << " |\n";
+            output << "|\n";
         }
 
         return output.str();
@@ -86,12 +79,20 @@ namespace {
             }
         );
 
-        // generating table rows within inja template is quite cumbersome, hence we do it here instead.
+        // generating Markdown table within inja template is quite cumbersome, hence we do it programmatically instead.
         env.add_callback(
             "jsonSchemaToConfigTable", 2, [](const inja::Arguments& args) {
                 const auto& json_schema_path = args.at(0)->get<std::string>();
                 const auto& advanced = args.at(1)->get<bool>();
                 return jsonSchemaToConfigTable(json_schema_path, advanced);
+            }
+        );
+
+        // generating Markdown table within inja template is quite cumbersome, hence we do it programmatically instead.
+        env.add_callback(
+            "jsonSchemaToExample", 1, [](const inja::Arguments& args) {
+                const auto& json_schema_path = args.at(0)->get<std::string>();
+                return jsonSchemaToExample(json_schema_path);
             }
         );
 
@@ -113,8 +114,8 @@ namespace {
     }
 
     void generate_json(const config::JsonTask& task) {
-        const auto schema_str = read_file_or_exit(task.get_schema_file());
-        const auto schema_json = nlohmann::ordered_json::parse(schema_str);
+        std::ifstream schema_file_input(task.get_schema_file());
+        const auto schema_json = nlohmann::ordered_json::parse(schema_file_input);
 
         nlohmann::ordered_json output;
         for(const auto& [property, fields] : schema_json["properties"].items()) {
@@ -158,7 +159,7 @@ int wmain([[maybe_unused]] const int argc, [[maybe_unused]] const wchar_t* argv[
     const auto config_str = kb::io::read_file(config_path);
     config::options = nlohmann::json::parse(config_str).get<config::Config>();
 
-    for(const auto& task : config::options.tasks) {
+    for(const auto& task : config::options.get_tasks()) {
         std::visit(
             [&]<typename T>(const T& t) {
                 LOG_DEBUG("Processing: {}", nlohmann::json(t).dump());

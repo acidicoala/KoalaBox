@@ -25,10 +25,7 @@ namespace config {
         std::string destination_dir;
         std::string file_name;
 
-        NLOHMANN_DEFINE_TYPE_INTRUSIVE_WITH_DEFAULT(
-            TextTask,
-            type, template_file, destination_dir, file_name
-        );
+        NLOHMANN_DEFINE_TYPE_INTRUSIVE_WITH_DEFAULT(TextTask, type, template_file, destination_dir, file_name);
 
     public:
         [[nodiscard]] std::string get_template_file() const;
@@ -41,11 +38,7 @@ namespace config {
         TaskType type = TaskType::Json;
         std::string schema_file;
         std::string destination_file;
-
-        NLOHMANN_DEFINE_TYPE_INTRUSIVE_WITH_DEFAULT(
-            JsonTask,
-            type, schema_file, destination_file
-        );
+        NLOHMANN_DEFINE_TYPE_INTRUSIVE_WITH_DEFAULT(JsonTask, type, schema_file, destination_file);
 
     public:
         [[nodiscard]] std::string get_schema_file() const;
@@ -58,16 +51,11 @@ namespace config {
     private:
         nlohmann::json variables;
         nlohmann::ordered_json resolved_variables;
+        std::vector<Task> tasks;
+        NLOHMANN_DEFINE_TYPE_INTRUSIVE_WITH_DEFAULT(Config, variables, tasks);
 
     public:
-        std::string templates_dir;
-        std::vector<Task> tasks;
-
-        NLOHMANN_DEFINE_TYPE_INTRUSIVE_WITH_DEFAULT(
-            Config,
-            templates_dir, variables, tasks
-        );
-
+        [[nodiscard]] const std::vector<Task>& get_tasks() const;
         [[nodiscard]] const nlohmann::json& get_variables() const;
     };
 

@@ -40,3 +40,8 @@ In such cases, it might be worth trying [Special K], which can inject {{ project
 - From this downloaded zip extract {{ unlocker_dll_names }}, depending on a game's bitness.
 - Rename this extracted DLL to {{ sdk_dll_names }}, depending on a game's bitness.
 - Place this renamed unlocker DLL next to the {{ sdk_dll_orig_names }} file.
+
+[latest {{ project_name }} release zip]: {{ github_repo_url }}/releases/latest
+[latest Koaloader release zip]: https://github.com/acidicoala/Koaloader/releases/latest
+[Special K]: https://www.special-k.info
+[custom plugin]: https://wiki.special-k.info/en/SpecialK/Tools#custom-plugin

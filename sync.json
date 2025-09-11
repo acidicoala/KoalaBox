@@ -1,0 +1,21 @@
+{
+  "$schema": "./res/sync.schema.json",
+  "variables": {
+    "project_name": "KoalaBox"
+  },
+  "tasks": [
+    {
+      "type": "text",
+      "template_file": "./templates/.gitattributes"
+    },
+    {
+      "type": "text",
+      "template_file": "./templates/UNLICENSE.txt"
+    },
+    {
+      "type": "text",
+      "template_file": "./README.template.md",
+      "file_name": "README.md"
+    }
+  ]
+}
