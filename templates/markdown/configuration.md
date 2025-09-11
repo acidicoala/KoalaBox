@@ -20,9 +20,9 @@ Below you can find the detailed description of each available config option. In 
 
 <details><summary>Advanced options</summary>
 
-> [!NOTE]
-> These options do not affect the unlocker, and should be left unmodified.
-> They serve as utilities for text or GUI editors.
+[//]: # (Admonitions don't work inside collapsible spoilers on GitHub :/)
+
+**NOTE**: These options do not affect the unlocker, and should be left unmodified. They serve as utilities for text or GUI editors.
 
 {{ jsonSchemaToConfigTable(json_schema_path, true) }}
 </details>
