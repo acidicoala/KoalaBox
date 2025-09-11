@@ -13,4 +13,4 @@ This project makes use of the following open source projects:
 - [microsoft/wil](https://github.com/microsoft/wil)
 - [p-ranav/glob](https://github.com/p-ranav/glob)
 - [pantor/inja](https://github.com/pantor/inja)
-  {% block extra_oss_libs %}{% endblock %}
+{% block extra_oss_libs %}{% endblock %}

@@ -67,8 +67,8 @@ namespace {
         // inja uses ## by default for line statements, which leads to crashes in markdown templates.
         // Hence, we add a prefix to avoid such crashes.
         env.set_line_statement("inja::##");
-        env.set_lstrip_blocks(true);
-        // env.set_trim_blocks(true);
+        // env.set_lstrip_blocks(true);
+        env.set_trim_blocks(true);
 
         // useful for filtering advanced properties in json schema
         env.add_callback(
