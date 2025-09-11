@@ -61,7 +61,7 @@ function(configure_output_name OUT_NAME)
 endfunction()
 
 function(configure_include_directories)
-    target_include_directories(${CMAKE_PROJECT_NAME} PRIVATE
+    target_include_directories(${PROJECT_NAME} PRIVATE
         "${CMAKE_CURRENT_SOURCE_DIR}/src"
         "${CMAKE_CURRENT_BINARY_DIR}/generated"
         "${ARGN}")
