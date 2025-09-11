@@ -1,12 +1,12 @@
 ## 📖 Introduction
 
-### What is {{ project_name }}?
+### ❓ What is {{ project_name }}?
 
 {{ project_name }} is a DLC unlocker for games that are _legitimately_ owned in your {{ store_name }} account.
 It attempts to fool games that use {{ store_sdk_full }} ({{ store_sdk }}) into thinking that you own the game's DLCs.
 However, {{ project_name }} does not modify the rest of the {{ store_sdk }}, hence features like multiplayer, achievements, and so on remain fully functional.
 
-### Which games are supported?
+### ❔ Which games are supported?
 
 Only games that use {{ store_sdk_full }} for the DLC ownership verification are supported.
 Hence, if a game's installation directory does not contain any {{ sdk_dll_names}} files then it's definitely not supported.
