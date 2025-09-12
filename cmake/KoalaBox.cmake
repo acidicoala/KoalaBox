@@ -4,6 +4,7 @@ set(CMAKE_CXX_STANDARD 23 CACHE STRING "The C++ standard to use")
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>" CACHE STRING "MSVC Runtime Library")
 set(BUILD_SHARED_LIBS OFF CACHE BOOL "Build DLL instead of static library")
+set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 
 set(CPM_SOURCE_CACHE "${CMAKE_SOURCE_DIR}/build/.cache" CACHE STRING "CPM.cmake source cache")
 include("${CMAKE_CURRENT_LIST_DIR}/get_cpm.cmake")
@@ -72,7 +73,7 @@ function(configure_linker_exports)
         ARG "UNDECORATE" "TARGET;HEADER_NAME;FORWARDED_DLL;INPUT_SOURCES_DIR;DLL_FILES_GLOB" "" ${ARGN}
     )
 
-    set(GENERATED_LINKER_EXPORTS "${CMAKE_CURRENT_BINARY_DIR}/generated/${ARG_HEADER_NAME}.h")
+    set(GENERATED_LINKER_EXPORTS "${CMAKE_CURRENT_BINARY_DIR}/generated/${ARG_HEADER_NAME}")
 
     # Make the linker_exports header available before build
     file(TOUCH ${GENERATED_LINKER_EXPORTS})
@@ -83,7 +84,7 @@ function(configure_linker_exports)
         COMMAND exports_generator # Executable path
         "${ARG_UNDECORATE}" # Undecorate boolean
         "${ARG_FORWARDED_DLL}" # Forwarded DLL path
-        "${ARG_DLL_FILES_GLOB}" # Input DLLs
+        "\"${ARG_DLL_FILES_GLOB}\"" # Input DLLs
         "${GENERATED_LINKER_EXPORTS}" # Output header
         "${ARG_INPUT_SOURCES_DIR}" # Input sources
 

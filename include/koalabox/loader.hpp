@@ -6,10 +6,9 @@
 namespace koalabox::loader {
     namespace fs = std::filesystem;
 
-    std::map<std::string, std::string> get_export_map(
-        void* library,
-        bool undecorate = false
-    );
+    using export_map_t = std::map<std::string, std::string>;
+
+    export_map_t get_export_map(void* library, bool undecorate = false);
 
     std::string get_decorated_function(void* library, const std::string& function_name);
 

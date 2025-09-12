@@ -54,7 +54,7 @@ namespace {
                 filtered_msg.replace(matches[1].first, matches[1].second, "%USERNAME%");
             }
 
-            fmt::format_to(std::back_inserter(dest), "{}", filtered_msg);
+            std::format_to(std::back_inserter(dest), "{}", filtered_msg);
         }
 
         [[nodiscard]] std::unique_ptr<formatter> clone() const override {

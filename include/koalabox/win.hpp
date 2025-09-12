@@ -69,14 +69,6 @@ namespace koalabox::win {
 
     fs::path get_system_directory();
 
-    void free_library_or_throw(const HMODULE& module_handle);
-
-    bool free_library(const HMODULE& module_handle, bool panic_on_fail = false);
-
-    HMODULE load_library_or_throw(const fs::path& module_path);
-
-    HMODULE load_library(const fs::path& module_path);
-
     void register_application_restart();
 
     std::optional<MEMORY_BASIC_INFORMATION> virtual_query(const void* pointer);

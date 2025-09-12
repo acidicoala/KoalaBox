@@ -9,6 +9,7 @@
 
 namespace koalabox::util {
     void error_box(const std::string& title, const std::string& message) {
+        // TODO: verify implementation
         // Make dependency on gtk3 optional. Many modern distros do not include lib32-gtk3 by default.
         void* libgtk3 = dlopen("libgtk-3", RTLD_LAZY);
         if(!libgtk3) {
@@ -50,5 +51,14 @@ namespace koalabox::util {
 
         logger::shutdown();
         exit(errno);
+    }
+
+    std::string get_env_var(const std::string& key) {
+        const char* value = getenv(key.c_str());
+        if(value) {
+            return {value};
+        }
+
+        return "";
     }
 }

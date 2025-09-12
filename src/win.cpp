@@ -385,48 +385,6 @@ namespace koalabox::win {
         PANIC_ON_CATCH(get_system_directory_or_throw)
     }
 
-    void free_library_or_throw(const HMODULE& module_handle) {
-        if(not FreeLibrary(module_handle)) {
-            throw std::runtime_error(
-                std::format(
-                    "Failed to free a library with the given module handle: {}",
-                    static_cast<void*>(module_handle)
-                )
-            );
-        }
-    }
-
-    bool free_library(const HMODULE& handle, bool panic_on_fail) {
-        try {
-            free_library_or_throw(handle);
-            return true;
-        } catch(std::exception& ex) {
-            if(panic_on_fail) {
-                util::panic(ex.what());
-            }
-
-            return false;
-        }
-    }
-
-    HMODULE load_library_or_throw(const fs::path& module_path) {
-        const auto module_path_wstr = path::to_wstr(module_path);
-        auto* const module_handle = LoadLibrary(module_path_wstr.c_str());
-
-        return module_handle
-                   ? module_handle
-                   : throw std::runtime_error(
-                       std::format(
-                           "Failed to load the module at path: '{}'",
-                           str::to_str(module_path_wstr)
-                       )
-                   );
-    }
-
-    HMODULE load_library(const fs::path& module_path) {
-        PANIC_ON_CATCH(load_library_or_throw, module_path)
-    }
-
     void register_application_restart() {
         if(const auto result = RegisterApplicationRestart(nullptr, 0); result != S_OK) {
             throw std::runtime_error(

@@ -2,6 +2,7 @@
 
 #include <optional>
 #include <stdexcept>
+#include <string>
 
 namespace koalabox {
     struct throw_if_empty {

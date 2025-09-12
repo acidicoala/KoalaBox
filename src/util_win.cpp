@@ -34,4 +34,14 @@ namespace koalabox::util {
         logger::shutdown();
         exit(last_error);
     }
+
+    std::string get_env_var(const std::string& key) {
+        const auto wide_key = str::to_wstr(key);
+
+        // @doc https://learn.microsoft.com/en-us/windows/win32/api/winbase/nf-winbase-getenvironmentvariable
+        TCHAR buffer[32 * 1024];
+        const auto bytes_read = GetEnvironmentVariable(wide_key.c_str(), buffer, sizeof(buffer));
+
+        return str::to_str({buffer, bytes_read});
+    }
 }

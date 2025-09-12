@@ -70,11 +70,11 @@ namespace {
         exit(10);
     }
 
-    auto get_library_exports(const std::string& lib_files_glob, const bool undecorate) {
+    auto get_library_exports_map(const std::string& lib_files_glob, const bool undecorate) {
         std::map<std::string, std::string> dll_exports;
 
         const auto lib_path_list = glob::glob(lib_files_glob);
-        LOG_INFO("Found {} DLL files", lib_path_list.size());
+        LOG_INFO("Found {} library files", lib_path_list.size());
 
         for(const auto& lib_path : lib_path_list) {
             if(not fs::exists(lib_path)) {
@@ -90,6 +90,26 @@ namespace {
         LOG_INFO("Found {} exported functions", dll_exports.size());
 
         return dll_exports;
+    }
+
+    kb::module::exports_t get_library_exports(const std::string& lib_files_glob) {
+        kb::module::exports_t all_exports;
+
+        const auto lib_path_list = glob::glob(lib_files_glob);
+        LOG_INFO("Found {} library files", lib_path_list.size());
+
+        for(const auto& lib_path : lib_path_list) {
+            if(not fs::exists(lib_path)) {
+                continue;
+            }
+
+            const auto lib_exports = kb::module::get_exports(lib_path);
+            all_exports.insert(lib_exports.begin(), lib_exports.end());
+        }
+
+        LOG_INFO("Found {} exported functions", all_exports.size());
+
+        return all_exports;
     }
 
     // Used for windows
@@ -122,7 +142,7 @@ namespace {
     // Used for linux
     void generate_proxy_wrappers_source(
         std::ofstream& export_file,
-        const std::map<std::string, std::string>& lib_exports,
+        const kb::module::exports_t& lib_exports,
         const std::set<std::string>& defined_functions,
         const std::string& forwarded_dll_name
     ) {
@@ -133,6 +153,8 @@ namespace {
 
 extern "C" void push_all();
 extern "C" void pop_all();
+
+#define EXPORT __attribute__((visibility("default")))
 
 namespace {{
     using void_fn = void(*)();
@@ -145,13 +167,13 @@ namespace {{
 )", forwarded_dll_name
         );
 
-        export_file << prologue << std::endl << std::endl;
+        export_file << prologue;
 
-        for(const auto& [function_name, decorated_function_name] : lib_exports) {
+        for(const auto& function_name : lib_exports) {
             // Comment out exports that we have defined
             const auto declaration = std::format(
                 // language=c++
-                R"(__attribute__((visibility("default"))) void {}())", decorated_function_name
+                R"(EXPORT void {}())", function_name
             );
 
             export_file << std::endl;
@@ -163,10 +185,10 @@ namespace {{
 
             export_file
                 << declaration << " {" << std::endl
-                << "push_all();" << std::endl
-                << "static const auto func = find(__func__);" << std::endl
-                << "pop_all();" << std::endl
-                << "func();" << std::endl
+                << "    push_all();" << std::endl
+                << "    static const auto func = find(__func__);" << std::endl
+                << "    pop_all();" << std::endl
+                << "    func();" << std::endl
                 << "}" << std::endl;
         }
     }
@@ -196,7 +218,7 @@ int MAIN(const int argc, const TCHAR* argv[]) { // NOLINT(*-use-internal-linkage
 
         const auto undecorate = parseBoolean(kb::str::to_str(argv[1]));
         const auto forwarded_dll_name = kb::str::to_str(argv[2]);
-        const auto input_dll_glob = kb::str::to_str(argv[3]);
+        const auto lib_files_glob = kb::str::to_str(argv[3]);
         const auto output_file_path = fs::path(kb::str::to_str(argv[4]));
 
         // Input sources are optional because Koaloader doesn't have them.
@@ -206,7 +228,6 @@ int MAIN(const int argc, const TCHAR* argv[]) { // NOLINT(*-use-internal-linkage
                                            ? std::set<std::string>()
                                            : get_defined_functions(sources_input_path);
 
-        const auto lib_exports = get_library_exports(input_dll_glob, undecorate);
 
         // Create directories for export file, if necessary
         fs::create_directories(output_file_path.parent_path());
@@ -219,8 +240,10 @@ int MAIN(const int argc, const TCHAR* argv[]) { // NOLINT(*-use-internal-linkage
         }
 
 #ifdef _WIN32
+        const auto lib_exports = get_library_exports_map(lib_files_glob, undecorate);
         generate_linker_exports_header(export_file, lib_exports, defined_functions, forwarded_dll_name);
 #else
+        const auto lib_exports = get_library_exports(lib_files_glob);
         generate_proxy_wrappers_source(export_file, lib_exports, defined_functions, forwarded_dll_name);
 #endif
 

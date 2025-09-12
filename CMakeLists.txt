@@ -27,7 +27,6 @@ set(KOALABOX_HEADERS
     include/koalabox/paths.hpp
     include/koalabox/str.hpp
     include/koalabox/util.hpp
-    include/koalabox/win.hpp
     include/koalabox/zip.hpp
 )
 
@@ -52,9 +51,10 @@ set(KOALABOX_SOURCES
 add_library(KoalaBox OBJECT ${KOALABOX_HEADERS} ${KOALABOX_SOURCES})
 
 if(WIN32)
-    target_compile_options(KoalaBox PUBLIC /std:c++latest)
+#    target_compile_options(KoalaBox PUBLIC /std:c++latest)
 
     target_sources(KoalaBox PRIVATE
+        include/koalabox/win.hpp
         src/dll_monitor_win.cpp
         src/ipc_win.cpp
         src/loader_win.cpp
@@ -143,7 +143,7 @@ target_compile_definitions(KoalaBox PUBLIC
     $<$<NOT:$<CONFIG:Debug>>:SPDLOG_ACTIVE_LEVEL=SPDLOG_LEVEL_DEBUG>
 )
 
-set(SPDLOG_OPTIONS "")
+set(SPDLOG_OPTIONS SPDLOG_USE_STD_FORMAT)
 if(WIN32)
     list(APPEND SPDLOG_OPTIONS
         "SPDLOG_WCHAR_SUPPORT ON"
