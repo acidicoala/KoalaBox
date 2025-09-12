@@ -1,16 +1,15 @@
 #include <ranges>
 
 #include <polyhook2/Detour/NatDetour.hpp>
-#include <polyhook2/PE/EatHook.hpp>
 #include <polyhook2/Virtuals/VFuncSwapHook.hpp>
 
 #include "koalabox/hook.hpp"
 #include "koalabox/globals.hpp"
 #include "koalabox/logger.hpp"
+#include "koalabox/module.hpp"
 #include "koalabox/path.hpp"
 #include "koalabox/str.hpp"
 #include "koalabox/util.hpp"
-#include "koalabox/win.hpp"
 
 namespace {
     namespace kb = koalabox;
@@ -185,6 +184,9 @@ namespace koalabox::hook {
 
         uint64_t trampoline = 0;
 
+
+        // False flag - no memory is actually leaked
+        // ReSharper disable once CppDFAMemoryLeak
         auto* const detour = new PLH::NatDetour(
             reinterpret_cast<uint64_t>(address),
             reinterpret_cast<uint64_t>(callback_function),
@@ -206,16 +208,13 @@ namespace koalabox::hook {
     }
 
     void detour_or_throw(
-        const HMODULE& module_handle,
+        void* const module_handle,
         const std::string& function_name,
         const void* callback_function
     ) {
-        const auto address = win::get_proc_address_or_throw(
-            module_handle,
-            function_name.c_str()
-        );
+        const auto* address = module::get_function_address(module_handle, function_name.c_str()).value();
 
-        detour_or_throw(reinterpret_cast<void*>(address), function_name, callback_function);
+        detour_or_throw(address, function_name, callback_function);
     }
 
     void detour_or_warn(
@@ -267,46 +266,6 @@ namespace koalabox::hook {
             util::panic(
                 std::format("Failed to hook function {} via Detour: {}", function_name, ex.what())
             );
-        }
-    }
-
-    void eat_hook_or_throw(
-        const HMODULE& module_handle,
-        const std::string& function_name,
-        const void* callback_function
-    ) {
-        LOG_DEBUG("Hooking '{}' via EAT", function_name);
-
-        uint64_t orig_function_address = 0;
-
-        auto* const eat_hook = new PLH::EatHook(
-            function_name,
-            module_handle,
-            reinterpret_cast<uint64_t>(callback_function),
-            &orig_function_address
-        );
-
-        if(eat_hook->hook()) {
-            hook_map[function_name] = {
-                .orig_func_ptr = reinterpret_cast<void*>(orig_function_address),
-                .hook = std::unique_ptr<PLH::IHook>(eat_hook),
-            };
-        } else {
-            delete eat_hook;
-
-            throw std::runtime_error(std::format("Failed to hook function: '{}'", function_name));
-        }
-    }
-
-    void eat_hook_or_warn(
-        const HMODULE& module_handle,
-        const std::string& function_name,
-        const void* callback_function
-    ) {
-        try {
-            eat_hook_or_throw(module_handle, function_name, callback_function);
-        } catch(const std::exception& ex) {
-            LOG_WARN("Detour error: {}", ex.what());
         }
     }
 
@@ -340,6 +299,8 @@ namespace koalabox::hook {
 
         auto original_functions = std::make_unique<PLH::VFuncMap>();
 
+        // False positive - No memory is actually leaked
+        // ReSharper disable once CppDFAMemoryLeak
         auto* const swap_hook = new PLH::VFuncSwapHook(
             static_cast<const char*>(class_ptr),
             redirect,
@@ -354,6 +315,7 @@ namespace koalabox::hook {
             };
             reverse_class_map[function_name] = class_ptr;
         } else {
+            delete swap_hook;
             throw std::runtime_error(std::format("Failed to hook function: {}", function_name));
         }
     }
@@ -415,9 +377,9 @@ namespace koalabox::hook {
         PLH::Log::registerLogger(polyhook_logger);
     }
 
-    bool is_hook_mode(const HMODULE& self_module, const std::string& orig_library_name) {
+    bool is_hook_mode(const HMODULE self_module, const std::string& orig_library_name) {
         // E.g. C:/Library/api.dll
-        const auto module_path = win::get_module_path(self_module);
+        const auto module_path = module::get_fs_path(self_module);
 
         // E.g. api
         const auto self_name = path::to_str(module_path.stem());

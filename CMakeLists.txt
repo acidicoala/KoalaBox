@@ -7,34 +7,92 @@ project(
     DESCRIPTION "A box of koality tools"
 )
 
+set(KOALABOX_HEADERS
+    include/koalabox/cache.hpp
+    include/koalabox/config.hpp
+    include/koalabox/crypto.hpp
+    include/koalabox/dll_monitor.hpp
+    include/koalabox/globals.hpp
+    include/koalabox/hook.hpp
+    include/koalabox/http_client.hpp
+    include/koalabox/io.hpp
+    include/koalabox/ipc.hpp
+    include/koalabox/koalabox.hpp
+    include/koalabox/loader.hpp
+    include/koalabox/logger.hpp
+    include/koalabox/module.hpp
+    include/koalabox/parser.hpp
+    include/koalabox/patcher.hpp
+    include/koalabox/path.hpp
+    include/koalabox/paths.hpp
+    include/koalabox/str.hpp
+    include/koalabox/util.hpp
+    include/koalabox/win.hpp
+    include/koalabox/zip.hpp
+)
+
 set(KOALABOX_SOURCES
     src/cache.cpp
     src/crypto.cpp
-    src/dll_monitor.cpp
     src/globals.cpp
     src/logger.cpp
     src/hook.cpp
     src/http_client.cpp
     src/io.cpp
-    src/ipc.cpp
     src/loader.cpp
+    src/module.cpp
     src/parser.cpp
     src/patcher.cpp
     src/path.cpp
     src/paths.cpp
     src/str.cpp
-    src/util.cpp
-    src/win.cpp
     src/zip.cpp
 )
 
-add_library(KoalaBox OBJECT ${KOALABOX_SOURCES})
-target_compile_options(KoalaBox PUBLIC /std:c++latest)
+add_library(KoalaBox OBJECT ${KOALABOX_HEADERS} ${KOALABOX_SOURCES})
+
+if(WIN32)
+    target_compile_options(KoalaBox PUBLIC /std:c++latest)
+
+    target_sources(KoalaBox PRIVATE
+        src/dll_monitor_win.cpp
+        src/ipc_win.cpp
+        src/loader_win.cpp
+        src/module_win.cpp
+        src/path_win.cpp
+        src/paths_win.cpp
+        src/str_win.cpp
+        src/util_win.cpp
+        src/win.cpp
+    )
+else()
+    target_sources(KoalaBox PRIVATE
+        src/dll_monitor_linux.cpp
+        src/loader_linux.cpp
+        src/module_linux.cpp
+        src/path_linux.cpp
+        src/paths_linux.cpp
+        src/push_pop_all_32.asm
+        src/push_pop_all_64.asm
+        src/str_linux.cpp
+        src/util_linux.cpp
+    )
+
+    find_package(PkgConfig REQUIRED)
+    pkg_check_modules(GTK3 REQUIRED gtk+-3.0)
+
+    include_directories(${GTK3_INCLUDE_DIRS})
+    # link_directories(${GTK3_LIBRARY_DIRS})
+    # add_definitions(${GTK3_CFLAGS_OTHER})
+
+    # target_link_libraries(KoalaBox PUBLIC ${GTK3_LIBRARIES})
+endif()
 
 ### Setup KoalaBox exports
 
 target_include_directories(KoalaBox PUBLIC "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>")
 target_include_directories(KoalaBox PRIVATE "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/src>")
+
 
 set(PCH_PATH ${CMAKE_CURRENT_SOURCE_DIR}/src/pch.hpp)
 target_precompile_headers(KoalaBox PUBLIC "$<$<COMPILE_LANGUAGE:CXX>:${PCH_PATH}>")
@@ -72,6 +130,7 @@ target_link_libraries(KoalaBox PUBLIC cpr)
 ## https://github.com/stevemk14ebr/PolyHook_2_0
 CPMAddPackage(
     URI "gh:stevemk14ebr/PolyHook_2_0#298d56210b9d9e66cde8f96481d6053925c6ae15"
+    GIT_SUBMODULES "*"
     OPTIONS
     "POLYHOOK_FEATURE_INLINENTD OFF"
     "POLYHOOK_FEATURE_EXCEPTION OFF"
@@ -83,12 +142,19 @@ target_compile_definitions(KoalaBox PUBLIC
     $<$<CONFIG:Debug>:SPDLOG_ACTIVE_LEVEL=SPDLOG_LEVEL_TRACE>
     $<$<NOT:$<CONFIG:Debug>>:SPDLOG_ACTIVE_LEVEL=SPDLOG_LEVEL_DEBUG>
 )
+
+set(SPDLOG_OPTIONS "")
+if(WIN32)
+    list(APPEND SPDLOG_OPTIONS
+        "SPDLOG_WCHAR_SUPPORT ON"
+        "SPDLOG_WCHAR_FILENAMES ON"
+        "SPDLOG_WCHAR_CONSOLE ON"
+    )
+endif()
+
 CPMAddPackage(
     URI "gh:gabime/spdlog@1.15.3"
-    OPTIONS
-    "SPDLOG_WCHAR_SUPPORT ON"
-    "SPDLOG_WCHAR_FILENAMES ON"
-    "SPDLOG_WCHAR_CONSOLE ON"
+    OPTIONS ${SPDLOG_OPTIONS}
 )
 target_link_libraries(KoalaBox PUBLIC spdlog)
 

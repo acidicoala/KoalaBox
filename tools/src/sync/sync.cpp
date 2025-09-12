@@ -144,7 +144,7 @@ namespace {
     }
 }
 
-int wmain([[maybe_unused]] const int argc, [[maybe_unused]] const wchar_t* argv[]) { // NOLINT(*-use-internal-linkage)
+int MAIN([[maybe_unused]] const int argc, [[maybe_unused]] const TCHAR* argv[]) { // NOLINT(*-use-internal-linkage)
     kb::logger::init_console_logger();
     spdlog::default_logger()->set_pattern("%-8l| %T.%e | %v");
 

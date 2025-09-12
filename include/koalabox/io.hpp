@@ -16,6 +16,4 @@ namespace koalabox::io {
      * @return `true` if operation was successful, `false` otherwise
      */
     bool write_file(const fs::path& file_path, const std::string& contents) noexcept;
-
-    bool is_local_port_in_use(int port);
 }

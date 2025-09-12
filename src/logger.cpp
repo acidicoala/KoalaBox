@@ -74,11 +74,10 @@ namespace {
 }
 
 namespace koalabox::logger {
-    void init_file_logger(const fs::path& path) {
-        fs::create_directories(path.parent_path());
-        const auto path_wstr = path::to_wstr(path);
+    void init_file_logger(const fs::path& log_path) {
+        fs::create_directories(log_path.parent_path());
 
-        const auto logger = spdlog::basic_logger_mt("file", path_wstr, true);
+        const auto logger = spdlog::basic_logger_mt("file", path::to_kb_str(log_path), true);
         configure_logger(logger);
     }
 

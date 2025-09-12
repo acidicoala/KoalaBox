@@ -7,11 +7,11 @@ namespace koalabox::loader {
     namespace fs = std::filesystem;
 
     std::map<std::string, std::string> get_export_map(
-        const HMODULE& library,
+        void* library,
         bool undecorate = false
     );
 
-    std::string get_decorated_function(const HMODULE& library, const std::string& function_name);
+    std::string get_decorated_function(void* library, const std::string& function_name);
 
-    HMODULE load_original_library(const fs::path& self_path, const std::string& orig_library_name);
+    void* load_original_library(const fs::path& self_path, const std::string& orig_library_name);
 }

@@ -16,10 +16,6 @@ namespace koalabox::paths {
 
     fs::path get_log_path();
 
-    fs::path get_ca_key_path();
-
-    fs::path get_ca_cert_path();
-
     fs::path get_cache_dir();
 
     fs::path get_user_dir();

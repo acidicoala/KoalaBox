@@ -3,6 +3,8 @@
 #include <filesystem>
 #include <string>
 
+#include "koalabox/koalabox.hpp"
+
 namespace fs = std::filesystem;
 
 /**
@@ -13,4 +15,5 @@ namespace koalabox::path {
     fs::path from_str(const std::string& str);
     std::wstring to_wstr(const fs::path& path);
     std::string to_str(const fs::path& path);
+    string to_kb_str(const fs::path& path);
 }

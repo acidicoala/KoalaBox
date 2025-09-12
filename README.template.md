@@ -3,6 +3,17 @@
 
 _C++ utilities for koality projects_
 
+## 🛠️ System requirements
+
+### 🪟 Windows
+
+- MSVC toolchain
+
+### 🐧 Linux
+
+- Clang compiler toolchain
+- GTK 3
+
 ## ❓Trivia
 
 The name of this project is inspired by [BusyBox], which provides several Unix utilities.

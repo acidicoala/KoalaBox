@@ -5,7 +5,7 @@
 #include <spdlog/spdlog.h>
 
 namespace koalabox::logger {
-    void init_file_logger(const std::filesystem::path& path);
+    void init_file_logger(const std::filesystem::path& log_path);
 
     void init_console_logger();
 

@@ -8,10 +8,11 @@
 #include <koalabox/io.hpp>
 #include <koalabox/loader.hpp>
 #include <koalabox/logger.hpp>
-#include <koalabox/path.hpp>
 #include <koalabox/parser.hpp>
+#include <koalabox/path.hpp>
 #include <koalabox/str.hpp>
-#include <koalabox/win.hpp>
+
+#include "koalabox/module.hpp"
 
 namespace {
     namespace kb = koalabox;
@@ -69,18 +70,18 @@ namespace {
         exit(10);
     }
 
-    auto get_dll_exports(const std::string& dll_files_glob, const bool undecorate) {
+    auto get_library_exports(const std::string& lib_files_glob, const bool undecorate) {
         std::map<std::string, std::string> dll_exports;
 
-        const auto dll_path_list = glob::glob(dll_files_glob);
-        LOG_INFO("Found {} DLL files", dll_path_list.size());
+        const auto lib_path_list = glob::glob(lib_files_glob);
+        LOG_INFO("Found {} DLL files", lib_path_list.size());
 
-        for(const auto& dll_path : dll_path_list) {
-            if(not fs::exists(dll_path)) {
+        for(const auto& lib_path : lib_path_list) {
+            if(not fs::exists(lib_path)) {
                 continue;
             }
 
-            auto* const library = kb::win::load_library_or_throw(dll_path);
+            auto* const library = kb::module::load_library_or_throw(lib_path);
             const auto lib_exports = kb::loader::get_export_map(library, undecorate);
 
             dll_exports.insert(lib_exports.begin(), lib_exports.end());
@@ -90,6 +91,85 @@ namespace {
 
         return dll_exports;
     }
+
+    // Used for windows
+    void generate_linker_exports_header(
+        std::ofstream& export_file,
+        const std::map<std::string, std::string>& lib_exports,
+        const std::set<std::string>& defined_functions,
+        const std::string& forwarded_dll_name
+    ) {
+        // Add header guard
+        export_file << "#pragma once" << std::endl << std::endl;
+
+        for(const auto& [function_name, decorated_function_name] : lib_exports) {
+            // Comment out exports that we have defined
+            const std::string comment = defined_functions.contains(function_name) ? "//" : "";
+
+            const auto line = std::format(
+                R"({}#pragma comment(linker, "/export:{}={}.{}"))",
+                //
+                comment,
+                decorated_function_name,
+                forwarded_dll_name,
+                decorated_function_name
+            );
+
+            export_file << line << std::endl;
+        }
+    }
+
+    // Used for linux
+    void generate_proxy_wrappers_source(
+        std::ofstream& export_file,
+        const std::map<std::string, std::string>& lib_exports,
+        const std::set<std::string>& defined_functions,
+        const std::string& forwarded_dll_name
+    ) {
+        // language=c++
+        const auto prologue = std::format(
+            R"(
+#include <dlfcn.h>
+
+extern "C" void push_all();
+extern "C" void pop_all();
+
+namespace {{
+    using void_fn = void(*)();
+
+    void_fn find(const char* name) {{
+        static auto* module_handle = dlopen("{}", RTLD_NOW);
+        return reinterpret_cast<void_fn>(dlsym(module_handle, name));
+    }}
+}}
+)", forwarded_dll_name
+        );
+
+        export_file << prologue << std::endl << std::endl;
+
+        for(const auto& [function_name, decorated_function_name] : lib_exports) {
+            // Comment out exports that we have defined
+            const auto declaration = std::format(
+                // language=c++
+                R"(__attribute__((visibility("default"))) void {}())", decorated_function_name
+            );
+
+            export_file << std::endl;
+
+            if(defined_functions.contains(function_name)) {
+                export_file << "// " << declaration << ";" << std::endl;
+                continue;
+            }
+
+            export_file
+                << declaration << " {" << std::endl
+                << "push_all();" << std::endl
+                << "static const auto func = find(__func__);" << std::endl
+                << "pop_all();" << std::endl
+                << "func();" << std::endl
+                << "}" << std::endl;
+        }
+    }
 }
 
 /**
@@ -98,10 +178,10 @@ namespace {
  * 1: undecorate? <br>
  * 2: forwarded dll name <br>
  * 3: glob pattern for input dll paths
- * 4: header output path <br>
+ * 4: output file path <br>
  * 5: sources input path <br> (optional)
  */
-int wmain(const int argc, const wchar_t* argv[]) { // NOLINT(*-use-internal-linkage)
+int MAIN(const int argc, const TCHAR* argv[]) { // NOLINT(*-use-internal-linkage)
     try {
         koalabox::logger::init_console_logger();
 
@@ -117,7 +197,7 @@ int wmain(const int argc, const wchar_t* argv[]) { // NOLINT(*-use-internal-link
         const auto undecorate = parseBoolean(kb::str::to_str(argv[1]));
         const auto forwarded_dll_name = kb::str::to_str(argv[2]);
         const auto input_dll_glob = kb::str::to_str(argv[3]);
-        const auto header_output_path = fs::path(kb::str::to_str(argv[4]));
+        const auto output_file_path = fs::path(kb::str::to_str(argv[4]));
 
         // Input sources are optional because Koaloader doesn't have them.
         const auto sources_input_path = fs::path(argc == 6 ? kb::str::to_str(argv[5]) : "");
@@ -126,42 +206,30 @@ int wmain(const int argc, const wchar_t* argv[]) { // NOLINT(*-use-internal-link
                                            ? std::set<std::string>()
                                            : get_defined_functions(sources_input_path);
 
-        const auto dll_exports = get_dll_exports(input_dll_glob, undecorate);
+        const auto lib_exports = get_library_exports(input_dll_glob, undecorate);
 
-        // Create directories for export header, if necessary
-        fs::create_directories(header_output_path.parent_path());
+        // Create directories for export file, if necessary
+        fs::create_directories(output_file_path.parent_path());
 
         // Open the export header file for writing
-        std::ofstream export_file(header_output_path, std::ofstream::out | std::ofstream::trunc);
+        std::ofstream export_file(output_file_path, std::ofstream::out | std::ofstream::trunc);
         if(not export_file.is_open()) {
             LOG_ERROR("Filed to open header file for writing");
             exit(4);
         }
 
-        // Add header guard
-        export_file << "#pragma once" << std::endl << std::endl;
+#ifdef _WIN32
+        generate_linker_exports_header(export_file, lib_exports, defined_functions, forwarded_dll_name);
+#else
+        generate_proxy_wrappers_source(export_file, lib_exports, defined_functions, forwarded_dll_name);
+#endif
 
-        for(const auto& [function_name, decorated_function_name] : dll_exports) {
-            // Comment out exports that we have defined
-            const std::string comment = defined_functions.contains(function_name) ? "//" : "";
-
-            const auto line = std::format(
-                R"({}#pragma comment(linker, "/export:{}={}.{}"))",
-                //
-                comment,
-                decorated_function_name,
-                forwarded_dll_name,
-                decorated_function_name
-            );
-
-            export_file << line << std::endl;
-        }
-
-        LOG_INFO("Finished generating {}", kb::path::to_str(header_output_path));
+        LOG_INFO("Finished generating {}", kb::path::to_str(output_file_path));
     } catch(const std::exception& ex) {
         LOG_ERROR("Error: {}", ex.what());
         exit(-1);
     }
 
     koalabox::logger::shutdown();
+    return 0;
 }

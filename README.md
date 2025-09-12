@@ -3,8 +3,18 @@
 # KoalaBox
 
 
-
 _C++ utilities for koality projects_
+
+## 🛠️ System requirements
+
+### 🪟 Windows
+
+- MSVC toolchain
+
+### 🐧 Linux
+
+- Clang compiler toolchain
+- GTK 3
 
 ## ❓Trivia
 
@@ -28,8 +38,6 @@ This project makes use of the following open source projects:
 - [microsoft/wil](https://github.com/microsoft/wil)
 - [p-ranav/glob](https://github.com/p-ranav/glob)
 - [pantor/inja](https://github.com/pantor/inja)
-
-
 
 
 ## 📄 License

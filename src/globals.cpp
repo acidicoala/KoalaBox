@@ -38,6 +38,9 @@ namespace koalabox::globals {
 
         initialized = true;
 
+
+#ifdef _WIN32
         DisableThreadLibraryCalls(self_handle);
+#endif
     }
 }

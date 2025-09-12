@@ -2,22 +2,13 @@
 
 #include <string>
 
-#ifdef UNICODE
-#define STRING std::wstring
-#else
-#define STRING std::string
-#endif
+#include "koalabox/koalabox.hpp"
 
 namespace koalabox::str {
     /**
-     * @return A new string_view with leading and trailing spaces removed
-     */
-    std::string_view trim(const std::string_view& s);
-
-    /**
      * @return A new string with leading and trailing spaces removed
      */
-    std::string trim(const std::string& s);
+    std::string trim(std::string s);
 
     /**
      * Performs case-insensitive string comparison.
@@ -31,9 +22,9 @@ namespace koalabox::str {
     std::string to_lower(const std::string& str);
 
     /**
-     * Converts 2-byte wide string to 1-byte string.
+     * Converts platform string to 1-byte string.
      */
-    std::string to_str(const std::wstring& wstr);
+    std::string to_str(const string& str);
 
     /**
      * Converts 1-byte string to 2-byte wide string.

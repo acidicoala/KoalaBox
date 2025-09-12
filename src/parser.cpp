@@ -61,6 +61,7 @@ namespace koalabox::parser {
         const auto node_results = query_impl(selector, root.getRootNode());
 
         std::vector<query_entry> string_results;
+        string_results.reserve(node_results.size());
         for(const auto& [path, node] : node_results) {
             string_results.emplace_back(
                 query_entry{
