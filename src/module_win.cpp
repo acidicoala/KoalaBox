@@ -40,7 +40,7 @@ namespace {
 }
 
 namespace koalabox::module {
-    std::filesystem::path get_fs_path(const void* const module_handle) {
+    std::filesystem::path get_fs_path(void* const module_handle) {
         const auto wstr_path = wil::GetModuleFileNameW<std::wstring>(module_handle);
         return path::from_wstr(wstr_path);
     }

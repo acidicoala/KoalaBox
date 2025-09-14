@@ -12,7 +12,7 @@ namespace koalabox::module {
                );
     }
 
-    section_t get_section_or_throw(const void* module_handle, const std::string& section_name) {
+    section_t get_section_or_throw(void* module_handle, const std::string& section_name) {
         return get_section(module_handle, section_name) | throw_if_empty(
                    std::format("Failed to find section '{}' in module {}", section_name, module_handle)
                );

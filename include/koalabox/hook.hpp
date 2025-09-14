@@ -9,7 +9,7 @@
     koalabox::hook::detour_or_warn(ADDRESS, #FUNC, reinterpret_cast<void*>(FUNC))
 
 #define KB_HOOK_DETOUR_MODULE(FUNC, MODULE) \
-    koalabox::hook::detour_or_warn(MODULE, #FUNC, reinterpret_cast<void*>(FUNC))
+    koalabox::hook::detour_module_or_warn(MODULE, #FUNC, reinterpret_cast<void*>(FUNC))
 
 namespace koalabox::hook {
     bool is_hooked(const std::string& function_name);
@@ -24,7 +24,7 @@ namespace koalabox::hook {
         const void* callback_function
     );
 
-    void detour_or_throw(
+    void detour_module_or_throw(
         void* module_handle,
         const std::string& function_name,
         const void* callback_function
@@ -36,7 +36,7 @@ namespace koalabox::hook {
         const void* callback_function
     );
 
-    void detour_or_warn(
+    void detour_module_or_warn(
         const HMODULE& module_handle,
         const std::string& function_name,
         const void* callback_function
@@ -48,7 +48,7 @@ namespace koalabox::hook {
         const void* callback_function
     );
 
-    void detour(
+    void detour_module(
         const HMODULE& module_handle,
         const std::string& function_name,
         const void* callback_function

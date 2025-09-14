@@ -37,7 +37,7 @@ namespace {
         constexpr auto timestamp = "%T.%e";
         constexpr auto thread_id = "%6!t";
 
-        return std::format("%L|{}|{}:{}|{}|%v", timestamp, src_file_name, src_line_num, thread_id);
+        return std::format("%-8l|{}|{}:{}|{}|%v", timestamp, src_file_name, src_line_num, thread_id);
     }
 
     class UsernameFilterFormatter final : public spdlog::formatter {
@@ -78,6 +78,13 @@ namespace koalabox::logger {
         fs::create_directories(log_path.parent_path());
 
         const auto logger = spdlog::basic_logger_mt("file", path::to_kb_str(log_path), true);
+
+#ifdef DEBUG_BUILD
+        // Useful for viewing logs directly in IDE console
+        auto console_sink = std::make_shared<spdlog::sinks::stdout_sink_mt>();
+        logger->sinks().emplace_back(console_sink);
+#endif
+
         configure_logger(logger);
     }
 

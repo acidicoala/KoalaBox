@@ -1,6 +1,7 @@
 #pragma once
 
 // Source: https://github.com/blaquee/dllnotif/blob/master/LdrDllNotification/ntapi.h
+// See also: https://github.com/MicrosoftDocs/win32/blob/docs/desktop-src/DevNotes/ldrregisterdllnotification.md
 
 // @formatter:off
 typedef __success(return >= 0) LONG NTSTATUS;

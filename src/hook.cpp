@@ -41,36 +41,49 @@ namespace {
     };
 
     struct hook_data_t {
-        void* orig_func_ptr = nullptr;
-        // ReSharper disable once CppDeclaratorNeverUsed
-        std::unique_ptr<PLH::VFuncMap> vfunc_map; // We need to save this to support unhooking
-        std::unique_ptr<PLH::IHook> hook;
+        void* orig_func_ptr;
+        // NOTE: It's important to keep that as raw pointers,
+        // since wrapping them in unique_ptr makes the struct uncopiable,
+        // which leads to a multitude of problems on clang.
+        PLH::VFuncMap* vfunc_map; // We need to save this to support unhooking
+        PLH::IHook* hook;
     };
 
     // Key is function name.
     using function_to_hook_data_map = std::map<std::string, hook_data_t>;
-    // Used for vtable swap hooks. Key is class pointer.
-    std::map<const void*, function_to_hook_data_map> class_map;
 
-    // Used as a fallback mechanism when functions from different classes
-    // end up being hooked with the same function. Normally we would use
-    // the class_map to get the class pointer first, but it may be missing
-    // in cases like late injection/hooking. Hence, as a last-resort method,
-    // we could try using the last known class pointer in the hopes that it
-    // may be compatible. Key is function name.
-    std::map<std::string, const void*> reverse_class_map;
+    // Used for vtable swap hooks. Key is class pointer.
+    auto& get_class_map() {
+        static std::map<const void*, function_to_hook_data_map> class_map;
+        return class_map;
+    }
+
+    auto& get_reverse_class_map() {
+        // Used as a fallback mechanism when functions from different classes
+        // end up being hooked with the same function. Normally we would use
+        // the class_map to get the class pointer first, but it may be missing
+        // in cases like late injection/hooking. Hence, as a last-resort method,
+        // we could try using the last known class pointer in the hopes that it
+        // may be compatible. Key is function name.
+        static std::map<std::string, const void*> reverse_class_map = {};
+        return reverse_class_map;
+    }
 
     // Used for detours/eat hooks. Key is function name.
-    function_to_hook_data_map hook_map;
+    auto& get_hook_map() {
+        static function_to_hook_data_map hook_map = {};
+        return hook_map;
+    }
 
     const function_to_hook_data_map& find_function_map(
         const void* class_ptr,
         const std::string& function_name
     ) {
+        const auto& class_map = get_class_map();
+
         if(class_map.contains(class_ptr)) {
             return class_map.at(class_ptr);
         }
-
         LOG_ERROR(
             "Hook map does not contain class pointer: {}.\n"
             "Falling back to last known class pointer of {}.\n"
@@ -80,6 +93,7 @@ namespace {
             kb::globals::get_project_name()
         );
 
+        const auto& reverse_class_map = get_reverse_class_map();
         if(reverse_class_map.contains(function_name)) {
             const auto* fallback_class_ptr = reverse_class_map.at(function_name);
 
@@ -103,10 +117,12 @@ namespace {
 
 namespace koalabox::hook {
     bool is_hooked(const std::string& function_name) {
-        return hook_map.contains(function_name);
+        return get_hook_map().contains(function_name);
     }
 
     bool is_vt_hooked(const void* class_ptr, const std::string& function_name) {
+        const auto& class_map = get_class_map();
+
         return class_map.contains(class_ptr) &&
                class_map.at(class_ptr).contains(function_name);
     }
@@ -115,12 +131,17 @@ namespace koalabox::hook {
         static std::mutex section;
         const std::lock_guard lock(section);
 
+        auto& hook_map = get_hook_map();
+
         if(not hook_map.contains(function_name)) {
             LOG_ERROR("Cannot unhook '{}'. Function name not found", function_name);
             return false;
         }
 
-        const auto success = hook_map.at(function_name).hook->unHook();
+        const auto& hook_data = hook_map.at(function_name);
+        const auto success = hook_data.hook->unHook();
+        delete hook_data.hook;
+        delete hook_data.vfunc_map;
         hook_map.erase(function_name);
 
         LOG_DEBUG("{} -> Unhooked '{}'", __func__, function_name);
@@ -131,6 +152,8 @@ namespace koalabox::hook {
     bool unhook_vt(const void* class_ptr, const std::string& function_name) {
         static std::mutex section;
         const std::lock_guard lock(section);
+
+        auto& class_map = get_class_map();
 
         if(not class_map.contains(class_ptr)) {
             LOG_ERROR("Cannot unhook '{}'. Class pointer not found: {}", function_name, class_ptr)
@@ -144,10 +167,12 @@ namespace koalabox::hook {
             return false;
         }
 
-        const auto success = function_map.at(function_name).hook->unHook();
-
+        const auto& hook_data = function_map.at(function_name);
+        const auto success = hook_data.hook->unHook();
+        delete hook_data.hook;
+        delete hook_data.vfunc_map;
         function_map.erase(function_name);
-        reverse_class_map.erase(function_name);
+        get_reverse_class_map().erase(function_name);
 
         LOG_DEBUG("{} -> Unhooked '{}' from {}", __func__, function_name, class_ptr);
 
@@ -157,6 +182,8 @@ namespace koalabox::hook {
     bool unhook_vt_all(const void* class_ptr) {
         static std::mutex section;
         const std::lock_guard lock(section);
+
+        auto& class_map = get_class_map();
 
         if(not class_map.contains(class_ptr)) {
             LOG_ERROR("Unhooking error. Class pointer not found: {}", class_ptr)
@@ -184,8 +211,7 @@ namespace koalabox::hook {
 
         uint64_t trampoline = 0;
 
-
-        // False flag - no memory is actually leaked
+        // False flag - no memory is actually leaked, it is freed in unhook
         // ReSharper disable once CppDFAMemoryLeak
         auto* const detour = new PLH::NatDetour(
             reinterpret_cast<uint64_t>(address),
@@ -197,9 +223,10 @@ namespace koalabox::hook {
         detour->setDetourScheme(PLH::x64Detour::ALL);
 #endif
         if(detour->hook()) {
-            hook_map[function_name] = {
+            get_hook_map()[function_name] = {
                 .orig_func_ptr = reinterpret_cast<void*>(trampoline),
-                .hook = std::unique_ptr<PLH::IHook>(detour),
+                .vfunc_map = new PLH::VFuncMap{},
+                .hook = detour,
             };
         } else {
             delete detour;
@@ -207,7 +234,7 @@ namespace koalabox::hook {
         }
     }
 
-    void detour_or_throw(
+    void detour_module_or_throw(
         void* const module_handle,
         const std::string& function_name,
         const void* callback_function
@@ -229,13 +256,13 @@ namespace koalabox::hook {
         }
     }
 
-    void detour_or_warn(
+    void detour_module_or_warn(
         const HMODULE& module_handle,
         const std::string& function_name,
         const void* callback_function
     ) {
         try {
-            detour_or_throw(module_handle, function_name, callback_function);
+            detour_module_or_throw(module_handle, function_name, callback_function);
         } catch(const std::exception& ex) {
             LOG_WARN("Detour error: {}", ex.what());
         }
@@ -255,13 +282,13 @@ namespace koalabox::hook {
         }
     }
 
-    void detour(
+    void detour_module(
         const HMODULE& module_handle,
         const std::string& function_name,
         const void* callback_function
     ) {
         try {
-            detour_or_throw(module_handle, function_name, callback_function);
+            detour_module_or_throw(module_handle, function_name, callback_function);
         } catch(const std::exception& ex) {
             util::panic(
                 std::format("Failed to hook function {} via Detour: {}", function_name, ex.what())
@@ -297,25 +324,28 @@ namespace koalabox::hook {
 
         const PLH::VFuncMap redirect = {{ordinal, reinterpret_cast<uint64_t>(callback_function)}};
 
-        auto original_functions = std::make_unique<PLH::VFuncMap>();
+        // False positive - No memory is actually leaked, it is freed in unhook_vt
+        // ReSharper disable once CppDFAMemoryLeak
+        auto* original_functions = new PLH::VFuncMap();
 
-        // False positive - No memory is actually leaked
+        // False positive - No memory is actually leaked, it is freed in unhook_vt
         // ReSharper disable once CppDFAMemoryLeak
         auto* const swap_hook = new PLH::VFuncSwapHook(
             static_cast<const char*>(class_ptr),
             redirect,
-            original_functions.get()
+            original_functions
         );
 
         if(swap_hook->hook()) {
-            class_map[class_ptr][function_name] = {
+            get_class_map()[class_ptr][function_name] = {
                 .orig_func_ptr = reinterpret_cast<void*>((*original_functions)[ordinal]),
-                .vfunc_map = std::move(original_functions),
-                .hook = std::unique_ptr<PLH::IHook>(swap_hook),
+                .vfunc_map = original_functions,
+                .hook = swap_hook,
             };
-            reverse_class_map[function_name] = class_ptr;
+            get_reverse_class_map()[function_name] = class_ptr;
         } else {
             delete swap_hook;
+            delete original_functions;
             throw std::runtime_error(std::format("Failed to hook function: {}", function_name));
         }
     }
@@ -345,6 +375,8 @@ namespace koalabox::hook {
     }
 
     void* get_hooked_function_address(const std::string& function_name) {
+        const auto& hook_map = get_hook_map();
+
         if(not hook_map.contains(function_name)) {
             util::panic(
                 std::format("Hook map does not contain function: {}", function_name)

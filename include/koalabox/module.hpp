@@ -29,7 +29,7 @@ namespace koalabox::module {
     using exports_t = std::set<std::string>;
     exports_t get_exports(const std::filesystem::path& lib_path);
 
-    std::filesystem::path get_fs_path(const void* module_handle);
+    std::filesystem::path get_fs_path(void* module_handle);
     std::optional<void*> get_function_address(
         void* module_handle,
         const char* function_name
@@ -44,8 +44,8 @@ namespace koalabox::module {
         return reinterpret_cast<F>(get_function_address_or_throw(module_handle, procedure_name));
     }
 
-    std::optional<section_t> get_section(const void* module_handle, const std::string& section_name);
-    section_t get_section_or_throw(const void* module_handle, const std::string& section_name);
+    std::optional<section_t> get_section(void* lib_handle, const std::string& section_name);
+    section_t get_section_or_throw(void* module_handle, const std::string& section_name);
 
     std::optional<void*> load_library(const std::filesystem::path& library_path);
     void* load_library_or_throw(const std::filesystem::path& library_path);

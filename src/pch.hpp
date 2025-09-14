@@ -26,7 +26,7 @@
 using HMODULE = void*;
 
 #define __cdecl __attribute__((__cdecl__))
-#define __fastcall __attribute__((__fastcall__))
+#define __fastcall
 #define __stdcall __attribute__((__stdcall__))
 #define __declspec(spec) __attribute__((spec))
 

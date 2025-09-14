@@ -9,6 +9,10 @@ set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 set(CPM_SOURCE_CACHE "${CMAKE_SOURCE_DIR}/build/.cache" CACHE STRING "CPM.cmake source cache")
 include("${CMAKE_CURRENT_LIST_DIR}/get_cpm.cmake")
 
+if(CMAKE_BUILD_TYPE STREQUAL "Debug")
+    add_definitions(-DDEBUG_BUILD)
+endif()
+
 # Sets the variable ${VAR} with val_for_32 on 32-bit build
 # and appends 64 to val_for_32 on 64-bit build, unless an optional argument is provided.
 function(set_32_and_64 VAR val_for_32)
@@ -91,5 +95,6 @@ function(configure_linker_exports)
         DEPENDS exports_generator
     )
 
-    add_dependencies("${ARG_TARGET}" "${GENERATE_LINKER_EXPORTS_TARGET}")
+    target_sources(${ARG_TARGET} PRIVATE ${GENERATED_LINKER_EXPORTS})
+#    add_dependencies("${ARG_TARGET}" "${GENERATE_LINKER_EXPORTS_TARGET}")
 endfunction()

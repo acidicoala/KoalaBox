@@ -20,69 +20,38 @@
 namespace {
     using namespace koalabox::module;
 
-    exports_t list_dynsym_exports_64(const void* map) {
-        const Elf64_Ehdr* ehdr = reinterpret_cast<const Elf64_Ehdr*>(map);
-        const Elf64_Shdr* shdrs = reinterpret_cast<const Elf64_Shdr*>((const char*) map + ehdr->e_shoff);
-        const char* shstrtab = (const char*) map + shdrs[ehdr->e_shstrndx].sh_offset;
+    exports_t list_dynsym_exports(const void* map) {
+        const auto map_base = static_cast<const char*>(map);
+        // TODO: refactor
+        const auto* const ehdr = static_cast<const ElfW(Ehdr)*>(map);
+        const auto* shdrs = reinterpret_cast<const ElfW(Shdr)*>(map_base + ehdr->e_shoff);
+        const auto* shstrtab = map_base + shdrs[ehdr->e_shstrndx].sh_offset;
 
-        const Elf64_Shdr* dynsym = nullptr;
-        const Elf64_Shdr* dynstr = nullptr;
+        const ElfW(Shdr)* dynsym = nullptr;
+        const ElfW(Shdr)* dynstr = nullptr;
         for(int i = 0; i < ehdr->e_shnum; ++i) {
             const char* name = shstrtab + shdrs[i].sh_name;
-            if(strcmp(name, ".dynsym") == 0) dynsym = &shdrs[i];
-            else if(strcmp(name, ".dynstr") == 0) dynstr = &shdrs[i];
-        }
-        if(!dynsym || !dynstr) {
-            LOG_ERROR(".dynsym or .dynstr not found");
-            return {};
-        }
-
-        const Elf64_Sym* syms = (const Elf64_Sym*) ((const char*) map + dynsym->sh_offset);
-        size_t nsyms = dynsym->sh_size / sizeof(Elf64_Sym);
-        const char* strtab = (const char*) map + dynstr->sh_offset;
-
-        exports_t exports;
-        for(size_t i = 0; i < nsyms; ++i) {
-            const Elf64_Sym& s = syms[i];
-            if(ELF64_ST_TYPE(s.st_info) == STT_FUNC &&
-               (ELF64_ST_BIND(s.st_info) == STB_GLOBAL || ELF64_ST_BIND(s.st_info) == STB_WEAK) &&
-               s.st_name != 0 &&
-               s.st_shndx != SHN_UNDEF) {
-                const std::string function_name = strtab + s.st_name;
-                if(!function_name.starts_with("_")) {
-                    exports.insert(function_name);
-                }
+            if(strcmp(name, ".dynsym") == 0) {
+                dynsym = &shdrs[i];
+            } else if(strcmp(name, ".dynstr") == 0) {
+                dynstr = &shdrs[i];
             }
         }
-        return exports;
-    }
-
-    exports_t list_dynsym_exports_32(const void* map) {
-        const Elf32_Ehdr* ehdr = reinterpret_cast<const Elf32_Ehdr*>(map);
-        const Elf32_Shdr* shdrs = reinterpret_cast<const Elf32_Shdr*>((const char*) map + ehdr->e_shoff);
-        const char* shstrtab = (const char*) map + shdrs[ehdr->e_shstrndx].sh_offset;
-
-        const Elf32_Shdr* dynsym = nullptr;
-        const Elf32_Shdr* dynstr = nullptr;
-        for(int i = 0; i < ehdr->e_shnum; ++i) {
-            const char* name = shstrtab + shdrs[i].sh_name;
-            if(strcmp(name, ".dynsym") == 0) dynsym = &shdrs[i];
-            else if(strcmp(name, ".dynstr") == 0) dynstr = &shdrs[i];
-        }
         if(!dynsym || !dynstr) {
             LOG_ERROR(".dynsym or .dynstr not found");
             return {};
         }
 
-        const Elf32_Sym* syms = (const Elf32_Sym*) ((const char*) map + dynsym->sh_offset);
-        size_t nsyms = dynsym->sh_size / sizeof(Elf32_Sym);
-        const char* strtab = (const char*) map + dynstr->sh_offset;
+        const auto* syms = reinterpret_cast<const ElfW(Sym)*>(map_base + dynsym->sh_offset);
+        const auto nsyms = dynsym->sh_size / sizeof(ElfW(Sym));
+        const auto* strtab = map_base + dynstr->sh_offset;
 
         exports_t exports;
         for(size_t i = 0; i < nsyms; ++i) {
-            const Elf32_Sym& s = syms[i];
-            if(ELF32_ST_TYPE(s.st_info) == STT_FUNC &&
-               (ELF32_ST_BIND(s.st_info) == STB_GLOBAL || ELF32_ST_BIND(s.st_info) == STB_WEAK) &&
+            const ElfW(Sym)& s = syms[i];
+            // Both Elf32_Sym and Elf64_Sym use the same one-byte st_info field.
+            if(ELF64_ST_TYPE(s.st_info) == STT_FUNC &&
+               (ELF64_ST_BIND(s.st_info) == STB_GLOBAL || ELF64_ST_BIND(s.st_info) == STB_WEAK) &&
                s.st_name != 0 &&
                s.st_shndx != SHN_UNDEF) {
                 const std::string function_name = strtab + s.st_name;
@@ -121,22 +90,14 @@ namespace koalabox::module {
             return {};
         }
 
-        unsigned char* ident = static_cast<unsigned char*>(map);
-        if(memcmp(ident, ELFMAG, SELFMAG) != 0) {
+        if(memcmp(map, ELFMAG, SELFMAG) != 0) {
             LOG_ERROR("Failed to identify library (not a valid ELF file): %s", lib_path.c_str());
             munmap(map, filesize);
             close(fd);
             return {};
         }
 
-        exports_t exports;
-        if(ident[EI_CLASS] == ELFCLASS64) {
-            exports = list_dynsym_exports_64(map);
-        } else if(ident[EI_CLASS] == ELFCLASS32) {
-            exports = list_dynsym_exports_32(map);
-        } else {
-            LOG_ERROR("Unknown ELF class: {}", ident[EI_CLASS]);
-        }
+        exports_t exports = list_dynsym_exports(map);
 
         munmap(map, filesize);
         close(fd);
@@ -144,7 +105,7 @@ namespace koalabox::module {
         return exports;
     }
 
-    std::filesystem::path get_fs_path(const void* const module_handle) {
+    std::filesystem::path get_fs_path(void* const module_handle) {
         char path[PATH_MAX]{};
 
         if(!module_handle) {
@@ -155,19 +116,13 @@ namespace koalabox::module {
                 return path::from_str(path);
             }
         } else {
-            // Get path to the shared object containing the given symbol
-            Dl_info info{};
-            const auto result = dladdr(module_handle, &info);
-            // TODO: Doesn't actually work, always fails
-            if(!result) {
-                LOG_ERROR("dladdr result: {}", result);
-            }
-            if(dladdr(module_handle, &info) && info.dli_fname) {
-                return path::from_str(info.dli_fname);
+            link_map* lm;
+            if(dlinfo(module_handle, RTLD_DI_LINKMAP, &lm) == 0) { // NOLINT(*-multi-level-implicit-pointer-conversion)
+                return path::from_str(lm->l_name);
             }
         }
 
-        throw std::runtime_error("Failed to get path from module");
+        throw std::runtime_error("Failed to get path from module handle");
     }
 
     std::optional<void*> get_function_address(
@@ -181,30 +136,124 @@ namespace koalabox::module {
         return {};
     }
 
-    std::optional<section_t> get_section(const void* module_handle, const std::string& section_name) {
-        const auto* base = reinterpret_cast<const uint8_t*>(module_handle);
-        const auto* ehdr = reinterpret_cast<const Elf64_Ehdr*>(base);
+    std::optional<section_t> get_section(void* lib_handle, const std::string& section_name) {
+        link_map* lm;
+        dlinfo(lib_handle, RTLD_DI_LINKMAP, &lm); // NOLINT(*-multi-level-implicit-pointer-conversion)
 
-        if(memcmp(ehdr->e_ident, ELFMAG, SELFMAG) != 0)
-            return {};
+        struct context_t {
+            const std::string section_name;
+            const void* module_base{};
+            const link_map* link_map = nullptr;
+            std::optional<section_t> result;
+        };
+        context_t initial_context{section_name, lib_handle, lm, {}};
 
-        const auto* sh_table = reinterpret_cast<const Elf64_Shdr*>(base + ehdr->e_shoff);
-        const auto* shstr_sh = &sh_table[ehdr->e_shstrndx];
-        auto shstrtab = reinterpret_cast<const char*>(base + shstr_sh->sh_offset);
+        dl_iterate_phdr(
+            // ReSharper disable once CppParameterMayBeConstPtrOrRef
+            [](dl_phdr_info* const header_info, [[maybe_unused]] size_t size, void* context_raw) {
+                static constexpr auto CONTINUE_ITERATION = 0;
+                static constexpr auto STOP_ITERATION = 1;
 
-        for(int i = 0; i < ehdr->e_shnum; ++i) {
-            const char* name = shstrtab + sh_table[i].sh_name;
-            if(section_name == name) {
-                void* start = (void*) (base + sh_table[i].sh_addr);
-                void* end = (void*) (base + sh_table[i].sh_addr + sh_table[i].sh_size);
-                return section_t{start, end, static_cast<uint32_t>(sh_table[i].sh_size)};
-            }
-        }
-        return {};
+                auto* const context = static_cast<context_t*>(context_raw);
+
+                // Check if this is the module we're looking for
+                if(header_info->dlpi_addr != context->link_map->l_addr) {
+                    return CONTINUE_ITERATION;
+                }
+
+                // Open the ELF file
+                auto* elf_file = fopen(header_info->dlpi_name, "rb");
+                if(!elf_file) {
+                    LOG_ERROR("Failed to open library: {}", header_info->dlpi_name);
+                    return STOP_ITERATION;
+                }
+
+                const auto cleanup = [&] {
+                    fclose(elf_file);
+                    return STOP_ITERATION;
+                };
+
+                // Read the ELF header
+                ElfW(Ehdr) elf_header;
+                if(fread(&elf_header, 1, sizeof(elf_header), elf_file) != sizeof(elf_header)) {
+                    LOG_ERROR("Failed to read elf header: {}", header_info->dlpi_name);
+                    return cleanup();
+                }
+
+                // Validate ELF magic number
+                if(memcmp(elf_header.e_ident, ELFMAG, SELFMAG) != 0) {
+                    LOG_ERROR("Not a valid ELF file: {}", header_info->dlpi_name);
+                    return cleanup();
+                }
+
+                // Read section headers
+                ElfW(Shdr) section_header;
+                if(fseek(
+                       elf_file,
+                       elf_header.e_shoff + (elf_header.e_shstrndx * sizeof(section_header)),
+                       SEEK_SET
+                   ) != 0) {
+                    LOG_ERROR("Failed to seek to section header: {}", header_info->dlpi_name);
+                    return cleanup();
+                }
+                if(fread(&section_header, 1, sizeof(section_header), elf_file) != sizeof(section_header)) {
+                    LOG_ERROR("Failed to read section header: {}", header_info->dlpi_name);
+                    return cleanup();
+                };
+
+                // Allocate memory for section names
+                auto* section_names = static_cast<char*>(malloc(section_header.sh_size));
+                if(!section_names) {
+                    LOG_ERROR("Failed to allocate memory for section names");
+                    return cleanup();
+                }
+
+                if(fseek(elf_file, section_header.sh_offset, SEEK_SET) != 0) { // NOLINT(*-narrowing-conversions)
+                    LOG_ERROR("Failed to seek to section names: {}", header_info->dlpi_name);
+                    return cleanup();
+                }
+                if(fread(section_names, 1, section_header.sh_size, elf_file) != section_header.sh_size) {
+                    LOG_ERROR("Failed to read section names: {}", header_info->dlpi_name);
+                    return cleanup();
+                }
+
+                // Iterate through sections
+                for(int i = 0; i < elf_header.e_shnum; i++) {
+                    if(fseek(elf_file, elf_header.e_shoff + (i * sizeof(section_header)), SEEK_SET) != 0) {
+                        LOG_ERROR("Failed to seek to section header: {}", header_info->dlpi_name);
+                        return cleanup();
+                    }
+                    if(fread(&section_header, 1, sizeof(section_header), elf_file) != sizeof(section_header)) {
+                        LOG_ERROR("Failed to read to section header: {}", header_info->dlpi_name);
+                        return cleanup();
+                    };
+
+                    const char* name = section_names + section_header.sh_name;
+                    if(name == context->section_name) {
+                        const auto section_size = section_header.sh_size;
+                        auto* start = reinterpret_cast<uint8_t*>(header_info->dlpi_addr + section_header.sh_offset);
+                        auto* end = start + section_size;
+
+                        context->result = section_t{
+                            .start_address = start,
+                            .end_address = end,
+                            .size = static_cast<uint32_t>(section_size)
+                        };
+
+                        break;
+                    }
+                }
+
+                free(section_names);
+                return cleanup();
+            }, &initial_context
+        );
+
+        return initial_context.result;
     }
 
     std::optional<void*> load_library(const std::filesystem::path& library_path) {
-        LOG_DEBUG("Loading library: {}", path::to_str(library_path));
+        LOG_DEBUG("Loading library: '{}'", path::to_str(library_path));
 
         if(auto* library = dlopen(path::to_str(library_path).c_str(), RTLD_NOW | RTLD_GLOBAL)) {
             return {library};

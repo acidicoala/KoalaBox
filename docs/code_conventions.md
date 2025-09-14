@@ -40,3 +40,7 @@ Projects should use the style stored in IDE, specifically
 
 Projects should use the inspections stored in IDE, specifically
 [acidicoala.xml](https://github.com/acidicoala/acidicoala/blob/main/idea-configs/inspections/acidicoala.xml).
+
+## Global variables
+
+Do NOT use global variables without explicit initialization. MSVC initializes them correctly, but Clang fails to do so.

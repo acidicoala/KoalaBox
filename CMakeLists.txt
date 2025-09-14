@@ -82,10 +82,6 @@ else()
     pkg_check_modules(GTK3 REQUIRED gtk+-3.0)
 
     include_directories(${GTK3_INCLUDE_DIRS})
-    # link_directories(${GTK3_LIBRARY_DIRS})
-    # add_definitions(${GTK3_CFLAGS_OTHER})
-
-    # target_link_libraries(KoalaBox PUBLIC ${GTK3_LIBRARIES})
 endif()
 
 ### Setup KoalaBox exports
@@ -108,8 +104,6 @@ CPMAddPackage(
     URI "gh:nlohmann/json@3.12.0"
     OPTIONS "JSON_Diagnostics ON"
 )
-#set(nlohmann_json_DIR ${json_BINARY_DIR})
-#find_package(nlohmann_json REQUIRED)
 target_link_libraries(KoalaBox PUBLIC nlohmann_json::nlohmann_json)
 
 ## https://github.com/richgel999/miniz
@@ -150,6 +144,15 @@ if(WIN32)
         "SPDLOG_WCHAR_FILENAMES ON"
         "SPDLOG_WCHAR_CONSOLE ON"
     )
+
+    ## https://github.com/microsoft/wil
+    CPMAddPackage(
+        URI "gh:microsoft/wil@1.0.250325.1"
+        OPTIONS
+        "WIL_BUILD_TESTS OFF"
+        "WIL_BUILD_PACKAGING OFF"
+    )
+    target_link_libraries(KoalaBox PUBLIC WIL)
 endif()
 
 CPMAddPackage(
@@ -158,6 +161,7 @@ CPMAddPackage(
 )
 target_link_libraries(KoalaBox PUBLIC spdlog)
 
+# TODO: We need this only for tools, extract to a separate target
 ## https://github.com/nsumner/cpp-tree-sitter
 # The latest commit includes a fix for MSVC, which is not present in the latest release
 CPMAddPackage("gh:nsumner/cpp-tree-sitter#9cd7f3c9de9fc6d19bc982c6772fcd7a39e5797a")
@@ -176,14 +180,5 @@ target_link_libraries(KoalaBox PUBLIC cpp-tree-sitter tree-sitter-cpp)
 CPMAddPackage("gh:nemtrif/utfcpp@4.0.6")
 target_compile_definitions(KoalaBox PUBLIC UTF_CPP_CPLUSPLUS=202002L)
 target_link_libraries(KoalaBox PUBLIC utf8cpp)
-
-## https://github.com/microsoft/wil
-CPMAddPackage(
-    URI "gh:microsoft/wil@1.0.250325.1"
-    OPTIONS
-    "WIL_BUILD_TESTS OFF"
-    "WIL_BUILD_PACKAGING OFF"
-)
-target_link_libraries(KoalaBox PUBLIC WIL)
 
 add_subdirectory(tools)
