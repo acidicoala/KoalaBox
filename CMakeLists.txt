@@ -51,7 +51,7 @@ set(KOALABOX_SOURCES
 add_library(KoalaBox OBJECT ${KOALABOX_HEADERS} ${KOALABOX_SOURCES})
 
 if(WIN32)
-#    target_compile_options(KoalaBox PUBLIC /std:c++latest)
+    #    target_compile_options(KoalaBox PUBLIC /std:c++latest)
 
     target_sources(KoalaBox PRIVATE
         include/koalabox/win.hpp
@@ -72,11 +72,15 @@ else()
         src/module_linux.cpp
         src/path_linux.cpp
         src/paths_linux.cpp
-        src/push_pop_all_32.asm
-        src/push_pop_all_64.asm
         src/str_linux.cpp
         src/util_linux.cpp
     )
+
+    if(IS_32)
+        target_sources(KoalaBox PRIVATE src/push_pop_all_32.asm)
+    else()
+        target_sources(KoalaBox PRIVATE src/push_pop_all_64.asm)
+    endif()
 
     find_package(PkgConfig REQUIRED)
     pkg_check_modules(GTK3 REQUIRED gtk+-3.0)
@@ -123,6 +127,7 @@ target_link_libraries(KoalaBox PUBLIC cpr)
 
 ## https://github.com/stevemk14ebr/PolyHook_2_0
 CPMAddPackage(
+    NAME PolyHook_2
     URI "gh:acidicoala/PolyHook_2_0#db428ada41bd0d719af1668af4fa0c83fc02b99c"
     GIT_SUBMODULES "*"
     OPTIONS

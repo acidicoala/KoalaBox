@@ -44,3 +44,8 @@ Projects should use the inspections stored in IDE, specifically
 ## Global variables
 
 Do NOT use global variables without explicit initialization. MSVC initializes them correctly, but Clang fails to do so.
+
+## Naming conventions
+
+- All C++ exports must be under the `koalabox` namespace
+- All preprocessor macros must be prefixed with `KB_` (short for **K**oala**B**ox)

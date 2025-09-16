@@ -1,3 +1,5 @@
+#include <ranges>
+
 #include <dlfcn.h>
 
 #include "koalabox/dll_monitor.hpp"
@@ -13,6 +15,41 @@ namespace {
     auto& get_global_callbacks() {
         static kb::dll_monitor::callbacks_t global_callbacks{};
         return global_callbacks;
+    }
+
+    void process_library(const std::string& lib_name, void* lib_handle) {
+        auto& global_callbacks = get_global_callbacks();
+
+        const auto callback = global_callbacks.at(lib_name);
+        try {
+            // ReSharper disable once CppTooWideScope
+            const auto need_erasing = callback(lib_handle);
+
+            if(need_erasing) {
+                global_callbacks.erase(lib_name);
+            }
+        } catch(const std::exception& e) {
+            LOG_ERROR("{} -> Exception raised during callback invocation: {}", lib_name, e.what());
+        }
+
+        if(global_callbacks.empty()) {
+            kb::dll_monitor::shutdown_listener(nullptr);
+        }
+    }
+
+    void check_loaded_modules() {
+        for(const auto& dll_name : get_global_callbacks() | std::views::keys) {
+            auto* const module_handle = kb::module::get_library_handle(dll_name.c_str());
+
+            if(not module_handle) { continue; }
+
+            static std::mutex section;
+            const std::lock_guard lock(section);
+
+            LOG_INFO("Target library is already loaded: '{}'", dll_name);
+
+            process_library(dll_name, module_handle);
+        }
     }
 
     void on_library_loaded(const char* filename, void* lib_handle) {
@@ -32,28 +69,13 @@ namespace {
             LOG_DEBUG("Library loaded: '{}' @ {}", lib_name, lib_handle);
         }
 
-        auto& global_callbacks = get_global_callbacks();
-        if(global_callbacks.contains(lib_name)) {
+        if(get_global_callbacks().contains(lib_name)) {
             static std::mutex section;
             const std::lock_guard lock(section);
 
             LOG_INFO("Target library '{}' has been loaded: {}", lib_name, lib_handle);
 
-            const auto callback = global_callbacks.at(lib_name);
-            try {
-                // ReSharper disable once CppTooWideScope
-                const auto need_erasing = callback(lib_handle);
-
-                if(need_erasing) {
-                    global_callbacks.erase(lib_name);
-                }
-            } catch(const std::exception& e) {
-                LOG_ERROR("{} -> Exception raised during callback invocation: {}", lib_name, e.what());
-            }
-
-            if(global_callbacks.empty()) {
-                kb::dll_monitor::shutdown_listener(nullptr);
-            }
+            process_library(lib_name, lib_handle);
         }
     }
 
@@ -100,11 +122,14 @@ namespace koalabox::dll_monitor {
 
         LOG_DEBUG("DLL monitor initialized");
 
-        return nullptr;
+        check_loaded_modules();
+
+        // A dummy context
+        return new callback_context_t{};
     }
 
-    void shutdown_listener(const callback_context_t* const /*context*/) {
-        // delete context;
+    void shutdown_listener(const callback_context_t* const context) {
+        delete context;
 
         const auto dlopen_result = hook::unhook("dlopen");
         const auto dlmopen_result = hook::unhook("dlmopen");

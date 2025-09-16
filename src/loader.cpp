@@ -5,9 +5,9 @@
 
 namespace koalabox::loader {
     void* load_original_library(const fs::path& self_path, const std::string& orig_library_name) {
-#ifdef _WIN32
+#ifdef KB_WIN
         constexpr auto extension = "_o.dll";
-#else
+#elifdef KB_LINUX
         constexpr auto extension = "_o.so";
 #endif
         const auto full_original_library_name = orig_library_name + extension;

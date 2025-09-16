@@ -13,6 +13,12 @@ if(CMAKE_BUILD_TYPE STREQUAL "Debug")
     add_definitions(-DDEBUG_BUILD)
 endif()
 
+if(CMAKE_SIZEOF_VOID_P EQUAL 8)
+    set(IS_64 TRUE)
+else()
+    set(IS_32 TRUE)
+endif()
+
 # Sets the variable ${VAR} with val_for_32 on 32-bit build
 # and appends 64 to val_for_32 on 64-bit build, unless an optional argument is provided.
 function(set_32_and_64 VAR val_for_32)
@@ -96,5 +102,5 @@ function(configure_linker_exports)
     )
 
     target_sources(${ARG_TARGET} PRIVATE ${GENERATED_LINKER_EXPORTS})
-#    add_dependencies("${ARG_TARGET}" "${GENERATE_LINKER_EXPORTS_TARGET}")
+    add_dependencies("${ARG_TARGET}" "${GENERATE_LINKER_EXPORTS_TARGET}")
 endfunction()

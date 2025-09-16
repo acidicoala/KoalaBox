@@ -2,7 +2,29 @@
 
 #include <cstdint>
 
-#ifdef _WIN32
+// Aliases for 32/64-bit system
+#if defined(_WIN64) || defined(__x86_64__) || defined(__amd64__)
+
+#define KB_64
+
+#else
+
+#define KB_32
+
+#endif
+
+// Aliases for Windows/Linux OS
+#if defined(_WIN32)
+
+#define KB_WIN
+
+#else
+
+#define KB_LINUX
+
+#endif
+
+#ifdef KB_WIN
 
 // Windows headers
 #define WIN32_LEAN_AND_MEAN
@@ -17,7 +39,7 @@
 
 #define MAIN wmain
 
-#else
+#elifdef KB_LINUX
 
 /// Kind of a Windows polyfill for Linux?
 
@@ -25,6 +47,7 @@
 
 using HMODULE = void*;
 
+// TODO: Delete them after removing their usage
 #define __cdecl __attribute__((__cdecl__))
 #define __fastcall
 #define __stdcall __attribute__((__stdcall__))
@@ -40,12 +63,4 @@ using HMODULE = void*;
 
 #define TCHAR char
 
-#endif
-
-#if defined(_WIN64) || defined(__x86_64__) || defined(__amd64__)
-#define KB_32 0
-#define KB_64 1
-#else
-#define KB_32 1
-#define KB_64 0
 #endif

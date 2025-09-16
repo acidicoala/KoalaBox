@@ -28,9 +28,9 @@ namespace koalabox {
     }
 
     // Platform-specific type aliases
-#ifdef _WIN32
+#ifdef KB_WIN
     using string = std::wstring;
-#else
+#elifdef KB_LINUX
     using string = std::string;
 #endif
 }

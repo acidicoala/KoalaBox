@@ -50,13 +50,15 @@ namespace koalabox::util {
         error_box(title, message);
 
         logger::shutdown();
+
+        DebugBreak();
+
         exit(errno);
     }
 
     std::string get_env_var(const std::string& key) {
-        const char* value = getenv(key.c_str());
-        if(value) {
-            return {value};
+        if(const char* value = getenv(key.c_str())) {
+            return value;
         }
 
         return "";

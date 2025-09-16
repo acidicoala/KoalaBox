@@ -9,11 +9,11 @@
 /// Cross-platform abstraction over dynamic libraries (.DLL / .SO files)
 namespace koalabox::module {
     // TODO: Refactor into an enum
-    constexpr auto CONST_STR_SECTION = ".rodata";
-#ifdef _WIN32
-    constexpr auto CONST_STR_SECTION = ".rdata";
-#else
     constexpr auto CODE_SECTION = ".text";
+#ifdef KB_WIN
+    constexpr auto CONST_STR_SECTION = ".rdata";
+#elifdef KB_LINUX
+    constexpr auto CONST_STR_SECTION = ".rodata";
 #endif
 
     struct section_t {

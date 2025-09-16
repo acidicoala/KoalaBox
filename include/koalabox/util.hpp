@@ -10,4 +10,8 @@ namespace koalabox::util {
     [[noreturn]] void panic(const std::string& message);
 
     std::string get_env_var(const std::string& key);
+
+#ifdef KB_WIN
+    bool is_wine_env();
+#endif
 }

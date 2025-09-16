@@ -267,6 +267,7 @@ namespace koalabox::module {
     }
 
     void* get_library_handle(const TCHAR* library_name) {
-        return dlopen(library_name, RTLD_NOW | RTLD_GLOBAL);
+        const auto full_lib_name = std::format("{}.so", library_name);
+        return dlopen(full_lib_name.c_str(), RTLD_NOW | RTLD_GLOBAL);
     }
 }

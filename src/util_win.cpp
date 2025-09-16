@@ -1,3 +1,4 @@
+#include "pch.hpp"
 #include "koalabox/globals.hpp"
 #include "koalabox/logger.hpp"
 #include "koalabox/util.hpp"
@@ -43,5 +44,18 @@ namespace koalabox::util {
         const auto bytes_read = GetEnvironmentVariable(wide_key.c_str(), buffer, sizeof(buffer));
 
         return str::to_str({buffer, bytes_read});
+    }
+
+    bool is_wine_env() {
+        static const auto ntdll_handle = GetModuleHandle("ntdll.dll");
+        if(!ntdll_handle) {
+            // This should never happen
+            DebugBreak();
+            return false;
+        }
+
+        static const auto wine_function = GetProcAddress(ntdll_handle, "wine_get_version");
+
+        return wine_function != nullptr;
     }
 }

@@ -154,7 +154,7 @@ namespace {
 extern "C" void push_all();
 extern "C" void pop_all();
 
-#define EXPORT __attribute__((visibility("default")))
+#define EXPORT extern "C" __attribute__((visibility("default")))
 
 namespace {{
     using void_fn = void(*)();
@@ -239,10 +239,10 @@ int MAIN(const int argc, const TCHAR* argv[]) { // NOLINT(*-use-internal-linkage
             exit(4);
         }
 
-#ifdef _WIN32
+#ifdef KB_WIN
         const auto lib_exports = get_library_exports_map(lib_files_glob, undecorate);
         generate_linker_exports_header(export_file, lib_exports, defined_functions, forwarded_dll_name);
-#else
+#elifdef KB_LINUX
         const auto lib_exports = get_library_exports(lib_files_glob);
         generate_proxy_wrappers_source(export_file, lib_exports, defined_functions, forwarded_dll_name);
 #endif
