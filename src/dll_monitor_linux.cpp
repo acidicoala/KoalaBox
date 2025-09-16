@@ -1,9 +1,9 @@
 #include <dlfcn.h>
 
 #include "koalabox/dll_monitor.hpp"
-#include "koalabox/module.hpp"
 #include "koalabox/hook.hpp"
 #include "koalabox/logger.hpp"
+#include "koalabox/module.hpp"
 #include "koalabox/path.hpp"
 #include "koalabox/str.hpp"
 
@@ -27,7 +27,8 @@ namespace {
 
         if(!loaded_modules.contains(lib_name)) {
             loaded_modules.insert(lib_name);
-            LOG_TRACE("Library path: '{}'", filename);
+
+            LOG_TRACE("Library path: '{}'", kb::path::to_str(kb::module::get_fs_path(lib_handle)));
             LOG_DEBUG("Library loaded: '{}' @ {}", lib_name, lib_handle);
         }
 

@@ -41,3 +41,11 @@ using HMODULE = void*;
 #define TCHAR char
 
 #endif
+
+#if defined(_WIN64) || defined(__x86_64__) || defined(__amd64__)
+#define KB_32 0
+#define KB_64 1
+#else
+#define KB_32 1
+#define KB_64 0
+#endif

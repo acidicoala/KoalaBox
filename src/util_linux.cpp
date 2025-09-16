@@ -11,7 +11,7 @@ namespace koalabox::util {
     void error_box(const std::string& title, const std::string& message) {
         // TODO: verify implementation
         // Make dependency on gtk3 optional. Many modern distros do not include lib32-gtk3 by default.
-        void* libgtk3 = dlopen("libgtk-3", RTLD_LAZY);
+        void* libgtk3 = dlopen("libgtk-3.so", RTLD_LAZY);
         if(!libgtk3) {
             LOG_WARN("No gtk3 library available. Skipping error box.");
             return;

@@ -69,7 +69,7 @@ namespace koalabox::loader {
     }
 
     std::string get_decorated_function(const HMODULE& library, const std::string& function_name) {
-#ifdef _WIN64
+#if IS_X86_64
         return function_name;
 #else
         static std::map<HMODULE, std::map<std::string, std::string>> undecorated_function_maps;

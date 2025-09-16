@@ -23,7 +23,7 @@ namespace {
         void log_impl(const std::string& msg, const PLH::ErrorLevel level) const {
             const auto trimmed_message_view = std::string_view(
                 msg.data(),
-                msg.empty() ? 0 : msg.size() - 1
+                msg.empty() ? 0 : msg.size()
             );
 
             if(level == PLH::ErrorLevel::INFO && print_info) {
@@ -219,7 +219,7 @@ namespace koalabox::hook {
             &trampoline
         );
 
-#ifdef _WIN64
+#ifdef KB_64
         detour->setDetourScheme(PLH::x64Detour::ALL);
 #endif
         if(detour->hook()) {
