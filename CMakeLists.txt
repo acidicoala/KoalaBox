@@ -127,8 +127,7 @@ target_link_libraries(KoalaBox PUBLIC cpr)
 
 ## https://github.com/stevemk14ebr/PolyHook_2_0
 CPMAddPackage(
-    NAME PolyHook_2
-    URI "gh:acidicoala/PolyHook_2_0#90ad05c3ef225f2324fe6c7e85c5e86213a2d2c2"
+    URI "gh:stevemk14ebr/PolyHook_2_0#298d56210b9d9e66cde8f96481d6053925c6ae15"
     GIT_SUBMODULES "*"
     OPTIONS
     "POLYHOOK_FEATURE_INLINENTD OFF"
