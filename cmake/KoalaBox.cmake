@@ -6,6 +6,8 @@ set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>" CACHE STR
 set(BUILD_SHARED_LIBS OFF CACHE BOOL "Build DLL instead of static library")
 set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 
+add_compile_options("$<$<CXX_COMPILER_ID:MSVC>:-Zc:preprocessor>")
+
 set(CPM_SOURCE_CACHE "${CMAKE_SOURCE_DIR}/build/.cache" CACHE STRING "CPM.cmake source cache")
 include("${CMAKE_CURRENT_LIST_DIR}/get_cpm.cmake")
 

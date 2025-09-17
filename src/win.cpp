@@ -168,7 +168,7 @@ namespace koalabox::win {
                    : throw std::runtime_error(
                        std::format(
                            "Failed to get module info of the given module handle: {}",
-                           fmt::ptr(module_handle)
+                           reinterpret_cast<void*>(module_handle)
                        )
                    );
     }
@@ -195,7 +195,7 @@ namespace koalabox::win {
                     auto* res = reinterpret_cast<Response*>(lParam);
 
                     if(!success) {
-                        manifest_or_error = fmt::format(
+                        manifest_or_error = std::format(
                             "get_module_manifest_callback -> {}. Last error: {}",
                             manifest_or_error,
                             get_last_error()
@@ -287,7 +287,7 @@ namespace koalabox::win {
             );
         }
 
-        return fmt::format(
+        return std::format(
             "{}.{}.{}.{}",
             (version_info->dwFileVersionMS >> 16) & 0xffff,
             (version_info->dwFileVersionMS >> 0) & 0xffff,
@@ -414,10 +414,7 @@ namespace koalabox::win {
         return WriteProcessMemory(process, address, buffer, size, &bytes_written)
                    ? bytes_written
                    : throw std::runtime_error(
-                       std::format(
-                           "Failed to write process memory at address: '{}'",
-                           fmt::ptr(address)
-                       )
+                       std::format("Failed to write process memory at address: '{}'", address)
                    );
     }
 

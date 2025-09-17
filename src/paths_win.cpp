@@ -1,6 +1,7 @@
 #include <ShlObj.h>
 
-#include "paths.h"
+#include "koalabox/paths.hpp"
+#include "koalabox/win.hpp"
 
 namespace koalabox::paths {
     fs::path get_user_dir() {

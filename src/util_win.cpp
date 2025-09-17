@@ -1,7 +1,8 @@
-#include "pch.hpp"
 #include "koalabox/globals.hpp"
 #include "koalabox/logger.hpp"
+#include "koalabox/str.hpp"
 #include "koalabox/util.hpp"
+#include "koalabox/win.hpp"
 
 namespace koalabox::util {
     void error_box(const std::string& title, const std::string& message) {
@@ -47,7 +48,7 @@ namespace koalabox::util {
     }
 
     bool is_wine_env() {
-        static const auto ntdll_handle = GetModuleHandle("ntdll.dll");
+        static const auto ntdll_handle = GetModuleHandle(TEXT("ntdll.dll"));
         if(!ntdll_handle) {
             // This should never happen
             DebugBreak();
