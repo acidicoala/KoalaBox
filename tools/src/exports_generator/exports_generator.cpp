@@ -6,13 +6,12 @@
 #include <glob/glob.h>
 
 #include <koalabox/io.hpp>
-#include <koalabox/loader.hpp>
 #include <koalabox/logger.hpp>
 #include <koalabox/parser.hpp>
 #include <koalabox/path.hpp>
 #include <koalabox/str.hpp>
 
-#include "koalabox/module.hpp"
+#include "koalabox/lib.hpp"
 
 namespace {
     namespace kb = koalabox;
@@ -76,13 +75,13 @@ namespace {
         const auto lib_path_list = glob::glob(lib_files_glob);
         LOG_INFO("Found {} library files", lib_path_list.size());
 
+        // TODO: This has become awfully slow. Debug this.
         for(const auto& lib_path : lib_path_list) {
             if(not fs::exists(lib_path)) {
                 continue;
             }
-
-            auto* const library = kb::module::load_library_or_throw(lib_path);
-            const auto lib_exports = kb::loader::get_export_map(library, undecorate);
+            const auto* const library = kb::lib::load_library_or_throw(lib_path);
+            const auto lib_exports = kb::lib::get_export_map(library, undecorate);
 
             dll_exports.insert(lib_exports.begin(), lib_exports.end());
         }
@@ -92,33 +91,14 @@ namespace {
         return dll_exports;
     }
 
-    kb::module::exports_t get_library_exports(const std::string& lib_files_glob) {
-        kb::module::exports_t all_exports;
-
-        const auto lib_path_list = glob::glob(lib_files_glob);
-        LOG_INFO("Found {} library files", lib_path_list.size());
-
-        for(const auto& lib_path : lib_path_list) {
-            if(not fs::exists(lib_path)) {
-                continue;
-            }
-
-            const auto lib_exports = kb::module::get_exports(lib_path);
-            all_exports.insert(lib_exports.begin(), lib_exports.end());
-        }
-
-        LOG_INFO("Found {} exported functions", all_exports.size());
-
-        return all_exports;
-    }
-
     // Used for windows
-    void generate_linker_exports_header(
+    void generate_proxy_exports(
         std::ofstream& export_file,
         const std::map<std::string, std::string>& lib_exports,
         const std::set<std::string>& defined_functions,
         const std::string& forwarded_dll_name
     ) {
+#ifdef KB_WIN
         // Add header guard
         export_file << "#pragma once" << std::endl << std::endl;
 
@@ -137,15 +117,7 @@ namespace {
 
             export_file << line << std::endl;
         }
-    }
-
-    // Used for linux
-    void generate_proxy_wrappers_source(
-        std::ofstream& export_file,
-        const kb::module::exports_t& lib_exports,
-        const std::set<std::string>& defined_functions,
-        const std::string& forwarded_dll_name
-    ) {
+#elifdef KB_LINUX
         // language=c++
         const auto prologue = std::format(
             R"(
@@ -188,9 +160,10 @@ namespace {{
                 << "    push_all();" << std::endl
                 << "    static const auto func = find(__func__);" << std::endl
                 << "    pop_all();" << std::endl
-                << "    func();" << std::endl
+                << "    func();" << std::endl // TODO: This will lead to errors. Use jmp rax instead.
                 << "}" << std::endl;
         }
+#endif
     }
 }
 
@@ -228,7 +201,6 @@ int MAIN(const int argc, const TCHAR* argv[]) { // NOLINT(*-use-internal-linkage
                                            ? std::set<std::string>()
                                            : get_defined_functions(sources_input_path);
 
-
         // Create directories for export file, if necessary
         fs::create_directories(output_file_path.parent_path());
 
@@ -239,13 +211,8 @@ int MAIN(const int argc, const TCHAR* argv[]) { // NOLINT(*-use-internal-linkage
             exit(4);
         }
 
-#ifdef KB_WIN
         const auto lib_exports = get_library_exports_map(lib_files_glob, undecorate);
-        generate_linker_exports_header(export_file, lib_exports, defined_functions, forwarded_dll_name);
-#elifdef KB_LINUX
-        const auto lib_exports = get_library_exports(lib_files_glob);
-        generate_proxy_wrappers_source(export_file, lib_exports, defined_functions, forwarded_dll_name);
-#endif
+        generate_proxy_exports(export_file, lib_exports, defined_functions, forwarded_dll_name);
 
         LOG_INFO("Finished generating {}", kb::path::to_str(output_file_path));
     } catch(const std::exception& ex) {

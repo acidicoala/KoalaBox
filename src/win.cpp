@@ -10,49 +10,52 @@
 
 #pragma comment(lib, "version.lib")
 
+namespace {
+    namespace kb = koalabox;
+    using namespace koalabox::win;
+
+    std::vector<uint8_t> get_module_version_info_or_throw(const HMODULE& module_handle) {
+        const auto module_path = get_module_path(module_handle);
+        const auto module_path_wstr = kb::path::to_wstr(module_path);
+
+        DWORD version_handle = 0;
+        const DWORD version_size = GetFileVersionInfoSize(
+            module_path_wstr.c_str(),
+            &version_handle
+        );
+
+        if(not version_size) {
+            throw std::runtime_error(
+                std::format(
+                    "Failed to GetFileVersionInfoSize. Error: {}",
+                    get_last_error()
+                )
+            );
+        }
+
+        std::vector<uint8_t> version_data(version_size);
+
+        if(not GetFileVersionInfo(
+            module_path_wstr.c_str(),
+            version_handle,
+            version_size,
+            version_data.data()
+        )) {
+            throw std::runtime_error(
+                std::format("Failed to GetFileVersionInfo. Error: {}", get_last_error())
+            );
+        }
+
+        return version_data;
+    }
+}
+
 /**
  * NOTE: It's important not to log anything in these functions, since logging might not have been
  * initialized yet. All errors must be reported via exceptions, which will be then displayed to user
  * via logs or message boxes depending on the circumstance.
  */
 namespace koalabox::win {
-    namespace {
-        std::vector<uint8_t> get_module_version_info_or_throw(const HMODULE& module_handle) {
-            const auto module_path = get_module_path(module_handle);
-            const auto module_path_wstr = path::to_wstr(module_path);
-
-            DWORD version_handle = 0;
-            const DWORD version_size = GetFileVersionInfoSize(
-                module_path_wstr.c_str(),
-                &version_handle
-            );
-
-            if(not version_size) {
-                throw std::runtime_error(
-                    std::format(
-                        "Failed to GetFileVersionInfoSize. Error: {}",
-                        get_last_error()
-                    )
-                );
-            }
-
-            std::vector<uint8_t> version_data(version_size);
-
-            if(not GetFileVersionInfo(
-                module_path_wstr.c_str(),
-                version_handle,
-                version_size,
-                version_data.data()
-            )) {
-                throw std::runtime_error(
-                    std::format("Failed to GetFileVersionInfo. Error: {}", get_last_error())
-                );
-            }
-
-            return version_data;
-        }
-    }
-
 #define PANIC_ON_CATCH(FUNC, ...)                                                                  \
     try {                                                                                          \
         return FUNC(__VA_ARGS__);                                                                  \
@@ -294,70 +297,6 @@ namespace koalabox::win {
             (version_info->dwFileVersionLS >> 16) & 0xffff,
             (version_info->dwFileVersionLS >> 0) & 0xffff
         );
-    }
-
-    PIMAGE_SECTION_HEADER get_pe_section_header_or_throw(
-        const HMODULE& module_handle,
-        const std::string& section_name
-    ) {
-        const auto* const dos_header = reinterpret_cast<PIMAGE_DOS_HEADER>(module_handle);
-
-        if(dos_header->e_magic != IMAGE_DOS_SIGNATURE) {
-            throw std::runtime_error("Invalid DOS file");
-        }
-
-        auto* const nt_header =
-            reinterpret_cast<PIMAGE_NT_HEADERS>(
-                reinterpret_cast<uint8_t*>(module_handle) + dos_header->e_lfanew);
-
-        if(nt_header->Signature != IMAGE_NT_SIGNATURE) {
-            throw std::runtime_error("Invalid NT signature");
-        }
-
-        auto* section = IMAGE_FIRST_SECTION(nt_header);
-        for(int i = 0; i < nt_header->FileHeader.NumberOfSections; i++, section++) {
-            auto name = std::string(reinterpret_cast<char*>(section->Name), 8);
-            name = name.substr(0, name.find('\0')); // strip null padding
-
-            if(name != section_name) {
-                continue;
-            }
-
-            return section;
-        }
-
-        throw std::runtime_error(std::format("Section '{}' not found", section_name));
-    }
-
-    pe_section get_pe_section_or_throw(
-        const HMODULE& module_handle,
-        const std::string& section_name
-    ) {
-        const auto section = get_pe_section_header_or_throw(module_handle, section_name);
-        const auto section_start = reinterpret_cast<uintptr_t>(module_handle)
-                                   + section->PointerToRawData;
-        return {
-            .start_address = reinterpret_cast<uintptr_t>(module_handle) + section->PointerToRawData,
-            .end_address = section_start + section->SizeOfRawData,
-            .size = section->SizeOfRawData,
-        };
-    }
-
-    FARPROC get_proc_address_or_throw(const HMODULE& module_handle, LPCSTR procedure_name) {
-        const auto address = GetProcAddress(module_handle, procedure_name);
-
-        return address
-                   ? address
-                   : throw std::runtime_error(
-                       std::format(
-                           "Failed to get an address of the procedure: '{}'",
-                           procedure_name
-                       )
-                   );
-    }
-
-    FARPROC get_proc_address(const HMODULE& module_handle, const LPCSTR procedure_name) noexcept {
-        PANIC_ON_CATCH(get_proc_address_or_throw, module_handle, procedure_name)
     }
 
     fs::path get_system_directory_or_throw() {

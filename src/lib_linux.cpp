@@ -13,12 +13,10 @@
 #include <sys/mman.h>
 #include <sys/stat.h>
 
-#include "koalabox/logger.hpp"
-#include "koalabox/module.hpp"
-#include "koalabox/path.hpp"
+#include "koalabox.hpp"
 
 namespace {
-    using namespace koalabox::module;
+    using namespace koalabox::lib;
 
     exports_t list_dynsym_exports(const void* map) {
         const auto map_base = static_cast<const char*>(map);
@@ -64,7 +62,7 @@ namespace {
     }
 }
 
-namespace koalabox::module {
+namespace koalabox::lib {
     namespace fs = std::filesystem;
 
     exports_t get_exports(const fs::path& lib_path) {
@@ -266,8 +264,13 @@ namespace koalabox::module {
         dlclose(library_handle);
     }
 
-    void* get_library_handle(const TCHAR* library_name) {
+    void* get_library_handle(const std::string& library_name) {
         const auto full_lib_name = std::format("{}.so", library_name);
         return dlopen(full_lib_name.c_str(), RTLD_NOW | RTLD_GLOBAL);
+    }
+
+    std::string get_decorated_function(const void* /*library*/, const std::string& function_name) {
+        // No valid use case for this so far
+        return function_name;
     }
 }

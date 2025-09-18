@@ -2,6 +2,7 @@
 
 #include <string>
 
+// TODO: Move to core
 namespace koalabox::globals {
     /**
      * @return A handle representing the project DLL. Usually obtained from DllMain.

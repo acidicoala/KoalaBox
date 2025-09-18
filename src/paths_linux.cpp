@@ -1,8 +1,7 @@
 #include <pwd.h>
 #include <unistd.h>
 
-#include "koalabox/path.hpp"
-#include "koalabox/paths.hpp"
+#include "koalabox.hpp"
 
 namespace koalabox::paths {
     fs::path get_user_dir() {

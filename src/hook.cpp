@@ -6,7 +6,7 @@
 #include "koalabox/hook.hpp"
 #include "koalabox/globals.hpp"
 #include "koalabox/logger.hpp"
-#include "koalabox/module.hpp"
+#include "koalabox/lib.hpp"
 #include "koalabox/path.hpp"
 #include "koalabox/str.hpp"
 #include "koalabox/util.hpp"
@@ -239,7 +239,7 @@ namespace koalabox::hook {
         const std::string& function_name,
         const void* callback_function
     ) {
-        const auto* address = module::get_function_address(module_handle, function_name.c_str()).value();
+        const auto* address = lib::get_function_address(module_handle, function_name.c_str()).value();
 
         detour_or_throw(address, function_name, callback_function);
     }
@@ -257,7 +257,7 @@ namespace koalabox::hook {
     }
 
     void detour_module_or_warn(
-        const HMODULE& module_handle,
+        void* module_handle,
         const std::string& function_name,
         const void* callback_function
     ) {
@@ -283,7 +283,7 @@ namespace koalabox::hook {
     }
 
     void detour_module(
-        const HMODULE& module_handle,
+        void* module_handle,
         const std::string& function_name,
         const void* callback_function
     ) {
@@ -409,9 +409,9 @@ namespace koalabox::hook {
         PLH::Log::registerLogger(polyhook_logger);
     }
 
-    bool is_hook_mode(const HMODULE self_module, const std::string& orig_library_name) {
+    bool is_hook_mode(void* self_module, const std::string& orig_library_name) {
         // E.g. C:/Library/api.dll
-        const auto module_path = module::get_fs_path(self_module);
+        const auto module_path = lib::get_fs_path(self_module);
 
         // E.g. api
         const auto self_name = path::to_str(module_path.stem());

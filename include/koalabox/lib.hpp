@@ -1,13 +1,14 @@
 #pragma once
 
 #include <filesystem>
+#include <map>
 #include <set>
 
 #define KB_MOD_GET_FUNC(MODULE, PROC_NAME) \
-    koalabox::module::get_function(MODULE, #PROC_NAME, PROC_NAME)
+    koalabox::lib::get_function(MODULE, #PROC_NAME, PROC_NAME)
 
-/// Cross-platform abstraction over dynamic libraries (.DLL / .SO files)
-namespace koalabox::module {
+/// Cross-platform abstraction over dynamic libraries (.dll / .so files)
+namespace koalabox::lib {
     // TODO: Refactor into an enum
     constexpr auto CODE_SECTION = ".text";
 #ifdef KB_WIN
@@ -50,5 +51,20 @@ namespace koalabox::module {
     std::optional<void*> load_library(const std::filesystem::path& library_path);
     void* load_library_or_throw(const std::filesystem::path& library_path);
     void unload_library(void* library_handle);
-    void* get_library_handle(const TCHAR* library_name);
+    void* get_library_handle(const std::string& library_name);
+
+    using undecorated_name = std::string;
+    using decorated_name = std::string;
+    using export_map_t = std::map<undecorated_name, decorated_name>;
+
+#ifdef KB_WIN
+    export_map_t get_export_map(const void* library, bool undecorate = false);
+#endif
+
+    std::string get_decorated_function(const void* library, const std::string& function_name);
+
+    /**
+     * Appends "_o" to library name and attempts to load it from the from_path
+     */
+    void* load_original_library(const std::filesystem::path& from_path, const std::string& lib_name);
 }

@@ -2,12 +2,7 @@
 
 #include <dlfcn.h>
 
-#include "koalabox/dll_monitor.hpp"
-#include "koalabox/hook.hpp"
-#include "koalabox/logger.hpp"
-#include "koalabox/module.hpp"
-#include "koalabox/path.hpp"
-#include "koalabox/str.hpp"
+#include "koalabox.hpp"
 
 namespace {
     namespace kb = koalabox;
@@ -39,7 +34,7 @@ namespace {
 
     void check_loaded_modules() {
         for(const auto& dll_name : get_global_callbacks() | std::views::keys) {
-            auto* const module_handle = kb::module::get_library_handle(dll_name.c_str());
+            auto* const module_handle = kb::lib::get_library_handle(dll_name.c_str());
 
             if(not module_handle) { continue; }
 
@@ -65,7 +60,7 @@ namespace {
         if(!loaded_modules.contains(lib_name)) {
             loaded_modules.insert(lib_name);
 
-            LOG_TRACE("Library path: '{}'", kb::path::to_str(kb::module::get_fs_path(lib_handle)));
+            LOG_TRACE("Library path: '{}'", kb::path::to_str(kb::lib::get_fs_path(lib_handle)));
             LOG_DEBUG("Library loaded: '{}' @ {}", lib_name, lib_handle);
         }
 

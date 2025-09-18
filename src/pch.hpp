@@ -2,26 +2,25 @@
 
 #include <cstdint>
 
+// See: https://blog.kowalczyk.info/article/j/guide-to-predefined-macros-in-c-compilers-gcc-clang-msvc-etc..html
+// https://learn.microsoft.com/en-us/cpp/preprocessor/predefined-macros?view=msvc-170
+
 // Aliases for 32/64-bit system
 #if defined(_WIN64) || defined(__x86_64__) || defined(__amd64__)
-
 #define KB_64
-
 #else
-
 #define KB_32
-
 #endif
 
 // Aliases for Windows/Linux OS
 #if defined(_WIN32)
-
 #define KB_WIN
-
 #else
-
 #define KB_LINUX
+#endif
 
+#ifndef KB_DEBUG // Defined in CMake
+#define KB_RELEASE
 #endif
 
 #ifdef KB_WIN
@@ -45,6 +44,7 @@
 
 #include <csignal>
 
+// TODO: replace it with void* everywhere
 using HMODULE = void*;
 
 // TODO: Delete them after removing their usage
@@ -60,7 +60,6 @@ using HMODULE = void*;
 #define DebugBreak() raise(SIGTRAP)
 
 #define MAIN main
-
-#define TCHAR char
+#define TCHAR char // for the main signature
 
 #endif

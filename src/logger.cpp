@@ -40,19 +40,21 @@ namespace {
         return std::format("%-8l|{}|{}:{}|{}|%v", timestamp, src_file_name, src_line_num, thread_id);
     }
 
+    // TODO: This is not working when SPDLOG_USE_STD_FORMAT is set
     class UsernameFilterFormatter final : public spdlog::formatter {
     public:
         // Redact usernames
         void format(const spdlog::details::log_msg& msg, spdlog::memory_buf_t& dest) override {
-            static const std::regex username_regex(
-                R"(\w:[/\\]Users[/\\]([^/\\]+))",
-                std::regex_constants::icase
-            );
+            // TODO: Linux support
+            static const std::regex username_regex(R"(\w:[/\\]Users[/\\]([^/\\]+))", std::regex_constants::icase);
 
             std::string filtered_msg(msg.payload.data(), msg.payload.size());
             if(std::smatch matches; std::regex_search(filtered_msg, matches, username_regex)) {
                 filtered_msg.replace(matches[1].first, matches[1].second, "%USERNAME%");
             }
+
+            // Special case: Capitalize the first letter of log level
+            filtered_msg[0] = std::toupper(filtered_msg[0]);
 
             std::format_to(std::back_inserter(dest), "{}", filtered_msg);
         }
@@ -74,15 +76,15 @@ namespace {
 }
 
 namespace koalabox::logger {
-    void init_file_logger(const fs::path& log_path) {
-        fs::create_directories(log_path.parent_path());
+    void init_file_logger(const std::filesystem::path& log_path) {
+        std::filesystem::create_directories(log_path.parent_path());
 
-        const auto logger = spdlog::basic_logger_mt("file", path::to_kb_str(log_path), true);
+        const auto logger = spdlog::basic_logger_mt("file", path::to_platform_str(log_path), true);
 
-#ifdef DEBUG_BUILD
+#ifdef KB_DEBUG
         // Useful for viewing logs directly in IDE console
-        auto console_sink = std::make_shared<spdlog::sinks::stdout_sink_mt>();
-        logger->sinks().emplace_back(console_sink);
+        // auto console_sink = std::make_shared<spdlog::sinks::stdout_sink_mt>();
+        // logger->sinks().emplace_back(console_sink);
 #endif
 
         configure_logger(logger);

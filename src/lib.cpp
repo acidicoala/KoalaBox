@@ -1,8 +1,8 @@
-#include "koalabox/module.hpp"
-#include "koalabox/koalabox.hpp"
+#include "koalabox/logger.hpp"
+#include "koalabox/lib.hpp"
 #include "koalabox/path.hpp"
 
-namespace koalabox::module {
+namespace koalabox::lib {
     void* get_function_address_or_throw(
         void* module_handle,
         const char* function_name
@@ -22,5 +22,22 @@ namespace koalabox::module {
         return load_library(library_path) | throw_if_empty(
                    std::format("Failed to load library at '{}'", path::to_str(library_path))
                );
+    }
+
+    void* load_original_library(const std::filesystem::path& from_path, const std::string& lib_name) {
+#ifdef KB_WIN
+        constexpr auto extension = "_o.dll";
+#elifdef KB_LINUX
+        constexpr auto extension = "_o.so";
+#endif
+        const auto full_original_library_name = lib_name + extension;
+        const auto original_module_path = from_path / full_original_library_name;
+
+        auto* const original_module = lib::load_library_or_throw(original_module_path);
+
+        LOG_INFO("Loaded original library: '{}'", full_original_library_name);
+        LOG_TRACE("Loaded original library from: '{}'", path::to_str(original_module_path));
+
+        return original_module;
     }
 }

@@ -6,6 +6,14 @@
 #include "koalabox/str.hpp"
 
 namespace koalabox::str {
+    bool case_insensitive_compare::operator()(const std::string& str1, const std::string& str2) const noexcept {
+        return std::ranges::lexicographical_compare(
+            str1, str2, [](const unsigned char char1, const unsigned char char2) {
+                return std::tolower(char1) < std::tolower(char2);
+            }
+        );
+    }
+
     std::string trim(std::string s) {
         // Trim leading spaces
         s.erase(
@@ -35,10 +43,7 @@ namespace koalabox::str {
         result.resize(str.size());
 
         std::ranges::transform(
-            str,
-            result.begin(),
-            //
-            [](const unsigned char c) {
+            str, result.begin(), [](const unsigned char c) {
                 return std::tolower(c);
             }
         );

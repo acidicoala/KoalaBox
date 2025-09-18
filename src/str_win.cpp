@@ -1,65 +1,43 @@
-#include <algorithm>
-#include <iomanip>
-#include <ios>
-#include <sstream>
-
 #include "koalabox/str.hpp"
 
 namespace koalabox::str {
-    std::string to_str(const string& wstr) {
-        if(wstr.empty()) {
+    // TODO: try utf8::utf16to8(u16str);
+    std::string to_str(const std::wstring& str) {
+        if(str.empty()) {
             return {};
         }
 
         const auto required_size = WideCharToMultiByte(
-            CP_UTF8,
-            0,
-            wstr.data(),
-            static_cast<int>(wstr.size()),
-            nullptr,
-            0,
-            nullptr,
-            nullptr
+            CP_UTF8, 0, str.data(), static_cast<int>(str.size()), nullptr, 0, nullptr, nullptr
         );
 
         std::string result(required_size, 0);
         WideCharToMultiByte(
-            CP_UTF8,
-            0,
-            wstr.data(),
-            static_cast<int>(wstr.size()),
-            result.data(),
-            required_size,
-            nullptr,
-            nullptr
+            CP_UTF8, 0, str.data(), static_cast<int>(str.size()), result.data(), required_size, nullptr, nullptr
         );
 
         return result;
     }
 
+    // TODO: try utf8::utf8to16(u8str);
     std::wstring to_wstr(const std::string& str) {
         if(str.empty()) {
             return {};
         }
-
-        const auto required_size =
-            MultiByteToWideChar(CP_UTF8, 0, str.data(), static_cast<int>(str.size()), nullptr, 0);
+        const auto required_size = MultiByteToWideChar(
+            CP_UTF8, 0, str.data(), static_cast<int>(str.size()), nullptr, 0
+        );
 
         std::wstring result(required_size, 0);
         MultiByteToWideChar(
-            CP_UTF8,
-            0,
-            str.data(),
-            static_cast<int>(str.size()),
-            result.data(),
-            required_size
+            CP_UTF8, 0, str.data(), static_cast<int>(str.size()), result.data(), required_size
         );
 
         return result;
     }
 
     std::wstring to_wstr(const std::u16string& u16str) {
-        // See warning not in to_u16
+        // See warning in to_u16str
         return {u16str.begin(), u16str.end()};
     }
 

@@ -4,6 +4,9 @@
 #include <stdexcept>
 #include <string>
 
+#define KB_RT_ERROR(FMT, ...) \
+    std::runtime_error(std::format(FMT __VA_OPT__(,) __VA_ARGS__));
+
 namespace koalabox {
     struct throw_if_empty {
     private:
@@ -26,11 +29,4 @@ namespace koalabox {
     auto operator|(T&& value, F&& func) -> decltype(func(std::forward<T>(value))) {
         return func(std::forward<T>(value));
     }
-
-    // Platform-specific type aliases
-#ifdef KB_WIN
-    using string = std::wstring;
-#elifdef KB_LINUX
-    using string = std::string;
-#endif
 }

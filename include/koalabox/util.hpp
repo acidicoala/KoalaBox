@@ -1,6 +1,6 @@
 #pragma once
 
-#include <string>
+#include <koalabox/core.hpp>
 
 namespace koalabox::util {
     constexpr auto BITNESS = 8 * sizeof(void*);

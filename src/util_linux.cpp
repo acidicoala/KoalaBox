@@ -3,9 +3,7 @@
 #include <dlfcn.h>
 #include <gtk/gtk.h>
 
-#include "koalabox/globals.hpp"
-#include "koalabox/logger.hpp"
-#include "koalabox/util.hpp"
+#include "koalabox.hpp"
 
 namespace koalabox::util {
     void error_box(const std::string& title, const std::string& message) {

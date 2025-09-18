@@ -1,6 +1,6 @@
 #include "koalabox/paths.hpp"
 #include "koalabox/globals.hpp"
-#include "koalabox/module.hpp"
+#include "koalabox/lib.hpp"
 
 namespace {
     std::string get_file_name(const std::string& suffix) {
@@ -11,7 +11,7 @@ namespace {
 namespace koalabox::paths {
     fs::path get_self_dir() {
         static auto* const self_handle = globals::get_self_handle();
-        static const auto self_path = module::get_fs_path(self_handle);
+        static const auto self_path = lib::get_fs_path(self_handle);
         return self_path.parent_path();
     }
 

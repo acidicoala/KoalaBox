@@ -4,6 +4,8 @@
 #include "koalabox/str.hpp"
 
 namespace koalabox::path {
+    namespace fs = std::filesystem;
+
     fs::path from_wstr(const std::wstring& wstr) {
         const auto u16str = str::to_u16str(wstr);
         const auto u8str = utf8::utf16tou8(u16str);
@@ -16,7 +18,7 @@ namespace koalabox::path {
         return str::to_wstr(u16str);
     }
 
-    string to_kb_str(const fs::path& path) {
+    str::platform_string to_platform_str(const fs::path& path) {
         return to_wstr(path);
     }
 }

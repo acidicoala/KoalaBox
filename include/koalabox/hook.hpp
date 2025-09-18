@@ -37,7 +37,7 @@ namespace koalabox::hook {
     );
 
     void detour_module_or_warn(
-        const HMODULE& module_handle,
+        void* module_handle,
         const std::string& function_name,
         const void* callback_function
     );
@@ -49,7 +49,7 @@ namespace koalabox::hook {
     );
 
     void detour_module(
-        const HMODULE& module_handle,
+        void* module_handle,
         const std::string& function_name,
         const void* callback_function
     );
@@ -93,5 +93,5 @@ namespace koalabox::hook {
 
     void init(bool print_info = false);
 
-    bool is_hook_mode(HMODULE self_module, const std::string& orig_library_name);
+    bool is_hook_mode(void* self_module, const std::string& orig_library_name);
 }

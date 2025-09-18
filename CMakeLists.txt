@@ -9,18 +9,17 @@ project(
 
 set(KOALABOX_HEADERS
     include/koalabox/cache.hpp
+    include/koalabox/core.hpp
     include/koalabox/config.hpp
     include/koalabox/crypto.hpp
-    include/koalabox/dll_monitor.hpp
     include/koalabox/globals.hpp
     include/koalabox/hook.hpp
     include/koalabox/http_client.hpp
     include/koalabox/io.hpp
     include/koalabox/ipc.hpp
-    include/koalabox/koalabox.hpp
-    include/koalabox/loader.hpp
     include/koalabox/logger.hpp
-    include/koalabox/module.hpp
+    include/koalabox/lib.hpp
+    include/koalabox/lib_monitor.hpp
     include/koalabox/parser.hpp
     include/koalabox/patcher.hpp
     include/koalabox/path.hpp
@@ -38,8 +37,8 @@ set(KOALABOX_SOURCES
     src/hook.cpp
     src/http_client.cpp
     src/io.cpp
-    src/loader.cpp
-    src/module.cpp
+    src/lib.cpp
+    src/lib_monitor.cpp
     src/parser.cpp
     src/patcher.cpp
     src/path.cpp
@@ -51,14 +50,11 @@ set(KOALABOX_SOURCES
 add_library(KoalaBox OBJECT ${KOALABOX_HEADERS} ${KOALABOX_SOURCES})
 
 if(WIN32)
-    #    target_compile_options(KoalaBox PUBLIC /std:c++latest)
-
     target_sources(KoalaBox PRIVATE
         include/koalabox/win.hpp
-        src/dll_monitor_win.cpp
         src/ipc_win.cpp
-        src/loader_win.cpp
-        src/module_win.cpp
+        src/lib_monitor_win.cpp
+        src/lib_win.cpp
         src/path_win.cpp
         src/paths_win.cpp
         src/str_win.cpp
@@ -67,9 +63,8 @@ if(WIN32)
     )
 else()
     target_sources(KoalaBox PRIVATE
-        src/dll_monitor_linux.cpp
-        src/loader_linux.cpp
-        src/module_linux.cpp
+        src/lib_linux.cpp
+        src/lib_monitor_linux.cpp
         src/path_linux.cpp
         src/paths_linux.cpp
         src/str_linux.cpp
@@ -141,7 +136,7 @@ target_compile_definitions(KoalaBox PUBLIC
     $<$<NOT:$<CONFIG:Debug>>:SPDLOG_ACTIVE_LEVEL=SPDLOG_LEVEL_DEBUG>
 )
 
-set(SPDLOG_OPTIONS SPDLOG_USE_STD_FORMAT)
+set(SPDLOG_OPTIONS "SPDLOG_USE_STD_FORMAT ON")
 if(WIN32)
     list(APPEND SPDLOG_OPTIONS
         "SPDLOG_WCHAR_SUPPORT ON"
