@@ -139,7 +139,7 @@ namespace koalabox::dll_monitor {
 
     void shutdown_listener(const callback_context_t* const context) {
         if(not context) {
-            throw std::runtime_error(std::format("{} -> Context is null", __func__));
+            return;
         }
 
         const auto [cookie] = *context;
