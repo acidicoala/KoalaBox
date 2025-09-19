@@ -70,7 +70,7 @@ namespace {
     }
 
     auto get_library_exports_map(const std::string& lib_files_glob, const bool undecorate) {
-        std::map<std::string, std::string> dll_exports;
+        kb::lib::export_map_t dll_exports;
 
         const auto lib_path_list = glob::glob(lib_files_glob);
         LOG_INFO("Found {} library files", lib_path_list.size());
@@ -80,7 +80,7 @@ namespace {
                 continue;
             }
 
-            auto* const library = kb::lib::load_library_or_throw(lib_path);
+            const auto* const library = kb::lib::load_library_or_throw(lib_path);
             const auto lib_exports = kb::lib::get_export_map(library, undecorate);
 
             dll_exports.insert(lib_exports.begin(), lib_exports.end());

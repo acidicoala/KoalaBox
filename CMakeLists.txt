@@ -44,6 +44,7 @@ set(KOALABOX_SOURCES
     src/path.cpp
     src/paths.cpp
     src/str.cpp
+    src/util.cpp
     src/zip.cpp
 )
 

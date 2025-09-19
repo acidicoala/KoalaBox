@@ -54,7 +54,7 @@ namespace koalabox::lib {
     using decorated_name = std::string;
     using export_map_t = std::map<undecorated_name, decorated_name>;
 
-    export_map_t get_export_map(void* library, [[maybe_unused]] bool undecorate = false);
+    export_map_t get_export_map(const void* library, [[maybe_unused]] bool undecorate = false);
 
     std::string get_decorated_function(const void* library, const std::string& function_name);
 
