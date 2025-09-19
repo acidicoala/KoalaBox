@@ -13,6 +13,7 @@
 
 namespace {
     namespace kb = koalabox;
+    namespace fs = std::filesystem;
 
     std::string jsonSchemaToExample(const std::string& json_schema_path) {
         // Parse the example for validation purposes
