@@ -3,12 +3,14 @@
 #include <dlfcn.h>
 #include <gtk/gtk.h>
 
-#include "koalabox.hpp"
+#include "koalabox/globals.hpp"
+#include "koalabox/logger.hpp"
+#include "koalabox/util.hpp"
 
 namespace koalabox::util {
     void error_box(const std::string& title, const std::string& message) {
-        // TODO: verify implementation
-        // Make dependency on gtk3 optional. Many modern distros do not include lib32-gtk3 by default.
+        // Dependency on gtk3 must be  optional.
+        // Many modern distros do not include lib32-gtk3 by default.
         void* libgtk3 = dlopen("libgtk-3.so", RTLD_LAZY);
         if(!libgtk3) {
             LOG_WARN("No gtk3 library available. Skipping error box.");
@@ -52,13 +54,5 @@ namespace koalabox::util {
         DebugBreak();
 
         exit(errno);
-    }
-
-    std::string get_env_var(const std::string& key) {
-        if(const char* value = getenv(key.c_str())) {
-            return value;
-        }
-
-        return "";
     }
 }

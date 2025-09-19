@@ -3,9 +3,34 @@
 #include "koalabox/lib_monitor.hpp"
 #include "koalabox/logger.hpp"
 #include "koalabox/lib.hpp"
+#include "koalabox/path.hpp"
 
 namespace {
     using namespace koalabox::lib_monitor;
+
+    void process_library(const std::string& lib_name, void* lib_handle) {
+        auto& callbacks = details::get_callbacks();
+
+        bool should_remove_callback;
+        try {
+            const auto& callback = callbacks.at(lib_name);
+            should_remove_callback = callback(lib_handle);
+        } catch(const std::exception& e) {
+            LOG_ERROR("{} -> Exception raised during callback invocation: {}", lib_name, e.what());
+            should_remove_callback = true;
+        }
+
+        if(!should_remove_callback) {
+            return;
+        }
+
+        callbacks.erase(lib_name);
+
+        if(callbacks.empty()) {
+            // we have to start a new thread for cases where we shut down right after initialization
+            std::thread(shutdown_listener).detach();
+        }
+    }
 
     void check_loaded_modules() {
         // The map might change during iteration, so we need to iterate over a copy of keys
@@ -21,7 +46,7 @@ namespace {
 
             LOG_INFO("Library is already loaded: '{}'", lib_name);
 
-            details::process_library(lib_name, module_handle);
+            process_library(lib_name, module_handle);
         }
     }
 }
@@ -62,26 +87,27 @@ namespace koalabox::lib_monitor {
             return callbacks;
         }
 
-        void process_library(const std::string& lib_name, void* lib_handle) {
-            bool should_remove_callback;
-            try {
-                const auto& callback = get_callbacks().at(lib_name);
-                should_remove_callback = callback(lib_handle);
-            } catch(const std::exception& e) {
-                LOG_ERROR("{} -> Exception raised during callback invocation: {}", lib_name, e.what());
-                should_remove_callback = true;
-            }
-
-            if(!should_remove_callback) {
+        void on_library_loaded(const TCHAR* filename, void* lib_handle) {
+            if(!filename || !lib_handle) {
                 return;
             }
 
-            get_callbacks().erase(lib_name);
+            const auto lib_path = str::to_str(filename);
+            const auto lib_name = path::to_str(std::filesystem::path(lib_path).stem());
 
-            if(get_callbacks().empty()) {
-                // we have to start a new thread for cases where we shut down right after initialization
-                std::thread(shutdown_listener).detach();
+#ifdef KB_DEBUG
+            LOG_TRACE("DLL loaded: '{}' -> '{}", lib_name, lib_path);
+#else
+            LOG_DEBUG("DLL loaded: '{}'", lib_name);
+#endif
+
+            if(!get_callbacks().contains(lib_name)) {
+                return;
             }
+
+            LOG_INFO("Target library '{}' has been loaded: {}", lib_name, lib_handle);
+
+            process_library(lib_name, lib_handle);
         }
     }
 }

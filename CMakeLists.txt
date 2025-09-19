@@ -106,6 +106,7 @@ CPMAddPackage(
 target_link_libraries(KoalaBox PUBLIC nlohmann_json::nlohmann_json)
 
 ## https://github.com/richgel999/miniz
+target_compile_definitions(KoalaBox PUBLIC MINIZ_NO_DEFLATE_APIS)
 CPMAddPackage("gh:richgel999/miniz#c883286f1a6443720e7705450f59e579a4bbb8e2")
 target_link_libraries(KoalaBox PUBLIC miniz)
 

@@ -27,9 +27,6 @@ namespace koalabox::lib {
         }
     };
 
-    using exports_t = std::set<std::string>;
-    exports_t get_exports(const std::filesystem::path& lib_path);
-
     std::filesystem::path get_fs_path(void* module_handle);
     std::optional<void*> get_function_address(
         void* module_handle,
@@ -57,9 +54,7 @@ namespace koalabox::lib {
     using decorated_name = std::string;
     using export_map_t = std::map<undecorated_name, decorated_name>;
 
-#ifdef KB_WIN
-    export_map_t get_export_map(const void* library, bool undecorate = false);
-#endif
+    export_map_t get_export_map(void* library, [[maybe_unused]] bool undecorate = false);
 
     std::string get_decorated_function(const void* library, const std::string& function_name);
 

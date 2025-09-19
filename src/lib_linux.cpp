@@ -13,12 +13,14 @@
 #include <sys/mman.h>
 #include <sys/stat.h>
 
-#include "koalabox.hpp"
+#include "koalabox/lib.hpp"
+#include "koalabox/logger.hpp"
+#include "koalabox/path.hpp"
 
 namespace {
     using namespace koalabox::lib;
 
-    exports_t list_dynsym_exports(const void* map) {
+    export_map_t list_dynsym_exports(const void* map) {
         const auto map_base = static_cast<const char*>(map);
         // TODO: refactor
         const auto* const ehdr = static_cast<const ElfW(Ehdr)*>(map);
@@ -44,7 +46,7 @@ namespace {
         const auto nsyms = dynsym->sh_size / sizeof(ElfW(Sym));
         const auto* strtab = map_base + dynstr->sh_offset;
 
-        exports_t exports;
+        export_map_t exports;
         for(size_t i = 0; i < nsyms; ++i) {
             const ElfW(Sym)& s = syms[i];
             // Both Elf32_Sym and Elf64_Sym use the same one-byte st_info field.
@@ -54,7 +56,7 @@ namespace {
                s.st_shndx != SHN_UNDEF) {
                 const std::string function_name = strtab + s.st_name;
                 if(!function_name.starts_with("_")) {
-                    exports.insert(function_name);
+                    exports[function_name] = get_decorated_function(nullptr, function_name);
                 }
             }
         }
@@ -63,46 +65,6 @@ namespace {
 }
 
 namespace koalabox::lib {
-    namespace fs = std::filesystem;
-
-    exports_t get_exports(const fs::path& lib_path) {
-        int const fd = open(path::to_str(lib_path).c_str(), O_RDONLY);
-        if(fd < 0) {
-            LOG_ERROR("Failed to open library: %s", lib_path.c_str());
-            return {};
-        }
-
-        struct stat st{};
-        if(fstat(fd, &st) != 0) {
-            LOG_ERROR("Failed to fstat library: %s", lib_path.c_str());
-            close(fd);
-            return {};
-        }
-
-        size_t const filesize = st.st_size;
-        void* map = mmap(nullptr, filesize, PROT_READ, MAP_PRIVATE, fd, 0);
-        if(map == MAP_FAILED) {
-            perror("mmap");
-            LOG_ERROR("Failed to mmap library: %s", lib_path.c_str());
-            close(fd);
-            return {};
-        }
-
-        if(memcmp(map, ELFMAG, SELFMAG) != 0) {
-            LOG_ERROR("Failed to identify library (not a valid ELF file): %s", lib_path.c_str());
-            munmap(map, filesize);
-            close(fd);
-            return {};
-        }
-
-        exports_t exports = list_dynsym_exports(map);
-
-        munmap(map, filesize);
-        close(fd);
-
-        return exports;
-    }
-
     std::filesystem::path get_fs_path(void* const module_handle) {
         char path[PATH_MAX]{};
 
@@ -135,6 +97,7 @@ namespace koalabox::lib {
     }
 
     std::optional<section_t> get_section(void* lib_handle, const std::string& section_name) {
+        // TODO: Inspect this code carefully
         link_map* lm;
         dlinfo(lib_handle, RTLD_DI_LINKMAP, &lm); // NOLINT(*-multi-level-implicit-pointer-conversion)
 
@@ -257,6 +220,7 @@ namespace koalabox::lib {
             return {library};
         }
 
+        LOG_ERROR("Failed to load library: {}", dlerror());
         return {};
     }
 
@@ -267,6 +231,46 @@ namespace koalabox::lib {
     void* get_library_handle(const std::string& library_name) {
         const auto full_lib_name = std::format("{}.so", library_name);
         return dlopen(full_lib_name.c_str(), RTLD_NOW | RTLD_GLOBAL);
+    }
+
+    export_map_t get_export_map(void* const library, [[maybe_unused]] bool undecorate) {
+        const auto lib_path = get_fs_path(library);
+
+        int const fd = open(path::to_str(lib_path).c_str(), O_RDONLY);
+        if(fd < 0) {
+            LOG_ERROR("Failed to open library: %s", lib_path.c_str());
+            return {};
+        }
+
+        struct stat st{};
+        if(fstat(fd, &st) != 0) {
+            LOG_ERROR("Failed to fstat library: %s", lib_path.c_str());
+            close(fd);
+            return {};
+        }
+
+        size_t const filesize = st.st_size;
+        void* map = mmap(nullptr, filesize, PROT_READ, MAP_PRIVATE, fd, 0);
+        if(map == MAP_FAILED) {
+            perror("mmap");
+            LOG_ERROR("Failed to mmap library: %s", lib_path.c_str());
+            close(fd);
+            return {};
+        }
+
+        if(memcmp(map, ELFMAG, SELFMAG) != 0) {
+            LOG_ERROR("Failed to identify library (not a valid ELF file): %s", lib_path.c_str());
+            munmap(map, filesize);
+            close(fd);
+            return {};
+        }
+
+        auto export_map = list_dynsym_exports(map);
+
+        munmap(map, filesize);
+        close(fd);
+
+        return export_map;
     }
 
     std::string get_decorated_function(const void* /*library*/, const std::string& function_name) {

@@ -37,11 +37,6 @@ namespace koalabox::str {
     std::string to_str(const platform_string& str);
 
     /**
-     * Converts 1-byte string to 2-byte wide string.
-     */
-    std::wstring to_wstr(const std::string& str);
-
-    /**
      * Converts an ASCII string to hexadecimal representation.
      *
      * Example input: <code>"Hello World"</code><br>
@@ -58,6 +53,8 @@ namespace koalabox::str {
     std::string from_little_endian(uint32_t number);
 
 #ifdef KB_WIN
+    /** Converts 1-byte string to 2-byte wide string. */
+    std::wstring to_wstr(const std::string& str);
     std::wstring to_wstr(const std::u16string& u16str);
     std::u16string to_u16str(const std::wstring& wstr);
 #endif

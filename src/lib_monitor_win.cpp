@@ -28,27 +28,7 @@ namespace {
             return;
         }
 
-        static std::mutex section;
-        const std::lock_guard lock(section);
-
-        const auto dll_path = kb::str::to_str(NotificationData->Loaded.FullDllName->Buffer);
-        const auto dll_name = std::filesystem::path(dll_path).stem().string();
-
-#ifdef KB_DEBUG
-        LOG_TRACE("DLL loaded: '{}'", dll_path);
-#else
-        LOG_DEBUG("DLL loaded: '{}'", dll_name);
-#endif
-
-        if(!details::get_callbacks().contains(dll_name)) {
-            return;
-        }
-
-        auto* const dll_handle = NotificationData->Loaded.DllBase;
-
-        LOG_INFO("Target library '{}' has been loaded: {}", dll_name, static_cast<void*>(dll_handle));
-
-        details::process_library(dll_name, dll_handle);
+        details::on_library_loaded(NotificationData->Loaded.FullDllName->Buffer, NotificationData->Loaded.DllBase);
     }
 }
 

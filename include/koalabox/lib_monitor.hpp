@@ -25,7 +25,7 @@ namespace koalabox::lib_monitor {
 
     namespace details {
         callbacks_t& get_callbacks();
-        void process_library(const std::string& lib_name, void* lib_handle);
+        void on_library_loaded(const TCHAR* filename, void* lib_handle);
 
         void init(); // platform-specific
         void shutdown(); // platform-specific

@@ -75,12 +75,12 @@ namespace {
         const auto lib_path_list = glob::glob(lib_files_glob);
         LOG_INFO("Found {} library files", lib_path_list.size());
 
-        // TODO: This has become awfully slow. Debug this.
         for(const auto& lib_path : lib_path_list) {
             if(not fs::exists(lib_path)) {
                 continue;
             }
-            const auto* const library = kb::lib::load_library_or_throw(lib_path);
+
+            auto* const library = kb::lib::load_library_or_throw(lib_path);
             const auto lib_exports = kb::lib::get_export_map(library, undecorate);
 
             dll_exports.insert(lib_exports.begin(), lib_exports.end());
@@ -141,16 +141,16 @@ namespace {{
 
         export_file << prologue;
 
-        for(const auto& function_name : lib_exports) {
+        for(const auto& decorated_function_name : lib_exports | std::views::values) {
             // Comment out exports that we have defined
             const auto declaration = std::format(
                 // language=c++
-                R"(EXPORT void {}())", function_name
+                R"(EXPORT void {}())", decorated_function_name
             );
 
             export_file << std::endl;
 
-            if(defined_functions.contains(function_name)) {
+            if(defined_functions.contains(decorated_function_name)) {
                 export_file << "// " << declaration << ";" << std::endl;
                 continue;
             }
