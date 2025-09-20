@@ -2,6 +2,7 @@
 
 #include <spdlog/sinks/basic_file_sink.h>
 #include <spdlog/sinks/stdout_sinks.h>
+#include <spdlog/sinks/null_sink.h>
 
 #include "koalabox/logger.hpp"
 #include "koalabox/path.hpp"
@@ -93,6 +94,11 @@ namespace koalabox::logger {
     void init_console_logger() {
         const auto logger = spdlog::stdout_logger_mt("console");
         configure_logger(logger);
+    }
+
+    void init_null_logger() {
+        const auto logger = spdlog::null_logger_mt("null");
+        spdlog::set_default_logger(logger);
     }
 
     void shutdown() {

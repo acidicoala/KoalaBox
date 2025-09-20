@@ -6,8 +6,8 @@
 
 namespace koalabox::logger {
     void init_file_logger(const std::filesystem::path& log_path);
-
     void init_console_logger();
+    void init_null_logger();
 
     void shutdown();
 }
