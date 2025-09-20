@@ -183,3 +183,7 @@ target_compile_definitions(KoalaBox PUBLIC UTF_CPP_CPLUSPLUS=202002L)
 target_link_libraries(KoalaBox PUBLIC utf8cpp)
 
 add_subdirectory(tools)
+
+## https://github.com/p-ranav/glob
+CPMAddPackage("gh:p-ranav/glob#e796e3ca94e0c514296425d9884e2198c41699ee")
+target_link_libraries(KoalaBox PUBLIC Glob)
