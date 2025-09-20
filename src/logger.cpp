@@ -54,7 +54,7 @@ namespace {
             }
 
             // Special case: Capitalize the first letter of log level
-            filtered_msg[0] = std::toupper(filtered_msg[0]);
+            filtered_msg[0] = static_cast<char>(std::toupper(filtered_msg[0]));
 
             std::format_to(std::back_inserter(dest), "{}", filtered_msg);
         }
@@ -83,8 +83,8 @@ namespace koalabox::logger {
 
 #ifdef KB_DEBUG
         // Useful for viewing logs directly in IDE console
-        // auto console_sink = std::make_shared<spdlog::sinks::stdout_sink_mt>();
-        // logger->sinks().emplace_back(console_sink);
+        auto console_sink = std::make_shared<spdlog::sinks::stdout_sink_mt>();
+        logger->sinks().emplace_back(console_sink);
 #endif
 
         configure_logger(logger);

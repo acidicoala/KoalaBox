@@ -16,11 +16,11 @@ namespace koalabox::globals {
     namespace {
         bool initialized = false;
 
-        HMODULE self_handle = nullptr;
+        void* self_handle = nullptr;
         std::string project_name;
     }
 
-    HMODULE get_self_handle() {
+    void* get_self_handle() {
         VALIDATE_INIT();
 
         return self_handle;
@@ -32,7 +32,7 @@ namespace koalabox::globals {
         return project_name;
     }
 
-    void init_globals(const HMODULE handle, const std::string& name) {
+    void init_globals(void* handle, const std::string& name) {
         self_handle = handle;
         project_name = name;
 
@@ -40,7 +40,7 @@ namespace koalabox::globals {
 
 
 #ifdef KB_WIN
-        DisableThreadLibraryCalls(self_handle);
+        DisableThreadLibraryCalls(static_cast<HMODULE>(self_handle));
 #endif
     }
 }

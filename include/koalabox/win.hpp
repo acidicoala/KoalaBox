@@ -2,7 +2,11 @@
 
 #include <filesystem>
 
-EXTERN_C BOOLEAN WINAPI DllMain(HMODULE handle, DWORD reason, LPVOID reserved);
+
+#define DLL_MAIN(...) \
+    EXTERN_C [[maybe_unused]] BOOLEAN WINAPI DllMain(__VA_ARGS__)
+
+DLL_MAIN(void* handle, uint32_t reason, void* reserved);
 
 // TODO: Replace *_or_throw functions with a utility function
 namespace koalabox::win {
