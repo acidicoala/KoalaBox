@@ -3,7 +3,7 @@
 #include <filesystem>
 #include <map>
 
-#define KB_MOD_GET_FUNC(MODULE, PROC_NAME) \
+#define KB_LIB_GET_FUNC(MODULE, PROC_NAME) \
     koalabox::lib::get_function(MODULE, #PROC_NAME, PROC_NAME)
 
 /// Cross-platform abstraction over dynamic libraries (.dll / .so files)

@@ -14,6 +14,8 @@ namespace {
         // Potentially useful flags:
         // %P - Process ID
 
+        // %l - The log level of the message
+        // %L - Short log level of the message
         // %t - Thread ID
         // %s - Basename of the source file
         // %# - Source line
@@ -38,7 +40,7 @@ namespace {
         constexpr auto timestamp = "%T.%e";
         constexpr auto thread_id = "%6!t";
 
-        return std::format("%-8l|{}|{}:{}|{}|%v", timestamp, src_file_name, src_line_num, thread_id);
+        return std::format("%L|{}|{}:{}|{}|%v", timestamp, src_file_name, src_line_num, thread_id);
     }
 
     // TODO: This is not working when SPDLOG_USE_STD_FORMAT is set

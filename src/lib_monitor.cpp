@@ -63,14 +63,14 @@ namespace koalabox::lib_monitor {
         details::get_callbacks() = callbacks;
         details::init();
 
-        LOG_DEBUG("Library monitor initialized.");
+        LOG_DEBUG("Library monitor initialized");
 
         check_loaded_modules();
     }
 
     void shutdown_listener() {
         if(!is_initialized()) {
-            LOG_WARN("Library monitor is already shut down.");
+            LOG_WARN("Library monitor is already shut down");
             return;
         }
 
@@ -79,7 +79,7 @@ namespace koalabox::lib_monitor {
         details::shutdown();
         details::get_callbacks().clear();
 
-        LOG_DEBUG("Library monitor shut down.");
+        LOG_DEBUG("Library monitor shut down");
     }
 
     namespace details {
