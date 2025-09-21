@@ -50,6 +50,12 @@ jobs:
       - name: Print build directory tree
         run: tree /f ${{ env.BUILD_DIR }}
 
+      - name: Set VERSION_SUFFIX
+        run: |
+          if [[ "${{ github.ref }}" != refs/tags/* ]]; then
+            echo "VERSION_SUFFIX=-dev[$(git rev-parse --short HEAD)]" >> $GITHUB_ENV
+          fi
+
       - name: Generate build files
         run: cmake -G "Visual Studio 17 2022" -A "${{ env.CMAKE_ARCH }}" -B "${{ env.BUILD_DIR }}" -DMODULE=${{ matrix.module }}
 

@@ -53,6 +53,7 @@ endfunction()
 
 function(configure_build_config)
     set(BUILD_CONFIG_HEADER "${CMAKE_CURRENT_BINARY_DIR}/generated/build_config.h")
+    set(VERSION_SUFFIX "$ENV{VERSION_SUFFIX}")
 
     get_target_property(KOALABOX_SOURCE_DIR KoalaBox SOURCE_DIR)
     configure_file("${KOALABOX_SOURCE_DIR}/res/build_config.gen.h" ${BUILD_CONFIG_HEADER})
