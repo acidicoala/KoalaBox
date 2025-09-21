@@ -9,20 +9,20 @@
 
 - Download the [latest {{ project_name }} release zip].
 - From this downloaded zip extract {{ unlocker_dll_names }}, depending on a game's bitness.
-- Rename the unzipped DLL to `version.dll`.
-- Place this `version.dll` next to the game's `.exe` file.
+- Rename the unzipped DLL to {{ self_inject_dll }}.
+- Place this {{ self_inject_dll }} next to the game's `.exe` file.
 
 #### 🪝 Hook mode with Koaloader
 
-If a game doesn't load
-`version.dll`, you can use an alternative injector to load {{ project_name }} into the game process.
+If a game doesn't load {{ self_inject_dll }}, you can use an alternative injector to load
+{{ project_name }} into the game process.
 One such injector is [Koaloader], which supports different DLLs that a typical game might load.
-For example, assuming that the game loads `winmm.dll`:
+For example, assuming that the game loads `d3d11.dll`:
 
 - Install Koaloader:
     - Download the [latest Koaloader release zip].
-    - From this downloaded zip extract `winmm.dll` from `winmm-32` or `winmm-64`, depending on a game's bitness.
-    - Place `winmm.dll` next to the game's `.exe` file.
+    - From this downloaded zip extract `d3d11.dll` from `d3d11-32` or `d3d11-64`, depending on a game's bitness.
+    - Place `d3d11.dll` next to the game's `.exe` file.
 - Install {{ project_name }}
     - Download the [latest {{ project_name }} release zip].
     - From this downloaded zip extract {{ unlocker_dll_names }}, depending on a game's bitness.
