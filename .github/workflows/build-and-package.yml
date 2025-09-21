@@ -61,7 +61,11 @@ jobs:
         run: cmake -G "Visual Studio 17 2022" -A "${{ env.CMAKE_ARCH }}" -B "${{ env.BUILD_DIR }}" -DMODULE=${{ matrix.module }}
 
       - name: Build the project
-        run: cmake --build ${{ env.BUILD_DIR }} --config ${{ inputs.config }} --target ${{ matrix.module }}
+        run: cmake --build ${{ env.BUILD_DIR }} --config ${{ inputs.config }}
+        # Note: Adding --target ${{ matrix.module }} breaks Koaloader,
+        # since its target name remains Koaloader, not  ${{ matrix.module }}.
+        # However, we might as well build all modules to make sure that tools
+        # are building without issues as well.
 
       - name: Upload binaries
         uses: actions/upload-artifact@v4
