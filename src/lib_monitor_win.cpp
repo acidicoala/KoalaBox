@@ -1,14 +1,16 @@
-#include <ntapi.hpp>
+#include <phnt_windows.h> // It should precede phnt.h
+
+#define PHNT_VERSION PHNT_WINDOWS_10_RS2
+#include <phnt.h>
 
 #include <ranges>
 
+#include "koalabox/lib.hpp"
 #include "koalabox/lib_monitor.hpp"
 #include "koalabox/logger.hpp"
-#include "koalabox/lib.hpp"
-#include "koalabox/str.hpp"
 
 #define CALL_NT_DLL(FUNC) \
-    reinterpret_cast<_##FUNC>( \
+    reinterpret_cast<decltype(&FUNC)>( \
         kb::lib::get_function_address(kb::lib::get_library_handle("ntdll"), #FUNC).value() \
     )
 
@@ -16,12 +18,15 @@ namespace {
     namespace kb = koalabox;
     using namespace kb::lib_monitor;
 
-    void* cookie = nullptr;
+    PVOID cookie = nullptr;
 
+    /**
+     * @see PLDR_DLL_NOTIFICATION_FUNCTION
+     */
     void __stdcall notification_listener(
         const ULONG NotificationReason,
-        const LDR_DLL_NOTIFICATION_DATA* NotificationData,
-        [[maybe_unused]] const void* context
+        const PLDR_DLL_NOTIFICATION_DATA NotificationData,
+        [[maybe_unused]] PVOID Context
     ) {
         // We're interested only in load events
         if(NotificationReason != LDR_DLL_NOTIFICATION_REASON_LOADED) {

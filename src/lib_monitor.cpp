@@ -1,4 +1,5 @@
 #include <ranges>
+#include <set>
 
 #include "koalabox/lib_monitor.hpp"
 #include "koalabox/logger.hpp"

@@ -93,7 +93,6 @@ target_include_directories(KoalaBox PRIVATE "$<BUILD_INTERFACE:${CMAKE_CURRENT_S
 set(PCH_PATH ${CMAKE_CURRENT_SOURCE_DIR}/src/pch.hpp)
 target_precompile_headers(KoalaBox PUBLIC "$<$<COMPILE_LANGUAGE:CXX>:${PCH_PATH}>")
 
-
 ### Configure dependencies
 
 # Note: Dependencies should be linked to KoalaBox using PUBLIC scope
@@ -154,6 +153,10 @@ if(WIN32)
         "WIL_BUILD_PACKAGING OFF"
     )
     target_link_libraries(KoalaBox PUBLIC WIL)
+
+    # https://github.com/winsiderss/phnt
+    CPMAddPackage("gh:winsiderss/phnt#fc1f96ee976635f51faa89896d1d805eb0586350")
+    target_link_libraries(KoalaBox PUBLIC phnt)
 endif()
 
 CPMAddPackage(

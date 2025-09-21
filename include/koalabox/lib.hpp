@@ -2,7 +2,6 @@
 
 #include <filesystem>
 #include <map>
-#include <set>
 
 #define KB_MOD_GET_FUNC(MODULE, PROC_NAME) \
     koalabox::lib::get_function(MODULE, #PROC_NAME, PROC_NAME)
