@@ -302,11 +302,7 @@ namespace koalabox::hook {
         const uint16_t ordinal,
         const void* callback_function
     ) {
-        struct clazz {
-            void* vtable[];
-        };
-
-        const auto* cls = static_cast<const clazz*>(class_ptr);
+        const auto* virtual_class = static_cast<const virtual_class_t*>(class_ptr);
 
         const auto func_data = std::format(
             "'{}' @ [[{}]+0x{:X}]",
@@ -315,7 +311,7 @@ namespace koalabox::hook {
             ordinal * sizeof(void*)
         );
 
-        if(const auto* target_func = cls->vtable[ordinal]; target_func == callback_function) {
+        if(const auto* target_func = virtual_class->vtable[ordinal]; target_func == callback_function) {
             LOG_DEBUG("Function {} is already hooked. Skipping virtual function swap", func_data);
             return;
         }

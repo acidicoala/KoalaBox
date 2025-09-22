@@ -12,6 +12,10 @@
     koalabox::hook::detour_module_or_warn(MODULE, #FUNC, reinterpret_cast<void*>(FUNC))
 
 namespace koalabox::hook {
+    struct virtual_class_t {
+        void** vtable;
+    };
+
     bool is_hooked(const std::string& function_name);
     bool is_vt_hooked(const void* class_ptr, const std::string& function_name);
     bool unhook(const std::string& function_name);
