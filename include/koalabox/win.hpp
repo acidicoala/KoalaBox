@@ -11,7 +11,8 @@ DLL_MAIN(void* handle, uint32_t reason, void* reserved);
 namespace koalabox::win {
     namespace fs = std::filesystem;
 
-    std::vector<uint8_t> get_module_version_info_or_throw(const HMODULE& module_handle);
+    std::optional<std::vector<uint8_t>> get_module_version_info(HMODULE module_handle) noexcept;
+    std::vector<uint8_t> get_module_version_info_or_throw(const HMODULE module_handle);
     std::optional<std::string> get_version_info_string(
         HMODULE module_handle,
         const std::string& key,

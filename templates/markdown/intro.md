@@ -17,6 +17,7 @@ Additionally, there are several points to bear in mind when it comes to unlockin
 
 {% if show_3rd_party_point %}
 * {{ project_name }} most definitely will not work with games that use 3rd party DRM, such as games from Ubisoft, Rockstar, etc.{% endif %}
+* {{ project_name }} most likely will not work with games that use Denuvo SecureDLC.
 * {{ project_name }} is unlikely to unlock anything in Free-To-Play games since they typically store all player data on the corresponding game server and hence all the checks are server-side.
 * {{ project_name }} will not work with games that employ additional ownership protection or if the game is using alternative DLC verification mechanism.
 * {{ project_name }} is unlikely to work with games that use an anti-cheat, since they typically detect any DLL/EXE that has been tampered with. Sometimes it is possible to disable an anti-cheat, but that typically entails the loss of online capabilities. Search in the respective game topic for more information about how to disable anti-cheat.

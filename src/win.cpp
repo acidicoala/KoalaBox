@@ -26,39 +26,24 @@ namespace koalabox::win {
         util::panic(ex.what());                                                                    \
     }
 
-    std::vector<uint8_t> get_module_version_info_or_throw(const HMODULE& module_handle) {
+    std::optional<std::vector<uint8_t>> get_module_version_info(const HMODULE module_handle) noexcept {
         const auto module_path = get_module_path(module_handle);
         const auto module_path_wstr = path::to_wstr(module_path);
 
         DWORD version_handle = 0;
-        const DWORD version_size = GetFileVersionInfoSize(
-            module_path_wstr.c_str(),
-            &version_handle
-        );
+        if(const DWORD version_size = GetFileVersionInfoSize(module_path_wstr.c_str(), &version_handle)) {
+            std::vector<uint8_t> version_data(version_size);
 
-        if(not version_size) {
-            throw std::runtime_error(
-                std::format(
-                    "Failed to GetFileVersionInfoSize. Error: {}",
-                    get_last_error()
-                )
-            );
+            if(not GetFileVersionInfo(module_path_wstr.c_str(), version_handle, version_size, version_data.data())) {
+                return version_data;
+            }
         }
 
-        std::vector<uint8_t> version_data(version_size);
+        return std::nullopt;
+    }
 
-        if(not GetFileVersionInfo(
-            module_path_wstr.c_str(),
-            version_handle,
-            version_size,
-            version_data.data()
-        )) {
-            throw std::runtime_error(
-                std::format("Failed to GetFileVersionInfo. Error: {}", get_last_error())
-            );
-        }
-
-        return version_data;
+    std::vector<uint8_t> get_module_version_info_or_throw(const HMODULE module_handle) {
+        return get_module_version_info(module_handle) | throw_if_empty(std::format("Unexpected empty version info"));
     }
 
     std::optional<std::string> get_version_info_string(
@@ -67,24 +52,23 @@ namespace koalabox::win {
         const std::string& codepage
     ) noexcept {
         try {
-            const auto version_info = get_module_version_info_or_throw(module_handle);
-
-            UINT size = 0;
-            PWSTR product_name_wstr_ptr = nullptr;
-            const auto success = VerQueryValue(
-                version_info.data(),
-                str::to_wstr(std::format(R"(\StringFileInfo\{}\{})", codepage, key)).c_str(),
-                reinterpret_cast<void**>(&product_name_wstr_ptr),
-                &size
-            );
-
-            if(not success) {
-                // LOG_TRACE("Failed to get version info string: VerQueryValue call returned false");
-                return std::nullopt;
+            if(const auto version_info = get_module_version_info(module_handle)) {
+                UINT size = 0;
+                PWSTR product_name_wstr_ptr = nullptr;
+                if(
+                    VerQueryValue(
+                        version_info->data(),
+                        str::to_wstr(std::format(R"(\StringFileInfo\{}\{})", codepage, key)).c_str(),
+                        reinterpret_cast<void**>(&product_name_wstr_ptr),
+                        &size
+                    )
+                ) {
+                    // returning {product_name_wstr_ptr, size} includes null-terminator char,
+                    // which breaks string comparisons
+                    return str::to_str(product_name_wstr_ptr);
+                }
             }
-
-            // returning {product_name_wstr_ptr, size} includes null-terminator char, which breaks string comparisons
-            return str::to_str(product_name_wstr_ptr);
+            return std::nullopt;
         } catch(const std::exception& e) {
             LOG_ERROR("Failed to get version info string: {}", e.what());
             return std::nullopt;
