@@ -9,7 +9,7 @@ namespace koalabox::globals {
      */
     void* get_self_handle();
 
-    std::string get_project_name();
+    const std::string& get_project_name();
 
     void init_globals(void* handle, const std::string& name);
 }

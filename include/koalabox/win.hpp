@@ -2,7 +2,6 @@
 
 #include <filesystem>
 
-
 #define DLL_MAIN(...) \
     EXTERN_C [[maybe_unused]] BOOLEAN WINAPI DllMain(__VA_ARGS__)
 
@@ -11,6 +10,13 @@ DLL_MAIN(void* handle, uint32_t reason, void* reserved);
 // TODO: Replace *_or_throw functions with a utility function
 namespace koalabox::win {
     namespace fs = std::filesystem;
+
+    std::vector<uint8_t> get_module_version_info_or_throw(const HMODULE& module_handle);
+    std::optional<std::string> get_version_info_string(
+        HMODULE module_handle,
+        const std::string& key,
+        const std::string& codepage = "040904E4" // 0x409 (English - United States) + 1252 (Windows Latin-1)
+    ) noexcept;
 
     PROCESS_INFORMATION create_process(
         const std::string& app_name,
@@ -55,4 +61,7 @@ namespace koalabox::win {
     SIZE_T write_process_memory(const HANDLE& process, LPVOID address, LPCVOID buffer, SIZE_T size);
 
     std::string get_env_var(const std::string& key);
+
+    // Such checks are possible only on Windows, since Linux libraries don't include such metadata
+    void check_self_duplicates() noexcept;
 }

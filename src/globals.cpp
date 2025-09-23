@@ -26,7 +26,7 @@ namespace koalabox::globals {
         return self_handle;
     }
 
-    std::string get_project_name() {
+    const std::string& get_project_name() {
         VALIDATE_INIT();
 
         return project_name;
@@ -37,7 +37,6 @@ namespace koalabox::globals {
         project_name = name;
 
         initialized = true;
-
 
 #ifdef KB_WIN
         DisableThreadLibraryCalls(static_cast<HMODULE>(self_handle));

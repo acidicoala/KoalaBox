@@ -3,6 +3,9 @@
 #include <wil/win32_helpers.h>
 
 #include "koalabox/win.hpp"
+
+#include "koalabox/globals.hpp"
+#include "koalabox/lib.hpp"
 #include "koalabox/logger.hpp"
 #include "koalabox/path.hpp"
 #include "koalabox/str.hpp"
@@ -10,13 +13,22 @@
 
 #pragma comment(lib, "version.lib")
 
-namespace {
-    namespace kb = koalabox;
-    using namespace koalabox::win;
+/**
+ * NOTE: It's important not to log anything in these functions, since logging might not have been
+ * initialized yet. All errors must be reported via exceptions, which will be then displayed to user
+ * via logs or message boxes depending on the circumstance.
+ */
+namespace koalabox::win {
+#define PANIC_ON_CATCH(FUNC, ...)                                                                  \
+    try {                                                                                          \
+        return FUNC(__VA_ARGS__);                                                                  \
+    } catch (const std::exception& ex) {                                                           \
+        util::panic(ex.what());                                                                    \
+    }
 
     std::vector<uint8_t> get_module_version_info_or_throw(const HMODULE& module_handle) {
         const auto module_path = get_module_path(module_handle);
-        const auto module_path_wstr = kb::path::to_wstr(module_path);
+        const auto module_path_wstr = path::to_wstr(module_path);
 
         DWORD version_handle = 0;
         const DWORD version_size = GetFileVersionInfoSize(
@@ -48,19 +60,35 @@ namespace {
 
         return version_data;
     }
-}
 
-/**
- * NOTE: It's important not to log anything in these functions, since logging might not have been
- * initialized yet. All errors must be reported via exceptions, which will be then displayed to user
- * via logs or message boxes depending on the circumstance.
- */
-namespace koalabox::win {
-#define PANIC_ON_CATCH(FUNC, ...)                                                                  \
-    try {                                                                                          \
-        return FUNC(__VA_ARGS__);                                                                  \
-    } catch (const std::exception& ex) {                                                           \
-        util::panic(ex.what());                                                                    \
+    std::optional<std::string> get_version_info_string(
+        const HMODULE module_handle,
+        const std::string& key,
+        const std::string& codepage
+    ) noexcept {
+        try {
+            const auto version_info = get_module_version_info_or_throw(module_handle);
+
+            UINT size = 0;
+            PWSTR product_name_wstr_ptr = nullptr;
+            const auto success = VerQueryValue(
+                version_info.data(),
+                str::to_wstr(std::format(R"(\StringFileInfo\{}\{})", codepage, key)).c_str(),
+                reinterpret_cast<void**>(&product_name_wstr_ptr),
+                &size
+            );
+
+            if(not success) {
+                // LOG_TRACE("Failed to get version info string: VerQueryValue call returned false");
+                return std::nullopt;
+            }
+
+            // returning {product_name_wstr_ptr, size} includes null-terminator char, which breaks string comparisons
+            return str::to_str(product_name_wstr_ptr);
+        } catch(const std::exception& e) {
+            LOG_ERROR("Failed to get version info string: {}", e.what());
+            return std::nullopt;
+        }
     }
 
     PROCESS_INFORMATION create_process(
@@ -374,5 +402,34 @@ namespace koalabox::win {
         const auto bytes_read = GetEnvironmentVariable(wide_key.c_str(), buffer, sizeof(buffer));
 
         return str::to_str({buffer, bytes_read});
+    }
+
+    void check_self_duplicates() noexcept {
+        try {
+            DWORD cbNeeded;
+            HMODULE modules[1024];
+            if(EnumProcessModules(GetCurrentProcess(), modules, sizeof(modules), &cbNeeded)) {
+                const auto* const self_handle = globals::get_self_handle();
+                const auto& project_name = globals::get_project_name();
+
+                const auto count = cbNeeded / sizeof(HMODULE);
+                for(int i = 0; i < count; i++) {
+                    if(const auto product_name = get_version_info_string(modules[i], "ProductName")) {
+                        if(modules[i] != self_handle && *product_name == project_name) {
+                            const auto module_path = lib::get_fs_path(modules[i]);
+                            LOG_WARN(R"(Found a duplicate {} DLL: "{}")", project_name, path::to_str(module_path));
+                            LOG_WARN(
+                                "This will likely lead to errors or crashes. "
+                                "Have you mixed up hook and proxy modes together?"
+                            );
+                        }
+                    }
+                }
+            } else {
+                LOG_ERROR("Failed to enumerated process modules. Last error: {}", GetLastError());
+            }
+        } catch(const std::exception& e) {
+            LOG_ERROR("Failed to check self duplicates: {}", e.what());
+        }
     }
 }
