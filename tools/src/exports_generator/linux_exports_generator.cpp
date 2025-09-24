@@ -3,14 +3,67 @@
 
 #include <cxxopts.hpp>
 #include <glob/glob.h>
+#include <inja/inja.hpp>
 
 #include <koalabox/lib.hpp>
 #include <koalabox/logger.hpp>
 #include <koalabox/path.hpp>
 
 namespace {
+    // language=c++
+    constexpr auto HEADER_TEMPLATE = R"(// Auto-generated header file
+#pragma once
+
+namespace {{ namespace_id }} {
+    void init(void* self_lib_handle, void* original_lib_handle);
+}
+)";
+
+    // TODO: 32-bit support
+    // TODO: Fallback function when dlsym is null
+    // language=c++
+    constexpr auto SOURCE_TEMPLATE = R"(// Auto-generated source file
+#include <cstring>
+#include <dlfcn.h>
+
+#include <polyhook2/MemProtector.hpp>
+
+#include <koalabox/lib.hpp>
+
+#include "{{ header_filename }}"
+
+#define EXPORT extern "C" __attribute__((visibility("default"))) __attribute__((naked))
+
+## for function_name in function_names
+EXPORT void {{ function_name }}() {
+    asm volatile ("movabs $0xBaadF00dDeadBeef, %%rax":::"rax");
+    asm volatile ("jmp *%rax");
+}
+
+## endfor
+
+namespace {{ namespace_id }} {
+    void init(void* const self_lib_handle, void* const original_lib_handle) {
+        const auto code_section = koalabox::lib::get_section_or_throw(self_lib_handle, koalabox::lib::CODE_SECTION);
+        PLH::MemAccessor mem_accessor;
+        PLH::MemoryProtector const protector(
+            reinterpret_cast<uint64_t>(code_section.start_address),
+            code_section.size,
+            PLH::ProtFlag::RWX,
+            mem_accessor
+        );
+
+        void* address = nullptr;
+## for function_name in function_names
+
+        address = dlsym(original_lib_handle, "{{ function_name }}");
+        std::memcpy(reinterpret_cast<uint8_t*>(&{{ function_name }}) + 2, &address, sizeof(void*));
+## endfor
+    }
+}
+)";
+
     namespace kb = koalabox;
-    namespace fs = std::filesystem;
 
     const std::string INPUT_LIBS_GLOB = "input_libs_glob";
     const std::string OUTPUT_PATH = "output_path";
@@ -48,70 +101,13 @@ namespace {
             exit(EXIT_FAILURE);
         }
     }
-
-    void generate_header(const fs::path& header_path) {
-        std::ofstream header_file(header_path);
-        if(!header_file.is_open()) {
-            throw std::runtime_error("Could not open header file for writing");
-        }
-
-        header_file
-            << "#pragma once" << std::endl << std::endl
-            << "namespace proxy_exports {" << std::endl
-            << "    void init(void* original_lib_handle);" << std::endl
-            << "}" << std::endl;
-    }
-
-    void generate_source(
-        const std::set<std::string>& function_names,
-        const std::string& header_name,
-        const fs::path& source_path
-    ) {
-        std::ofstream source_file(source_path);
-        if(!source_file.is_open()) {
-            throw std::runtime_error("Could not open source file for writing");
-        }
-
-        source_file // language=c++
-            << "#include <dlfcn.h>" << std::endl // language=c++
-            << "#include <cstring>" << std::endl << std::endl // language=c++
-            << "#include <" << header_name << ">" << std::endl << std::endl // language=c++
-            << R"(#define EXPORT extern "C" __attribute__((visibility("default"))) __attribute__((naked)))"
-            << std::endl;
-
-        for(const auto& fn_name : function_names) {
-            // TODO: 32-bit support
-            source_file
-                << std::endl
-                << "EXPORT void " << fn_name << "() {" << std::endl
-                << "    asm volatile (\"movabs $0x" << std::hex << 0xBaadFeedDeadBeef << R"(, %%rax":::"rax");)"
-                << std::endl
-                << "    asm volatile (\"jmp *%rax\");" << std::endl
-                << "}" << std::endl;
-        }
-
-        source_file << std::endl // language=c++
-            << "namespace proxy_exports {" << std::endl // language=c++
-            << "    void init(void* original_lib_handle){" << std::endl // language=c++
-            << "        void* address = nullptr;" << std::endl;
-
-        for(const auto& fn_name : function_names) {
-            // TODO: Use fallback function if dlsym result is null
-            source_file << std::endl
-                << "        address = dlsym(original_lib_handle, \"" << fn_name << "\");" << std::endl
-                << "        std::memcpy(reinterpret_cast<uint8_t*>(&" << fn_name << ") + 2, &address, sizeof(void*));"
-                << std::endl;
-        }
-
-        source_file << "    }" << std::endl
-            << "}" << std::endl;
-    }
 }
 
 int main(const int argc, const char* argv[]) {
     try {
         kb::logger::init_console_logger();
 
+        // ReSharper disable once CppUseStructuredBinding
         const auto args = parse_args(argc, argv);
 
         std::set<std::string> function_names;
@@ -125,9 +121,26 @@ int main(const int argc, const char* argv[]) {
             }
         }
 
-        const auto header_path = args.output_path + ".hpp";
-        generate_header(header_path);
-        generate_source(function_names, kb::path::from_str(header_path).filename(), args.output_path + ".cpp");
+        const auto header_path = kb::path::from_str(args.output_path + ".hpp");
+        const auto source_path = kb::path::from_str(args.output_path + ".cpp");
+
+        const nlohmann::json context = {
+            {"header_filename", kb::path::to_str(header_path.filename())},
+            {"namespace_id", kb::path::to_str(header_path.stem())},
+            {"function_names", function_names}
+        };
+
+        if(std::ofstream header_file(header_path); header_file.is_open()) {
+            inja::render_to(header_file, HEADER_TEMPLATE, context);
+        } else {
+            throw std::runtime_error("Could not open header file for writing");
+        }
+
+        if(std::ofstream source_file(source_path); source_file.is_open()) {
+            inja::render_to(source_file, SOURCE_TEMPLATE, context);
+        } else {
+            throw std::runtime_error("Could not open header file for writing");
+        }
     } catch(const std::exception& e) {
         LOG_ERROR("Unhandled global exception: {}", e.what());
         exit(EXIT_FAILURE);

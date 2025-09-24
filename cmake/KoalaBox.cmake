@@ -94,14 +94,14 @@ function(configure_linker_exports)
     set(GENERATE_LINKER_EXPORTS_TARGET "generate_linker_exports_for_${ARG_HEADER_NAME}")
     add_custom_target("${GENERATE_LINKER_EXPORTS_TARGET}" ALL
         COMMENT "Generate linker exports for export address table"
-        COMMAND exports_generator # Executable path
+        COMMAND windows_exports_generator # Executable path
         "${ARG_UNDECORATE}" # Undecorate boolean
         "${ARG_FORWARDED_DLL}" # Forwarded DLL path
         "\"${ARG_DLL_FILES_GLOB}\"" # Input DLLs
         "${GENERATED_LINKER_EXPORTS}" # Output header
         "${ARG_INPUT_SOURCES_DIR}" # Input sources
 
-        DEPENDS exports_generator
+        DEPENDS windows_exports_generator
     )
 
     target_sources(${ARG_TARGET} PRIVATE ${GENERATED_LINKER_EXPORTS})
