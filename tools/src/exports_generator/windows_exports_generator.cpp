@@ -91,14 +91,12 @@ namespace {
         return dll_exports;
     }
 
-    // Used for windows
     void generate_proxy_exports(
         std::ofstream& export_file,
         const std::map<std::string, std::string>& lib_exports,
         const std::set<std::string>& defined_functions,
         const std::string& forwarded_dll_name
     ) {
-#ifdef KB_WIN
         // Add header guard
         export_file << "#pragma once" << std::endl << std::endl;
 
@@ -117,53 +115,6 @@ namespace {
 
             export_file << line << std::endl;
         }
-#elifdef KB_LINUX
-        // language=c++
-        const auto prologue = std::format(
-            R"(
-#include <dlfcn.h>
-
-extern "C" void push_all();
-extern "C" void pop_all();
-
-#define EXPORT extern "C" __attribute__((visibility("default")))
-
-namespace {{
-    using void_fn = void(*)();
-
-    void_fn find(const char* name) {{
-        static auto* module_handle = dlopen("{}", RTLD_NOW);
-        return reinterpret_cast<void_fn>(dlsym(module_handle, name));
-    }}
-}}
-)", forwarded_dll_name
-        );
-
-        export_file << prologue;
-
-        for(const auto& decorated_function_name : lib_exports | std::views::values) {
-            // Comment out exports that we have defined
-            const auto declaration = std::format(
-                // language=c++
-                R"(EXPORT void {}())", decorated_function_name
-            );
-
-            export_file << std::endl;
-
-            if(defined_functions.contains(decorated_function_name)) {
-                export_file << "// " << declaration << ";" << std::endl;
-                continue;
-            }
-
-            export_file
-                << declaration << " {" << std::endl
-                << "    push_all();" << std::endl
-                << "    static const auto func = find(__func__);" << std::endl
-                << "    pop_all();" << std::endl
-                << "    func();" << std::endl // TODO: This will lead to errors. Use jmp rax instead.
-                << "}" << std::endl;
-        }
-#endif
     }
 }
 

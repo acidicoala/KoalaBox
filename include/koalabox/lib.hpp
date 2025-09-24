@@ -26,9 +26,9 @@ namespace koalabox::lib {
         }
     };
 
-    std::filesystem::path get_fs_path(void* module_handle);
+    std::filesystem::path get_fs_path(const void* module_handle);
     std::optional<void*> get_function_address(
-        void* module_handle,
+        const void* lib_handle,
         const char* function_name
     );
     void* get_function_address_or_throw(

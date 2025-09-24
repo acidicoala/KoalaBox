@@ -107,3 +107,31 @@ function(configure_linker_exports)
     target_sources(${ARG_TARGET} PRIVATE ${GENERATED_LINKER_EXPORTS})
     add_dependencies("${ARG_TARGET}" "${GENERATE_LINKER_EXPORTS_TARGET}")
 endfunction()
+
+function(configure_proxy_exports)
+    cmake_parse_arguments(
+        ARG "" "TARGET;INPUT_LIBS_GLOB;OUTPUT_NAME" "" ${ARGN}
+    )
+
+    set(GENERATED_PROXY_EXPORTS "${CMAKE_CURRENT_BINARY_DIR}/generated/${ARG_OUTPUT_NAME}")
+
+    set(GENERATED_HEADER "${GENERATED_PROXY_EXPORTS}.hpp")
+    set(GENERATED_SOURCE "${GENERATED_PROXY_EXPORTS}.cpp")
+
+    # Make header and source available before build
+    file(TOUCH ${GENERATED_HEADER})
+    file(TOUCH ${GENERATED_SOURCE})
+
+    set(GENERATE_PROXY_EXPORTS_TARGET "generate_${ARG_OUTPUT_NAME}")
+    add_custom_target("${GENERATE_PROXY_EXPORTS_TARGET}" ALL
+        COMMENT "Generate proxy exports"
+        COMMAND linux_exports_generator # Executable path
+        --input_libs_glob "'${ARG_INPUT_LIBS_GLOB}'"
+        --output_path "${GENERATED_PROXY_EXPORTS}"
+
+        DEPENDS linux_exports_generator
+    )
+
+    target_sources(${ARG_TARGET} PRIVATE ${GENERATED_HEADER} ${GENERATED_SOURCE})
+    add_dependencies("${ARG_TARGET}" "${GENERATE_PROXY_EXPORTS_TARGET}")
+endfunction()

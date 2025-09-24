@@ -65,7 +65,7 @@ namespace {
 }
 
 namespace koalabox::lib {
-    std::filesystem::path get_fs_path(void* const module_handle) {
+    std::filesystem::path get_fs_path(const void* const module_handle) {
         char path[PATH_MAX]{};
 
         if(!module_handle) {
@@ -77,7 +77,7 @@ namespace koalabox::lib {
             }
         } else {
             link_map* lm;
-            if(dlinfo(module_handle, RTLD_DI_LINKMAP, &lm) == 0) { // NOLINT(*-multi-level-implicit-pointer-conversion)
+            if(dlinfo(const_cast<void*>(module_handle), RTLD_DI_LINKMAP, &lm) == 0) { // NOLINT(*-multi-level-implicit-pointer-conversion)
                 return path::from_str(lm->l_name);
             }
         }
@@ -86,10 +86,10 @@ namespace koalabox::lib {
     }
 
     std::optional<void*> get_function_address(
-        void* const module_handle,
+        const void* const lib_handle,
         const char* function_name
     ) {
-        if(auto* const address = dlsym(module_handle, function_name)) {
+        if(auto* const address = dlsym(const_cast<void*>(lib_handle), function_name)) {
             return {address};
         }
 
@@ -233,7 +233,8 @@ namespace koalabox::lib {
         return dlopen(full_lib_name.c_str(), RTLD_NOW | RTLD_GLOBAL);
     }
 
-    export_map_t get_export_map(void* const library, [[maybe_unused]] bool undecorate) {
+    export_map_t get_export_map(const void* const library, [[maybe_unused]] bool undecorate) {
+        // TODO: Check if this can be implemented using elfio library
         const auto lib_path = get_fs_path(library);
 
         int const fd = open(path::to_str(lib_path).c_str(), O_RDONLY);

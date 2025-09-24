@@ -14,6 +14,7 @@ namespace {
     std::vector<query_entry_impl> query_impl(
         const std::regex& selector,
         const ts::Node& node,
+        const bool single_match,
         const std::string& parent_path = ""
     ) {
         std::vector<query_entry_impl> results{};
@@ -28,12 +29,21 @@ namespace {
                 }
             );
 
+            if(single_match) {
+                return results;
+            }
+        }
+
+        if(current_path.ends_with("parameter_declaration/array_declarator")) {
+            // Special case for array declarators (e.g. int buffer[123])
+            results.emplace_back(current_path + "/identifier", node.getNamedChild(0));
+            results.emplace_back(current_path + "/dimension", node.getNamedChild(1));
             return results;
         }
 
         for(auto i = 0U, count = node.getNumNamedChildren(); i < count; ++i) {
             if(const auto child = node.getNamedChild(i); not child.isNull()) {
-                const auto child_results = query_impl(selector, child, current_path);
+                const auto child_results = query_impl(selector, child, single_match, current_path);
 
                 // Move child results to current results
                 results.insert(
@@ -55,10 +65,10 @@ namespace koalabox::parser {
         return parser.parseString(buffer);
     }
 
-    std::vector<query_entry> query(const std::string_view& source, const std::regex& selector) {
+    std::vector<query_entry> query(const std::string_view& source, const std::regex& selector, bool single_match) {
         const auto root = parse_source(source);
 
-        const auto node_results = query_impl(selector, root.getRootNode());
+        const auto node_results = query_impl(selector, root.getRootNode(), single_match, "");
 
         std::vector<query_entry> string_results;
         string_results.reserve(node_results.size());

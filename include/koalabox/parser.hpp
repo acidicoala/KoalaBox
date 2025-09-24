@@ -23,7 +23,7 @@ namespace koalabox::parser {
      * "/translation_unit/function_definition/function_declaration/identifier".
      * Convenient to use, but is relatively slow because of regex.
      */
-    std::vector<query_entry> query(const std::string_view& source, const std::regex& selector);
+    std::vector<query_entry> query(const std::string_view& source, const std::regex& selector, bool single_match = true);
 
     enum class visit_result {
         Continue,

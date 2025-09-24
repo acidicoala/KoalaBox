@@ -2,7 +2,14 @@
 
 ## Exports generator
 
-Generates linker exports that enable automatic proxy DLL injection via search order exploit.
+### Windows
+
+Generates linker exports header that forwards all exports to original library
+
+### Linux
+
+Generates c++ source file that implements exported functions,
+which dynamically call and return results from original library.
 
 ## Sync
 
