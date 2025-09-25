@@ -26,15 +26,9 @@ namespace koalabox::lib {
         }
     };
 
-    std::filesystem::path get_fs_path(const void* module_handle);
-    std::optional<void*> get_function_address(
-        const void* lib_handle,
-        const char* function_name
-    );
-    void* get_function_address_or_throw(
-        void* module_handle,
-        const char* function_name
-    );
+    std::filesystem::path get_fs_path(void* module_handle);
+    std::optional<void*> get_function_address(void* lib_handle, const char* function_name);
+    void* get_function_address_or_throw(void* module_handle, const char* function_name);
 
     template<typename F>
     F get_function(void* module_handle, const char* procedure_name, F) {

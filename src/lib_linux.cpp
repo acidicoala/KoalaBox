@@ -65,7 +65,7 @@ namespace {
 }
 
 namespace koalabox::lib {
-    std::filesystem::path get_fs_path(const void* const module_handle) {
+    std::filesystem::path get_fs_path(void* const module_handle) {
         char path[PATH_MAX]{};
 
         if(!module_handle) {
@@ -77,7 +77,7 @@ namespace koalabox::lib {
             }
         } else {
             link_map* lm;
-            if(dlinfo(const_cast<void*>(module_handle), RTLD_DI_LINKMAP, &lm) == 0) { // NOLINT(*-multi-level-implicit-pointer-conversion)
+            if(dlinfo(module_handle, RTLD_DI_LINKMAP, &lm) == 0) { // NOLINT(*-multi-level-implicit-pointer-conversion)
                 return path::from_str(lm->l_name);
             }
         }
@@ -85,11 +85,8 @@ namespace koalabox::lib {
         throw std::runtime_error("Failed to get path from module handle");
     }
 
-    std::optional<void*> get_function_address(
-        const void* const lib_handle,
-        const char* function_name
-    ) {
-        if(auto* const address = dlsym(const_cast<void*>(lib_handle), function_name)) {
+    std::optional<void*> get_function_address(void* const lib_handle, const char* function_name) {
+        if(auto* const address = dlsym(lib_handle, function_name)) {
             return {address};
         }
 

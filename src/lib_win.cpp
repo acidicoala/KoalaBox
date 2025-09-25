@@ -47,15 +47,12 @@ namespace {
 }
 
 namespace koalabox::lib {
-    std::filesystem::path get_fs_path(const void* const module_handle) {
+    std::filesystem::path get_fs_path(void* const module_handle) {
         const auto wstr_path = wil::GetModuleFileNameW<std::wstring>(static_cast<HMODULE>(module_handle));
         return path::from_wstr(wstr_path);
     }
 
-    std::optional<void*> get_function_address(
-        void* const lib_handle,
-        const char* function_name
-    ) {
+    std::optional<void*> get_function_address(void* const lib_handle, const char* function_name) {
         if(auto* const address = GetProcAddress(static_cast<HMODULE>(lib_handle), function_name)) {
             return {address};
         }

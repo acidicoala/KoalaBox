@@ -87,7 +87,6 @@ endif()
 ### Setup KoalaBox exports
 
 target_include_directories(KoalaBox PUBLIC "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>")
-target_include_directories(KoalaBox PRIVATE "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/src>")
 
 
 set(PCH_PATH ${CMAKE_CURRENT_SOURCE_DIR}/src/pch.hpp)
@@ -185,8 +184,8 @@ CPMAddPackage("gh:nemtrif/utfcpp@4.0.6")
 target_compile_definitions(KoalaBox PUBLIC UTF_CPP_CPLUSPLUS=202002L)
 target_link_libraries(KoalaBox PUBLIC utf8cpp)
 
-add_subdirectory(tools)
-
 ## https://github.com/p-ranav/glob
 CPMAddPackage("gh:p-ranav/glob#e796e3ca94e0c514296425d9884e2198c41699ee")
 target_link_libraries(KoalaBox PUBLIC Glob)
+
+add_subdirectory(tools)

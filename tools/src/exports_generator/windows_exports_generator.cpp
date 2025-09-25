@@ -3,19 +3,44 @@
 #include <regex>
 #include <set>
 
+#include <cxxopts.hpp>
 #include <glob/glob.h>
 
 #include <koalabox/io.hpp>
+#include <koalabox/lib.hpp>
 #include <koalabox/logger.hpp>
 #include <koalabox/parser.hpp>
 #include <koalabox/path.hpp>
-#include <koalabox/str.hpp>
 
-#include "koalabox/lib.hpp"
+#include <koalabox_tools/cmd.hpp>
 
 namespace {
     namespace kb = koalabox;
     namespace fs = std::filesystem;
+
+    struct Args {
+        bool demangle;
+        std::string forwarded_dll_name;
+        std::string lib_files_glob;
+        std::string output_file_path;
+        std::string sources_input_path;
+
+        static Args parse(const int argc, const TCHAR** argv) {
+            const auto normalized = kb::tools::cmd::normalize_args(argc, argv);
+
+            KBT_CMD_PARSE_ARGS(
+                "linux_exports_generator", "Generates proxy exports for linux libraries",
+                argc, normalized.argv.data(),
+                demangle,
+                forwarded_dll_name,
+                lib_files_glob,
+                output_file_path,
+                sources_input_path
+            )
+
+            return args;
+        }
+    };
 
     std::string preprocess_source_file(const std::string& source_file_content) {
         const std::regex dll_export_regex(R"(DLL_EXPORT\(\s*([^)]+?)\s*\))");
@@ -54,19 +79,6 @@ namespace {
         }
 
         return declared_functions;
-    }
-
-    bool parseBoolean(const std::string& bool_str) {
-        if(kb::str::eq(bool_str, "TRUE")) {
-            return true;
-        }
-
-        if(kb::str::eq(bool_str, "FALSE")) {
-            return false;
-        }
-
-        LOG_ERROR("Invalid boolean value: {}", bool_str);
-        exit(10);
     }
 
     auto get_library_exports_map(const std::string& lib_files_glob, const bool undecorate) {
@@ -131,22 +143,12 @@ int MAIN(const int argc, const TCHAR* argv[]) { // NOLINT(*-use-internal-linkage
     try {
         koalabox::logger::init_console_logger();
 
-        for(int i = 0; i < argc; i++) {
-            LOG_INFO("Arg #{} = '{}'", i, koalabox::str::to_str(argv[i]));
-        }
+        const auto args = Args::parse(argc, argv);
 
-        if(argc != 5 && argc != 6) {
-            LOG_ERROR("Invalid number of arguments. Expected 5 or 6. Got: {}", argc);
-            exit(1);
-        }
+        const auto output_file_path = kb::path::from_str(args.output_file_path);
 
-        const auto undecorate = parseBoolean(kb::str::to_str(argv[1]));
-        const auto forwarded_dll_name = kb::str::to_str(argv[2]);
-        const auto lib_files_glob = kb::str::to_str(argv[3]);
-        const auto output_file_path = fs::path(kb::str::to_str(argv[4]));
-
-        // Input sources are optional because Koaloader doesn't have them.
-        const auto sources_input_path = fs::path(argc == 6 ? kb::str::to_str(argv[5]) : "");
+        // Input sources are optional because SmokeAPI and Koaloader don't have them.
+        const auto sources_input_path = kb::path::from_str(args.sources_input_path);
 
         const auto defined_functions = sources_input_path.empty()
                                            ? std::set<std::string>()
@@ -159,18 +161,18 @@ int MAIN(const int argc, const TCHAR* argv[]) { // NOLINT(*-use-internal-linkage
         std::ofstream export_file(output_file_path, std::ofstream::out | std::ofstream::trunc);
         if(not export_file.is_open()) {
             LOG_ERROR("Filed to open header file for writing");
-            exit(4);
+            exit(EXIT_FAILURE);
         }
 
-        const auto lib_exports = get_library_exports_map(lib_files_glob, undecorate);
-        generate_proxy_exports(export_file, lib_exports, defined_functions, forwarded_dll_name);
+        const auto lib_exports = get_library_exports_map(args.lib_files_glob, args.demangle);
+        generate_proxy_exports(export_file, lib_exports, defined_functions, args.forwarded_dll_name);
 
         LOG_INFO("Finished generating {}", kb::path::to_str(output_file_path));
     } catch(const std::exception& ex) {
         LOG_ERROR("Error: {}", ex.what());
-        exit(-1);
+        exit(EXIT_FAILURE);
     }
 
     koalabox::logger::shutdown();
-    return 0;
+    return EXIT_SUCCESS;
 }

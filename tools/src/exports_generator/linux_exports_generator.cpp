@@ -65,15 +65,15 @@ namespace {{ namespace_id }} {
 
     namespace kb = koalabox;
 
-    const std::string INPUT_LIBS_GLOB = "input_libs_glob";
-    const std::string OUTPUT_PATH = "output_path";
-
     struct Args {
         std::string input_libs_glob;
         std::string output_path;
     };
 
     Args parse_args(const int argc, const char** argv) {
+        const std::string INPUT_LIBS_GLOB = "input_libs_glob";
+        const std::string OUTPUT_PATH = "output_path";
+
         try {
             for(auto i = 0; i < argc; ++i) {
                 LOG_DEBUG("argv[{}] = {}", i, argv[i]);
