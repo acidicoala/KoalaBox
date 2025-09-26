@@ -1,7 +1,8 @@
 #include <deque>
 
-#include "koalabox/parser.hpp"
-#include "koalabox/logger.hpp"
+#include <koalabox/logger.hpp>
+
+#include "koalabox_tools/parser.hpp"
 
 extern "C" const TSLanguage* tree_sitter_cpp();
 
@@ -11,7 +12,7 @@ namespace {
         ts::Node node;
     };
 
-    std::vector<query_entry_impl> query_impl(
+    std::vector<query_entry_impl> query_impl( // NOLINT(*-no-recursion)
         const std::regex& selector,
         const ts::Node& node,
         const bool single_match,
@@ -58,7 +59,7 @@ namespace {
     }
 }
 
-namespace koalabox::parser {
+namespace koalabox::tools::parser {
     ts::Tree parse_source(const std::string_view& buffer) {
         const auto language = ts::Language(tree_sitter_cpp());
         auto parser = ts::Parser(language);

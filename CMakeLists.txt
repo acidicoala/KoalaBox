@@ -20,7 +20,6 @@ set(KOALABOX_HEADERS
     include/koalabox/logger.hpp
     include/koalabox/lib.hpp
     include/koalabox/lib_monitor.hpp
-    include/koalabox/parser.hpp
     include/koalabox/patcher.hpp
     include/koalabox/path.hpp
     include/koalabox/paths.hpp
@@ -39,7 +38,6 @@ set(KOALABOX_SOURCES
     src/io.cpp
     src/lib.cpp
     src/lib_monitor.cpp
-    src/parser.cpp
     src/patcher.cpp
     src/path.cpp
     src/paths.cpp
@@ -135,7 +133,6 @@ target_compile_definitions(KoalaBox PUBLIC
     $<$<CONFIG:Debug>:SPDLOG_ACTIVE_LEVEL=SPDLOG_LEVEL_TRACE>
     $<$<NOT:$<CONFIG:Debug>>:SPDLOG_ACTIVE_LEVEL=SPDLOG_LEVEL_DEBUG>
 )
-
 set(SPDLOG_OPTIONS "SPDLOG_USE_STD_FORMAT ON")
 if(WIN32)
     list(APPEND SPDLOG_OPTIONS
@@ -143,7 +140,19 @@ if(WIN32)
         "SPDLOG_WCHAR_FILENAMES ON"
         "SPDLOG_WCHAR_CONSOLE ON"
     )
+endif()
+CPMAddPackage(
+    URI "gh:gabime/spdlog@1.15.3"
+    OPTIONS ${SPDLOG_OPTIONS}
+)
+target_link_libraries(KoalaBox PUBLIC spdlog)
 
+## https://github.com/nemtrif/utfcpp
+CPMAddPackage("gh:nemtrif/utfcpp@4.0.6")
+target_compile_definitions(KoalaBox PUBLIC UTF_CPP_CPLUSPLUS=202002L)
+target_link_libraries(KoalaBox PUBLIC utf8cpp)
+
+if(WIN32)
     ## https://github.com/microsoft/wil
     CPMAddPackage(
         URI "gh:microsoft/wil@1.0.250325.1"
@@ -157,35 +166,5 @@ if(WIN32)
     CPMAddPackage("gh:winsiderss/phnt#fc1f96ee976635f51faa89896d1d805eb0586350")
     target_link_libraries(KoalaBox PUBLIC phnt)
 endif()
-
-CPMAddPackage(
-    URI "gh:gabime/spdlog@1.15.3"
-    OPTIONS ${SPDLOG_OPTIONS}
-)
-target_link_libraries(KoalaBox PUBLIC spdlog)
-
-# TODO: We need this only for tools, extract to a separate target
-## https://github.com/nsumner/cpp-tree-sitter
-# The latest commit includes a fix for MSVC, which is not present in the latest release
-CPMAddPackage("gh:nsumner/cpp-tree-sitter#9cd7f3c9de9fc6d19bc982c6772fcd7a39e5797a")
-
-# Grammars need to be installed in a special way
-# Downloads a tree-sitter grammar from github
-# and makes it available as a cmake library target.
-add_grammar_from_repo(
-    tree-sitter-cpp # Library name
-    https://github.com/tree-sitter/tree-sitter-cpp.git # Repository URL
-    0.23.4 # Version tag
-)
-target_link_libraries(KoalaBox PUBLIC cpp-tree-sitter tree-sitter-cpp)
-
-## https://github.com/nemtrif/utfcpp
-CPMAddPackage("gh:nemtrif/utfcpp@4.0.6")
-target_compile_definitions(KoalaBox PUBLIC UTF_CPP_CPLUSPLUS=202002L)
-target_link_libraries(KoalaBox PUBLIC utf8cpp)
-
-## https://github.com/p-ranav/glob
-CPMAddPackage("gh:p-ranav/glob#e796e3ca94e0c514296425d9884e2198c41699ee")
-target_link_libraries(KoalaBox PUBLIC Glob)
 
 add_subdirectory(tools)

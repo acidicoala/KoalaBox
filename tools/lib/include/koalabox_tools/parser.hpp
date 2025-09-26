@@ -9,7 +9,7 @@
 /**
  * Utilities for parsing C/C++ headers and sources.
  */
-namespace koalabox::parser {
+namespace koalabox::tools::parser {
     ts::Tree parse_source(const std::string_view& buffer);
 
     struct query_entry {

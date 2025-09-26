@@ -5,16 +5,27 @@
 
 #include <cxxopts.hpp>
 #include <glob/glob.h>
+#include <inja/inja.hpp>
 
 #include <koalabox/io.hpp>
 #include <koalabox/lib.hpp>
 #include <koalabox/logger.hpp>
-#include <koalabox/parser.hpp>
 #include <koalabox/path.hpp>
 
 #include <koalabox_tools/cmd.hpp>
+#include <koalabox_tools/parser.hpp>
 
 namespace {
+    // language=c++
+    constexpr auto* HEADER_TEMPLATE =R"(#pragma once
+
+## for function_name in function_names
+{% if function_name in implemented_functions %}{% set comment="//" %}{% else %}{% set comment="" %}{% endif %}
+{{ comment }}#pragma comment(linker, "/export:{{ function_name }}={{ forwarded_dll_name }}.{{ function_name }}")
+## endfor
+
+)";
+
     namespace kb = koalabox;
     namespace fs = std::filesystem;
 
@@ -51,7 +62,7 @@ namespace {
      * Returns a list of functions parsed from the sources
      * in a given directory. Edge cases: Comments
      */
-    auto get_defined_functions(const fs::path& path) {
+    auto get_implemented_functions(const fs::path& path) {
         std::set<std::string> declared_functions;
 
         for(const auto& entry : std::filesystem::recursive_directory_iterator(path)) {
@@ -66,7 +77,7 @@ namespace {
 
             const auto processed_source = preprocess_source_file(file_content);
 
-            const auto query_results = koalabox::parser::query(
+            const auto query_results = koalabox::tools::parser::query(
                 processed_source,
                 // language=regexp
                 std::regex(R"((/\w+)*/function_declarator/identifier)")
@@ -85,7 +96,7 @@ namespace {
         kb::lib::export_map_t dll_exports;
 
         const auto lib_path_list = glob::glob(lib_files_glob);
-        LOG_INFO("Found {} library files", lib_path_list.size());
+        LOG_INFO("Found {} library file(s)", lib_path_list.size());
 
         for(const auto& lib_path : lib_path_list) {
             if(not fs::exists(lib_path)) {
@@ -101,32 +112,6 @@ namespace {
         LOG_INFO("Found {} exported functions", dll_exports.size());
 
         return dll_exports;
-    }
-
-    void generate_proxy_exports(
-        std::ofstream& export_file,
-        const std::map<std::string, std::string>& lib_exports,
-        const std::set<std::string>& defined_functions,
-        const std::string& forwarded_dll_name
-    ) {
-        // Add header guard
-        export_file << "#pragma once" << std::endl << std::endl;
-
-        for(const auto& [function_name, decorated_function_name] : lib_exports) {
-            // Comment out exports that we have defined
-            const std::string comment = defined_functions.contains(function_name) ? "//" : "";
-
-            const auto line = std::format(
-                R"({}#pragma comment(linker, "/export:{}={}.{}"))",
-                //
-                comment,
-                decorated_function_name,
-                forwarded_dll_name,
-                decorated_function_name
-            );
-
-            export_file << line << std::endl;
-        }
     }
 }
 
@@ -150,22 +135,35 @@ int MAIN(const int argc, const TCHAR* argv[]) { // NOLINT(*-use-internal-linkage
         // Input sources are optional because SmokeAPI and Koaloader don't have them.
         const auto sources_input_path = kb::path::from_str(args.sources_input_path);
 
-        const auto defined_functions = sources_input_path.empty()
+        const auto implemented_functions = sources_input_path.empty()
                                            ? std::set<std::string>()
-                                           : get_defined_functions(sources_input_path);
+                                           : get_implemented_functions(sources_input_path);
 
         // Create directories for export file, if necessary
         fs::create_directories(output_file_path.parent_path());
 
-        // Open the export header file for writing
-        std::ofstream export_file(output_file_path, std::ofstream::out | std::ofstream::trunc);
-        if(not export_file.is_open()) {
-            LOG_ERROR("Filed to open header file for writing");
-            exit(EXIT_FAILURE);
+        const auto lib_exports = get_library_exports_map(args.lib_files_glob, args.demangle);
+
+        std::vector<std::string> function_names;
+        function_names.reserve(lib_exports.size());
+        for(const auto& function_name : lib_exports | std::views::values) {
+            function_names.push_back(function_name);
         }
 
-        const auto lib_exports = get_library_exports_map(args.lib_files_glob, args.demangle);
-        generate_proxy_exports(export_file, lib_exports, defined_functions, args.forwarded_dll_name);
+        const nlohmann::json context = {
+            {"forwarded_dll_name", args.forwarded_dll_name},
+            {"function_names", function_names},
+            {"implemented_functions", implemented_functions},
+        };
+
+        if(std::ofstream header_file(output_file_path); header_file.is_open()) {
+            inja::Environment env;
+            env.set_trim_blocks(true);
+            env.set_lstrip_blocks(true);
+            env.render_to(header_file, env.parse(HEADER_TEMPLATE), context);
+        } else {
+            throw std::runtime_error("Could not open header file for writing");
+        }
 
         LOG_INFO("Finished generating {}", kb::path::to_str(output_file_path));
     } catch(const std::exception& ex) {

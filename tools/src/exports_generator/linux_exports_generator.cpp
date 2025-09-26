@@ -11,8 +11,7 @@
 
 namespace {
     // language=c++
-    constexpr auto HEADER_TEMPLATE = R"(// Auto-generated header file
-#pragma once
+    constexpr auto HEADER_TEMPLATE = R"(#pragma once
 
 namespace {{ namespace_id }} {
     void init(void* self_lib_handle, void* original_lib_handle);
