@@ -7,6 +7,14 @@
 
 ### 🪝 Hook mode
 
+Hook mode itself has two sub-modes: Self-Hook and Hook with injector.
+
+#### 🪝 Self-Hook mode
+
+In self-hook mode {{ project_name }} is injected automatically without the help of third-party injectors.
+It works best when a game doesn't have any protections against DLL injection.
+The main advantage of this mode is its minimal setup, which adds only 1 new DLL to the game folder.
+
 - Download the [latest {{ project_name }} release zip].
 - From this downloaded zip extract {{ unlocker_dll_names }}, depending on a game's bitness.
 - Rename the unzipped DLL to {{ self_inject_dll }}.
