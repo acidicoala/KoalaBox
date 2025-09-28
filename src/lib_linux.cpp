@@ -4,8 +4,10 @@
 #include <string>
 #include <vector>
 
+// This must be before linux headers to avoid name collisions
+#include <elfio/elfio.hpp>
+
 #include <dlfcn.h>
-#include <elf.h>
 #include <fcntl.h>
 #include <link.h>
 #include <unistd.h>
@@ -19,6 +21,7 @@
 
 namespace {
     using namespace koalabox::lib;
+    namespace fs = std::filesystem;
 
     export_map_t list_dynsym_exports(const void* map) {
         const auto map_base = static_cast<const char*>(map);
@@ -65,7 +68,7 @@ namespace {
 }
 
 namespace koalabox::lib {
-    std::filesystem::path get_fs_path(void* const module_handle) {
+    fs::path get_fs_path(void* const module_handle) {
         char path[PATH_MAX]{};
 
         if(!module_handle) {
@@ -94,6 +97,7 @@ namespace koalabox::lib {
     }
 
     std::optional<section_t> get_section(void* lib_handle, const std::string& section_name) {
+        // TODO: Check if this can be done using elfio library
         // TODO: Inspect this code carefully
         link_map* lm;
         dlinfo(lib_handle, RTLD_DI_LINKMAP, &lm); // NOLINT(*-multi-level-implicit-pointer-conversion)
@@ -210,10 +214,11 @@ namespace koalabox::lib {
         return initial_context.result;
     }
 
-    std::optional<void*> load_library(const std::filesystem::path& library_path) {
+    std::optional<void*> load_library(const fs::path& library_path) {
         LOG_DEBUG("Loading library: '{}'", path::to_str(library_path));
 
-        if(auto* library = dlopen(path::to_str(library_path).c_str(), RTLD_NOW | RTLD_GLOBAL)) {
+        // RTLD_LOCAL here is very important, it avoids unintended overwrites of function exports.
+        if(auto* library = dlopen(path::to_str(library_path).c_str(), RTLD_NOW | RTLD_LOCAL)) {
             return {library};
         }
 
@@ -232,7 +237,7 @@ namespace koalabox::lib {
 
     export_map_t get_export_map(const void* const library, [[maybe_unused]] bool undecorate) {
         // TODO: Check if this can be implemented using elfio library
-        const auto lib_path = get_fs_path(library);
+        const auto lib_path = get_fs_path(const_cast<void*>(library));
 
         int const fd = open(path::to_str(lib_path).c_str(), O_RDONLY);
         if(fd < 0) {
@@ -274,5 +279,22 @@ namespace koalabox::lib {
     std::string get_decorated_function(const void* /*library*/, const std::string& function_name) {
         // No valid use case for this so far
         return function_name;
+    }
+
+    std::optional<Bitness> get_bitness(const fs::path& library_path) {
+        ELFIO::elfio reader;
+        const auto lib_path_str = path::to_str(library_path);
+        if(!reader.load(lib_path_str)) {
+            LOG_ERROR("Failed to load ELF file: {}", lib_path_str);
+            return std::nullopt;
+        }
+
+        switch(reader.get_class()) {
+        case ELFCLASS32: return Bitness::$32;
+        case ELFCLASS64: return Bitness::$64;
+        default:
+            LOG_ERROR("Unknown ELF class: {}", reader.get_class());
+            return std::nullopt;
+        }
     }
 }

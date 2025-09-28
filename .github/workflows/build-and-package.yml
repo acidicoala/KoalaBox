@@ -47,9 +47,6 @@ jobs:
         with:
           arch: ${{ env.CMD_ARCH }}
 
-      - name: Print build directory tree
-        run: tree /f ${{ env.BUILD_DIR }}
-
       - name: Set VERSION_SUFFIX
         run: |
           if ($env:GITHUB_REF -notlike 'refs/tags/*') {
@@ -69,9 +66,9 @@ jobs:
       - name: Build the project
         run: cmake --build ${{ env.BUILD_DIR }} --config ${{ inputs.config }}
         # Note: Adding --target ${{ matrix.module }} breaks Koaloader,
-        # since its target name remains Koaloader, not  ${{ matrix.module }}.
+        # since its target name remains Koaloader, not ${{ matrix.module }}.
         # However, we might as well build all modules to make sure that tools
-        # are building without issues as well.
+        # are building without issues.
 
       - name: Upload binaries
         uses: actions/upload-artifact@v4

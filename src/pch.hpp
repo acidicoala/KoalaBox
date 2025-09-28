@@ -15,7 +15,7 @@
 // Aliases for Windows/Linux OS
 #if defined(_WIN32)
 #define KB_WIN
-#else
+#elif defined(__linux__)
 #define KB_LINUX
 #endif
 

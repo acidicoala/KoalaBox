@@ -55,4 +55,9 @@ namespace koalabox::lib {
      * Appends "_o" to library name and attempts to load it from the from_path
      */
     void* load_original_library(const std::filesystem::path& from_path, const std::string& lib_name);
+
+    enum class Bitness: uint8_t { $32 = 32U, $64 = 64U };
+    std::optional<Bitness> get_bitness(const std::filesystem::path& library_path);
+    std::optional<bool> is_32bit(const std::filesystem::path& library_path);
+    std::optional<bool> is_64bit(const std::filesystem::path& library_path);
 }

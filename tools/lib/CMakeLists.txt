@@ -15,9 +15,6 @@ set(KOALABOX_TOOLS_SOURCES
 add_library(KoalaBoxTools OBJECT ${KOALABOX_TOOLS_HEADERS} ${KOALABOX_TOOLS_SOURCES})
 target_include_directories(KoalaBoxTools PUBLIC "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>")
 
-## https://github.com/p-ranav/glob
-CPMAddPackage("gh:p-ranav/glob#e796e3ca94e0c514296425d9884e2198c41699ee")
-
 ## https://github.com/jarro2783/cxxopts
 CPMAddPackage("gh:jarro2783/cxxopts@3.3.1")
 
@@ -46,9 +43,6 @@ CPMAddPackage(
 add_library(BS_thread_pool INTERFACE)
 target_include_directories(BS_thread_pool INTERFACE ${BS_thread_pool_SOURCE_DIR}/include)
 
-## https://github.com/serge1/ELFIO
-CPMAddPackage("gh:serge1/ELFIO#Release_3.12")
-
 ## https://github.com/nsumner/cpp-tree-sitter
 # The latest commit includes a fix for MSVC, which is not present in the latest release
 CPMAddPackage("gh:nsumner/cpp-tree-sitter#9cd7f3c9de9fc6d19bc982c6772fcd7a39e5797a")
@@ -68,7 +62,5 @@ target_link_libraries(KoalaBoxTools PUBLIC
     cpp-tree-sitter tree-sitter-cpp
     BS_thread_pool
     cxxopts
-    elfio
-    Glob
     inja
 )

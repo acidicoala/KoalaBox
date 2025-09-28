@@ -33,11 +33,19 @@ namespace koalabox::lib {
         const auto full_original_library_name = lib_name + extension;
         const auto original_module_path = from_path / full_original_library_name;
 
-        auto* const original_module = lib::load_library_or_throw(original_module_path);
+        auto* const original_module = load_library_or_throw(original_module_path);
 
         LOG_INFO("Loaded original library: '{}'", full_original_library_name);
         LOG_TRACE("Loaded original library from: '{}'", path::to_str(original_module_path));
 
         return original_module;
+    }
+
+    std::optional<bool> is_32bit(const std::filesystem::path& library_path) {
+        return get_bitness(library_path) == Bitness::$32;
+    }
+
+    std::optional<bool> is_64bit(const std::filesystem::path& library_path) {
+        return get_bitness(library_path) == Bitness::$64;
     }
 }

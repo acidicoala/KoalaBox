@@ -23,6 +23,7 @@ set(KOALABOX_HEADERS
     include/koalabox/patcher.hpp
     include/koalabox/path.hpp
     include/koalabox/paths.hpp
+    include/koalabox/platform.hpp
     include/koalabox/str.hpp
     include/koalabox/util.hpp
     include/koalabox/zip.hpp
@@ -60,7 +61,7 @@ if(WIN32)
         src/util_win.cpp
         src/win.cpp
     )
-else()
+elseif(LINUX)
     target_sources(KoalaBox PRIVATE
         src/lib_linux.cpp
         src/lib_monitor_linux.cpp
@@ -69,12 +70,6 @@ else()
         src/str_linux.cpp
         src/util_linux.cpp
     )
-
-    if(IS_32)
-        target_sources(KoalaBox PRIVATE src/push_pop_all_32.asm)
-    else()
-        target_sources(KoalaBox PRIVATE src/push_pop_all_64.asm)
-    endif()
 
     find_package(PkgConfig REQUIRED)
     pkg_check_modules(GTK3 REQUIRED gtk+-3.0)
@@ -94,6 +89,14 @@ target_precompile_headers(KoalaBox PUBLIC "$<$<COMPILE_LANGUAGE:CXX>:${PCH_PATH}
 
 # Note: Dependencies should be linked to KoalaBox using PUBLIC scope
 # to avoid inconsistent flags/definitions.
+
+## https://github.com/serge1/ELFIO
+CPMAddPackage("gh:serge1/ELFIO#Release_3.12")
+target_link_libraries(KoalaBox PUBLIC elfio)
+
+## https://github.com/p-ranav/glob
+CPMAddPackage("gh:p-ranav/glob#e796e3ca94e0c514296425d9884e2198c41699ee")
+target_link_libraries(KoalaBox PUBLIC Glob)
 
 ## https://github.com/nlohmann/json
 CPMAddPackage(
@@ -120,7 +123,7 @@ target_link_libraries(KoalaBox PUBLIC cpr)
 
 ## https://github.com/stevemk14ebr/PolyHook_2_0
 CPMAddPackage(
-    URI "gh:stevemk14ebr/PolyHook_2_0#298d56210b9d9e66cde8f96481d6053925c6ae15"
+    URI "gh:stevemk14ebr/PolyHook_2_0#10529b9add5f07de3345350acba816c71b7bf6f2"
     GIT_SUBMODULES "*"
     OPTIONS
     "POLYHOOK_FEATURE_INLINENTD OFF"
