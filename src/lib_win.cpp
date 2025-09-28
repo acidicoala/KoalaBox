@@ -1,12 +1,13 @@
+#include <fstream>
 #include <map>
 #include <regex>
 
+#include <nlohmann/json.hpp>
 #include <wil/stl.h> // This header is absolutely necessary for wil::GetModuleFileNameW to work
 #include <wil/win32_helpers.h>
-#include <nlohmann/json.hpp>
 
-#include "koalabox/logger.hpp"
 #include "koalabox/lib.hpp"
+#include "koalabox/logger.hpp"
 #include "koalabox/path.hpp"
 #include "koalabox/str.hpp"
 #include "koalabox/util.hpp"
@@ -170,5 +171,46 @@ namespace koalabox::lib {
             return function_name;
         }
 #endif
+    }
+
+    std::optional<Bitness> get_bitness(const std::filesystem::path& library_path) {
+        std::ifstream file(library_path, std::ios::binary);
+        if(!file.is_open()) {
+            LOG_ERROR("Failed to read library: {}", path::to_str(library_path));
+            return std::nullopt;
+        }
+
+        IMAGE_DOS_HEADER dos_header;
+        file.read(reinterpret_cast<char*>(&dos_header), sizeof(dos_header));
+
+        if(dos_header.e_magic != IMAGE_DOS_SIGNATURE) {
+            LOG_ERROR("File is not a valid DOS library: {}", path::to_str(library_path));
+            return std::nullopt;
+        }
+
+        // Seek to PE header
+        file.seekg(dos_header.e_lfanew, std::ios::beg);
+
+        // Read PE signature
+        DWORD signature;
+        file.read(reinterpret_cast<char*>(&signature), sizeof(signature));
+
+        if(signature != IMAGE_NT_SIGNATURE) {
+            LOG_ERROR("File is not a valid NT library: {}", path::to_str(library_path));
+            return std::nullopt;
+        }
+
+        // Read file header
+        IMAGE_FILE_HEADER fileHeader;
+        file.read(reinterpret_cast<char*>(&fileHeader), sizeof(fileHeader));
+
+        // Check machine type
+        switch(fileHeader.Machine) {
+        case IMAGE_FILE_MACHINE_I386: return Bitness::$32;
+        case IMAGE_FILE_MACHINE_AMD64: return Bitness::$64;
+        default:
+            LOG_ERROR("Invalid library architecture: {}", fileHeader.Machine);
+            return std::nullopt;
+        }
     }
 }
