@@ -41,6 +41,12 @@ namespace koalabox::lib {
         return original_module;
     }
 
+    exports_t get_exports_or_throw(void* lib_handle) {
+        return get_exports(lib_handle) | throw_if_empty(
+            std::format("Failed get library exports of {}", lib_handle)
+        );
+    }
+
     std::optional<bool> is_32bit(const std::filesystem::path& library_path) {
         return get_bitness(library_path) == Bitness::$32;
     }

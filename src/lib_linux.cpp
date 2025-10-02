@@ -12,62 +12,16 @@
 #include <link.h>
 #include <unistd.h>
 #include <linux/limits.h>
-#include <sys/mman.h>
 #include <sys/stat.h>
 
 #include "koalabox/lib.hpp"
 #include "koalabox/logger.hpp"
 #include "koalabox/path.hpp"
 
-namespace {
+namespace koalabox::lib {
     using namespace koalabox::lib;
     namespace fs = std::filesystem;
 
-    export_map_t list_dynsym_exports(const void* map) {
-        const auto map_base = static_cast<const char*>(map);
-        // TODO: refactor
-        const auto* const ehdr = static_cast<const ElfW(Ehdr)*>(map);
-        const auto* shdrs = reinterpret_cast<const ElfW(Shdr)*>(map_base + ehdr->e_shoff);
-        const auto* shstrtab = map_base + shdrs[ehdr->e_shstrndx].sh_offset;
-
-        const ElfW(Shdr)* dynsym = nullptr;
-        const ElfW(Shdr)* dynstr = nullptr;
-        for(int i = 0; i < ehdr->e_shnum; ++i) {
-            const char* name = shstrtab + shdrs[i].sh_name;
-            if(strcmp(name, ".dynsym") == 0) {
-                dynsym = &shdrs[i];
-            } else if(strcmp(name, ".dynstr") == 0) {
-                dynstr = &shdrs[i];
-            }
-        }
-        if(!dynsym || !dynstr) {
-            LOG_ERROR(".dynsym or .dynstr not found");
-            return {};
-        }
-
-        const auto* syms = reinterpret_cast<const ElfW(Sym)*>(map_base + dynsym->sh_offset);
-        const auto nsyms = dynsym->sh_size / sizeof(ElfW(Sym));
-        const auto* strtab = map_base + dynstr->sh_offset;
-
-        export_map_t exports;
-        for(size_t i = 0; i < nsyms; ++i) {
-            const ElfW(Sym)& s = syms[i];
-            // Both Elf32_Sym and Elf64_Sym use the same one-byte st_info field.
-            if(ELF64_ST_TYPE(s.st_info) == STT_FUNC &&
-               (ELF64_ST_BIND(s.st_info) == STB_GLOBAL || ELF64_ST_BIND(s.st_info) == STB_WEAK) &&
-               s.st_name != 0 &&
-               s.st_shndx != SHN_UNDEF) {
-                const std::string function_name = strtab + s.st_name;
-                if(!function_name.starts_with("_")) {
-                    exports[function_name] = get_decorated_function(nullptr, function_name);
-                }
-            }
-        }
-        return exports;
-    }
-}
-
-namespace koalabox::lib {
     fs::path get_fs_path(void* const module_handle) {
         char path[PATH_MAX]{};
 
@@ -235,50 +189,47 @@ namespace koalabox::lib {
         return dlopen(full_lib_name.c_str(), RTLD_NOW | RTLD_GLOBAL);
     }
 
-    export_map_t get_export_map(const void* const library, [[maybe_unused]] bool undecorate) {
-        // TODO: Check if this can be implemented using elfio library
-        const auto lib_path = get_fs_path(const_cast<void*>(library));
+    std::optional<exports_t> get_exports(void* const lib_handle) {
+        const auto lib_path_str = path::to_str(get_fs_path(lib_handle));
 
-        int const fd = open(path::to_str(lib_path).c_str(), O_RDONLY);
-        if(fd < 0) {
-            LOG_ERROR("Failed to open library: %s", lib_path.c_str());
-            return {};
+        ELFIO::elfio reader;
+        if(!reader.load(lib_path_str)) {
+            LOG_ERROR("Failed to read ELF file: {}", lib_path_str);
+            return std::nullopt;
         }
 
-        struct stat st{};
-        if(fstat(fd, &st) != 0) {
-            LOG_ERROR("Failed to fstat library: %s", lib_path.c_str());
-            close(fd);
-            return {};
+        ELFIO::section* dynsym = reader.sections[".dynsym"];
+        if(!dynsym) {
+            LOG_ERROR("Failed to find dynamic symbol table section: {}", lib_path_str);
+            return std::nullopt;
         }
 
-        size_t const filesize = st.st_size;
-        void* map = mmap(nullptr, filesize, PROT_READ, MAP_PRIVATE, fd, 0);
-        if(map == MAP_FAILED) {
-            perror("mmap");
-            LOG_ERROR("Failed to mmap library: %s", lib_path.c_str());
-            close(fd);
-            return {};
+        exports_t results;
+
+        const ELFIO::symbol_section_accessor symbols(reader, dynsym);
+        for(auto i = 0U; i < symbols.get_symbols_num(); ++i) {
+            std::string name;
+            ELFIO::Elf64_Addr value;
+            ELFIO::Elf_Xword size;
+            unsigned char bind;
+            unsigned char type;
+            unsigned char other;
+            ELFIO::Elf_Half section_index;
+
+            symbols.get_symbol(i, name, value, size, bind, type, section_index, other);
+
+            // Exported functions: global/weak binding, type FUNC, default visibility, non-empty name
+            if(
+                section_index != SHN_UNDEF && // Exported, not just referenced
+                (bind == STB_GLOBAL || bind == STB_WEAK) && // Global or weak binding
+                (other & 0x3) == STV_DEFAULT && // Default visibility
+                !name.empty()
+            ) {
+                results.insert(name);
+            }
         }
 
-        if(memcmp(map, ELFMAG, SELFMAG) != 0) {
-            LOG_ERROR("Failed to identify library (not a valid ELF file): %s", lib_path.c_str());
-            munmap(map, filesize);
-            close(fd);
-            return {};
-        }
-
-        auto export_map = list_dynsym_exports(map);
-
-        munmap(map, filesize);
-        close(fd);
-
-        return export_map;
-    }
-
-    std::string get_decorated_function(const void* /*library*/, const std::string& function_name) {
-        // No valid use case for this so far
-        return function_name;
+        return results;
     }
 
     std::optional<Bitness> get_bitness(const fs::path& library_path) {

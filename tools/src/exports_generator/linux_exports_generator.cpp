@@ -10,6 +10,8 @@
 #include <koalabox/path.hpp>
 #include <koalabox/platform.hpp>
 
+#include <koalabox_tools/cmd.hpp>
+
 namespace {
     // language=c++
     constexpr auto HEADER_TEMPLATE = R"(// Auto-generated header file
@@ -20,7 +22,6 @@ namespace {{ namespace_id }} {
 }
 )";
 
-    // TODO: Fallback function when dlsym is null
     // language=c++
     constexpr auto SOURCE_TEMPLATE = R"(// Auto-generated source file
 #include <cstring>
@@ -37,8 +38,8 @@ namespace {{ namespace_id }} {
 
 #define EXPORT extern "C" __attribute__((visibility("default"))) __attribute__((naked))
 
-## for function_name in function_names
-EXPORT void {{ function_name }}() {
+## for symbol_name in exported_symbols
+EXPORT void {{ symbol_name }}() {
 {% if is_32bit %}
     asm volatile ("movl $0xDeadC0de, %%eax":::"eax");
     asm volatile ("jmp *%eax");
@@ -83,10 +84,10 @@ namespace {{ namespace_id }} {
 
         void* src_address = nullptr;
         void* dest_address = nullptr;
-## for function_name in function_names
+## for symbol_name in exported_symbols
 
-        dest_address = dlsym(self_lib_handle, "{{ function_name }}");
-        src_address = dlsym(original_lib_handle, "{{ function_name }}");
+        dest_address = dlsym(self_lib_handle, "{{ symbol_name }}");
+        src_address = dlsym(original_lib_handle, "{{ symbol_name }}");
         if(!src_address) src_address = reinterpret_cast<void*>(panic_exit);
         std::memcpy(static_cast<uint8_t*>(dest_address) + {{ address_offset }}, &src_address, sizeof(void*));
 ## endfor
@@ -102,39 +103,18 @@ namespace {{ namespace_id }} {
     struct Args {
         std::string input_libs_glob;
         std::string output_path;
-    };
 
-    Args parse_args(const int argc, const char** argv) {
-        const std::string INPUT_LIBS_GLOB = "input_libs_glob";
-        const std::string OUTPUT_PATH = "output_path";
+        static Args parse(const int argc, const char** argv) {
+            KBT_CMD_PARSE_ARGS(
+                "linux_exports_generator", "Generates proxy exports for linux libraries",
+                argc, argv,
+                input_libs_glob,
+                output_path
+            )
 
-        try {
-            for(auto i = 0; i < argc; ++i) {
-                LOG_DEBUG("argv[{}] = {}", i, argv[i]);
-            }
-
-            cxxopts::Options options("linux_exports_generator", "Generates proxy exports for linux libraries");
-            options.add_options()
-                (
-                    "ilg," + INPUT_LIBS_GLOB, "Libs from which symbol exports will be proxied",
-                    cxxopts::value<std::string>()
-                )
-                ("out," + OUTPUT_PATH, "Output file without extension", cxxopts::value<std::string>());
-
-            const auto args = options.parse(argc, argv);
-
-            const auto input_libs_glob = args[INPUT_LIBS_GLOB].as<std::string>();
-            const auto output_path = args[OUTPUT_PATH].as<std::string>();
-
-            LOG_INFO("{:<20} = {}", INPUT_LIBS_GLOB, input_libs_glob);
-            LOG_INFO("{:<20} = {}", OUTPUT_PATH, output_path);
-
-            return {input_libs_glob, output_path};
-        } catch(const std::exception& e) {
-            LOG_ERROR("Error parsing args: {}", e.what());
-            exit(EXIT_FAILURE);
+            return args;
         }
-    }
+    };
 }
 
 int main(const int argc, const char* argv[]) {
@@ -142,16 +122,18 @@ int main(const int argc, const char* argv[]) {
         kb::logger::init_console_logger();
 
         // ReSharper disable once CppUseStructuredBinding
-        const auto args = parse_args(argc, argv);
+        const auto args = Args::parse(argc, argv);
 
-        std::set<std::string> function_names;
+        std::set<std::string> exported_symbols;
         for(const auto& lib_path : glob::rglob(args.input_libs_glob)) {
-            const auto* lib_handle = kb::lib::load_library_or_throw(lib_path);
-            const auto export_map = kb::lib::get_export_map(lib_handle);
+            void* lib_handle = kb::lib::load_library_or_throw(lib_path);
+            const auto exports = kb::lib::get_exports_or_throw(lib_handle);
 
-            for(const auto& fn_name : export_map | std::views::keys) {
+            for(const auto& symbol : exports) {
                 // TODO: Check if the function is implemented
-                function_names.insert(fn_name);
+                if(!symbol.starts_with("_")) {
+                    exported_symbols.insert(symbol);
+                }
             }
         }
 
@@ -161,7 +143,7 @@ int main(const int argc, const char* argv[]) {
         const nlohmann::json context = {
             {"header_filename", kb::path::to_str(header_path.filename())},
             {"namespace_id", kb::path::to_str(header_path.stem())},
-            {"function_names", function_names},
+            {"exported_symbols", exported_symbols},
             {"is_32bit", kb::platform::is_32bit},
 #ifdef KB_32
             {"address_offset", 1}, // movl   takes 1 byte  for opcode + 4 bytes for address
