@@ -41,6 +41,8 @@ For example, assuming that the game loads `d3d11.dll`:
 There are games which have extra protections that break hook mode.
 In such cases, it might be worth trying [Special K], which can inject {{ project_name }} as a [custom plugin].
 
+---
+
 ### 🔀 Proxy mode
 
 - Find a {{ sdk_dll_names }} file in game directory, and rename it to {{ sdk_dll_orig_names }}.

@@ -22,8 +22,8 @@ If you have made sure that you picked the right DLL for Koaloader, then try addi
 
 ### 💥 The game is crashing
 
-If the game is crashing or not opening as expected after installing an unlocker, then try to download and install the latest [Microsoft Visual C++ Redistributable for Visual Studio 2015, 2017, 2019, and 2022](https://support.microsoft.com/en-gb/help/2977003/the-latest-supported-visual-c-downloads)
-<details><summary>Download page</summary>
+If the game is crashing or not opening as expected after installing an unlocker, then try to download and install the [Latest supported Visual C++ Redistributable version](https://learn.microsoft.com/en-us/cpp/windows/latest-supported-vc-redist?view=msvc-170#latest-supported-redistributable-version)
+<details><summary>Download page screenshot</summary>
 
-![Download page](https://i.ibb.co/n6K0X27/redist.jpg)
+![Download page](https://i.ibb.co/PZBXqHpB/vc-redist.jpg)
 </details>
