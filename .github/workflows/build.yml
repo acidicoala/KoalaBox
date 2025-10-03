@@ -19,6 +19,7 @@ on:
 
 jobs:
   build:
+    name: ${{ matrix.module }}-${{ matrix.os }}-${{ matrix.bitness }}
     runs-on: ${{ matrix.runner }}
     strategy:
       matrix:
