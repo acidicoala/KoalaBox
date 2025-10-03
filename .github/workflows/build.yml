@@ -50,11 +50,11 @@ jobs:
 
           - os: Linux
             bitness: 32
-            arch: -DCMAKE_C_FLAGS="-m32" -DCMAKE_CXX_FLAGS="-m32"
+            arch: -DCMAKE_C_FLAGS=-m32 -DCMAKE_CXX_FLAGS=-m32 -DCMAKE_EXE_LINKER_FLAGS=-m32
 
           - os: Linux
             bitness: 64
-            arch: -DCMAKE_C_FLAGS="-m64" -DCMAKE_CXX_FLAGS="-m64"
+            arch: -DCMAKE_C_FLAGS=-m64 -DCMAKE_CXX_FLAGS=-m64 -DCMAKE_EXE_LINKER_FLAGS=-m64
 
           # Output paths
           - os: Windows
@@ -70,11 +70,16 @@ jobs:
       - name: '🛠️ Install dependencies'
         if: ${{ matrix.os == 'Linux' }}
         run: |
+          if [ "${{ matrix.bitness }}" = "32" ]; then
+            sudo dpkg --add-architecture i386
+          fi
           sudo apt update
           sudo rm /var/lib/man-db/auto-update
-          sudo apt install -y libgtk-3-dev libbrotli-dev libzstd-dev
           if [ "${{ matrix.bitness }}" = "32" ]; then
-            sudo apt install -y gcc-multilib g++-multilib
+            sudo apt install libgtk-3-dev:i386 libbrotli-dev:i386 libzstd-dev:i386 \
+              gcc-multilib g++-multilib
+          else
+            sudo apt install libgtk-3-dev      libbrotli-dev      libzstd-dev
           fi
 
       - name: '📥 Check out repository code'
