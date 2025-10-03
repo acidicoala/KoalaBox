@@ -50,7 +50,7 @@ jobs:
 
           - os: Linux
             bitness: 32
-            arch: -DCMAKE_C_FLAGS=-m32 -DCMAKE_CXX_FLAGS=-m32 -DCMAKE_EXE_LINKER_FLAGS=-m32
+            arch: -DCMAKE_C_FLAGS=-m32 -DCMAKE_CXX_FLAGS=-m32 -DCMAKE_EXE_LINKER_FLAGS="-m32 -L/usr/lib/i386-linux-gnu"
 
           - os: Linux
             bitness: 64
@@ -72,39 +72,17 @@ jobs:
         run: |
           if [ "${{ matrix.bitness }}" = "32" ]; then
             sudo dpkg --add-architecture i386
+            $deps = "libbrotli-dev:i386 libzstd-dev:i386 libssl-dev:i386 gcc-multilib g++-multilib"
+          else
+            $deps = "libbrotli-dev libzstd-dev"
           fi
+          $deps = "$deps libgtk-3-dev gcc clang"
+          
           sudo apt update
           sudo rm /var/lib/man-db/auto-update
-          sudo apt install libgtk-3-dev
-          if [ "${{ matrix.bitness }}" = "32" ]; then
-            sudo apt install libbrotli-dev:i386 libzstd-dev:i386 libssl-dev:i386 \
-              gcc-multilib g++-multilib
-          else
-            sudo apt install libbrotli-dev      libzstd-dev
-          fi
-
-      # TODO: Delete these debug steps
-      - name: Show architecture
-        if: ${{ matrix.os == 'Linux' }}
-        run: uname -a
-
-      - name: Show compiler version
-        if: ${{ matrix.os == 'Linux' }}
-        run: clang++ --version
-
-      - name: Show CMake configuration
-        if: ${{ matrix.os == 'Linux' }}
-        run: cat ${{ env.BUILD_DIR }}/CMakeCache.txt || true
-
-      - name: List available libraries (i386 and x86_64)
-        if: ${{ matrix.os == 'Linux' }}
-        run: |
-          find /usr/lib/i386-linux-gnu -name "libssl.so*" -exec file {} \; || true
-          find /usr/lib/x86_64-linux-gnu -name "libssl.so*" -exec file {} \; || true
-          find /usr/lib/i386-linux-gnu -name "libbrotli*" -exec file {} \; || true
-          find /usr/lib/x86_64-linux-gnu -name "libbrotli*" -exec file {} \; || true
-          find /usr/lib/i386-linux-gnu -name "libzstd*" -exec file {} \; || true
-          find /usr/lib/x86_64-linux-gnu -name "libzstd*" -exec file {} \; || true
+          sudo apt install $deps
+          
+          clang++ --version
 
       - name: '📥 Check out repository code'
         uses: actions/checkout@v5
