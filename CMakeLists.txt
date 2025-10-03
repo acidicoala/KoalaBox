@@ -49,6 +49,10 @@ set(KOALABOX_SOURCES
 
 add_library(KoalaBox OBJECT ${KOALABOX_HEADERS} ${KOALABOX_SOURCES})
 
+if(CMAKE_BUILD_TYPE STREQUAL "Debug")
+    target_compile_definitions(KoalaBox PUBLIC KB_DEBUG)
+endif()
+
 if(WIN32)
     target_sources(KoalaBox PRIVATE
         include/koalabox/win.hpp
