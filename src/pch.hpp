@@ -23,7 +23,7 @@
 #define KB_RELEASE
 #endif
 
-#ifdef KB_WIN
+#if defined(KB_WIN)
 
 // Windows headers
 #define WIN32_LEAN_AND_MEAN
@@ -38,7 +38,7 @@
 
 #define MAIN wmain
 
-#elifdef KB_LINUX
+#elif defined(KB_LINUX)
 
 /// Kind of a Windows polyfill for Linux?
 

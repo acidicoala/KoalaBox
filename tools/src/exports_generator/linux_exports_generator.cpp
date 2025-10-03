@@ -145,9 +145,9 @@ int main(const int argc, const char* argv[]) {
             {"namespace_id", kb::path::to_str(header_path.stem())},
             {"exported_symbols", exported_symbols},
             {"is_32bit", kb::platform::is_32bit},
-#ifdef KB_32
+#if defined(KB_32)
             {"address_offset", 1}, // movl   takes 1 byte  for opcode + 4 bytes for address
-#elifdef KB_64
+#elif defined(KB_64)
             {"address_offset", 2}, // movabs takes 2 bytes for opcode + 8 bytes for address
 #endif
         };

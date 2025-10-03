@@ -1,6 +1,7 @@
 #pragma once
 
 #include <filesystem>
+#include <optional>
 #include <set>
 
 #define KB_LIB_GET_FUNC(MODULE, PROC_NAME) \
@@ -10,9 +11,9 @@
 namespace koalabox::lib {
     // TODO: Refactor into an enum
     constexpr auto CODE_SECTION = ".text";
-#ifdef KB_WIN
+#if defined(KB_WIN)
     constexpr auto CONST_STR_SECTION = ".rdata";
-#elifdef KB_LINUX
+#elif defined(KB_LINUX)
     constexpr auto CONST_STR_SECTION = ".rodata";
 #endif
 

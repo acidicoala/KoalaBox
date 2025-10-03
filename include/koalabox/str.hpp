@@ -2,12 +2,10 @@
 
 #include <string>
 
-#include "koalabox/core.hpp"
-
 namespace koalabox::str {
-#ifdef KB_WIN
+#if defined(KB_WIN)
     using platform_string = std::wstring;
-#elifdef KB_LINUX
+#elif defined(KB_LINUX)
     using platform_string = std::string;
 #endif
 
