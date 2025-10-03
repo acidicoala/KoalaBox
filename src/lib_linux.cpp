@@ -51,117 +51,43 @@ namespace koalabox::lib {
     }
 
     std::optional<section_t> get_section(void* lib_handle, const std::string& section_name) {
-        // TODO: Check if this can be done using elfio library
-        // TODO: Inspect this code carefully
         link_map* lm;
-        dlinfo(lib_handle, RTLD_DI_LINKMAP, &lm); // NOLINT(*-multi-level-implicit-pointer-conversion)
+        if(dlinfo(lib_handle, RTLD_DI_LINKMAP, &lm) != 0) {
+            LOG_ERROR("Failed to get link_map from lib handle: {}", lib_handle);
+            return std::nullopt;
+        }
 
+        // Find the correct module via dl_iterate_phdr
         struct context_t {
-            const std::string section_name;
-            const void* module_base{};
-            const link_map* link_map = nullptr;
+            const std::string& section_name;
+            const link_map* lm = nullptr;
             std::optional<section_t> result;
-        };
-        context_t initial_context{section_name, lib_handle, lm, {}};
+        } initial_context{section_name, lm, {}};
 
         dl_iterate_phdr(
-            // ReSharper disable once CppParameterMayBeConstPtrOrRef
-            [](dl_phdr_info* const header_info, [[maybe_unused]] size_t size, void* context_raw) {
-                static constexpr auto CONTINUE_ITERATION = 0;
-                static constexpr auto STOP_ITERATION = 1;
-
-                auto* const context = static_cast<context_t*>(context_raw);
-
-                // Check if this is the module we're looking for
-                if(header_info->dlpi_addr != context->link_map->l_addr) {
-                    return CONTINUE_ITERATION;
+            [](dl_phdr_info* const info, size_t, void* data) {
+                auto* ctx = static_cast<context_t*>(data);
+                if(info->dlpi_addr != ctx->lm->l_addr) {
+                    return 0;
                 }
 
-                // Open the ELF file
-                auto* elf_file = fopen(header_info->dlpi_name, "rb");
-                if(!elf_file) {
-                    LOG_ERROR("Failed to open library: {}", header_info->dlpi_name);
-                    return STOP_ITERATION;
+                ELFIO::elfio reader;
+                if(!reader.load(info->dlpi_name)) {
+                    LOG_ERROR("Failed to load library in ELFIO: {}", info->dlpi_name);
+                    return 1;
                 }
-
-                const auto cleanup = [&] {
-                    fclose(elf_file);
-                    return STOP_ITERATION;
-                };
-
-                // Read the ELF header
-                ElfW(Ehdr) elf_header;
-                if(fread(&elf_header, 1, sizeof(elf_header), elf_file) != sizeof(elf_header)) {
-                    LOG_ERROR("Failed to read elf header: {}", header_info->dlpi_name);
-                    return cleanup();
-                }
-
-                // Validate ELF magic number
-                if(memcmp(elf_header.e_ident, ELFMAG, SELFMAG) != 0) {
-                    LOG_ERROR("Not a valid ELF file: {}", header_info->dlpi_name);
-                    return cleanup();
-                }
-
-                // Read section headers
-                ElfW(Shdr) section_header;
-                if(fseek(
-                       elf_file,
-                       elf_header.e_shoff + (elf_header.e_shstrndx * sizeof(section_header)),
-                       SEEK_SET
-                   ) != 0) {
-                    LOG_ERROR("Failed to seek to section header: {}", header_info->dlpi_name);
-                    return cleanup();
-                }
-                if(fread(&section_header, 1, sizeof(section_header), elf_file) != sizeof(section_header)) {
-                    LOG_ERROR("Failed to read section header: {}", header_info->dlpi_name);
-                    return cleanup();
-                };
-
-                // Allocate memory for section names
-                auto* section_names = static_cast<char*>(malloc(section_header.sh_size));
-                if(!section_names) {
-                    LOG_ERROR("Failed to allocate memory for section names");
-                    return cleanup();
-                }
-
-                if(fseek(elf_file, section_header.sh_offset, SEEK_SET) != 0) { // NOLINT(*-narrowing-conversions)
-                    LOG_ERROR("Failed to seek to section names: {}", header_info->dlpi_name);
-                    return cleanup();
-                }
-                if(fread(section_names, 1, section_header.sh_size, elf_file) != section_header.sh_size) {
-                    LOG_ERROR("Failed to read section names: {}", header_info->dlpi_name);
-                    return cleanup();
-                }
-
-                // Iterate through sections
-                for(int i = 0; i < elf_header.e_shnum; i++) {
-                    if(fseek(elf_file, elf_header.e_shoff + (i * sizeof(section_header)), SEEK_SET) != 0) {
-                        LOG_ERROR("Failed to seek to section header: {}", header_info->dlpi_name);
-                        return cleanup();
-                    }
-                    if(fread(&section_header, 1, sizeof(section_header), elf_file) != sizeof(section_header)) {
-                        LOG_ERROR("Failed to read to section header: {}", header_info->dlpi_name);
-                        return cleanup();
-                    };
-
-                    const char* name = section_names + section_header.sh_name;
-                    if(name == context->section_name) {
-                        const auto section_size = section_header.sh_size;
-                        auto* start = reinterpret_cast<uint8_t*>(header_info->dlpi_addr + section_header.sh_offset);
-                        auto* end = start + section_size;
-
-                        context->result = section_t{
-                            .start_address = start,
-                            .end_address = end,
-                            .size = static_cast<uint32_t>(section_size)
-                        };
-
+                for(const auto& sec : reader.sections) {
+                    if(sec->get_name() == ctx->section_name) {
+                        const auto offset = sec->get_offset();
+                        const auto size = sec->get_size();
+                        auto* const base = reinterpret_cast<uint8_t*>(info->dlpi_addr);
+                        auto* start = base + offset;
+                        auto* end = start + size;
+                        ctx->result = section_t{start, end, static_cast<uint32_t>(size)};
                         break;
                     }
                 }
-
-                free(section_names);
-                return cleanup();
+                return 1; // Stop iteration
             }, &initial_context
         );
 
