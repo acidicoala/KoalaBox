@@ -62,12 +62,13 @@ jobs:
       BUILD_DIR: ${{ github.workspace }}/build
 
     steps:
-      - name: '🛠️ Install build dependencies'
-        if: ${{ matrix.bitness == 32 && matrix.os == 'Linux' }}
-        # 32-bit compiler toolchain and GTK-3 dev headers & libraries
-        run: |
-          sudo apt update
-          sudo apt install gcc-multilib g++-multilib libgtk-3-dev
+      - name: '🛠️ Install GTK-3 libraries'
+        if: ${{ matrix.os == 'Linux' }}
+        run: sudo apt update && sudo apt install libgtk-3-dev
+
+      - name: '🛠️ Install GCC libraries for 32-bit systems'
+        if: ${{ matrix.os == 'Linux' && matrix.bitness == 32 }}
+        run: sudo apt install gcc-multilib g++-multilib
 
       - name: '📥 Check out repository code'
         uses: actions/checkout@v5
