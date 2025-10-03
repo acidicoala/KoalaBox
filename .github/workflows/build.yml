@@ -72,11 +72,11 @@ jobs:
         run: |
           if [ "${{ matrix.bitness }}" = "32" ]; then
             sudo dpkg --add-architecture i386
-            $deps="libbrotli-dev:i386 libzstd-dev:i386 libssl-dev:i386 gcc-multilib g++-multilib"
+            deps="libbrotli-dev:i386 libzstd-dev:i386 libssl-dev:i386 gcc-multilib g++-multilib"
           else
-            $deps="libbrotli-dev libzstd-dev"
+            deps="libbrotli-dev libzstd-dev"
           fi
-          $deps="$deps libgtk-3-dev gcc clang"
+          deps="$deps libgtk-3-dev gcc clang"
           
           sudo apt update
           sudo rm /var/lib/man-db/auto-update
