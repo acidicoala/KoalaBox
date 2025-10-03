@@ -1,0 +1,101 @@
+name: 🏗️ Build
+on:
+  workflow_call:
+    inputs:
+      module:
+        description: 'Stringified JSON array of CMake projects to build'
+        required: true
+        type: string
+
+      os:
+        description: 'Stringified JSON array of target operating systems. Can be "Windows", "Linux", or both.'
+        required: true
+        type: string
+
+      bitness:
+        description: 'Stringified JSON array of target bitness. Can be 32, 64, or both.'
+        required: true
+        type: string
+
+jobs:
+  build:
+    runs-on: ${{ matrix.runner }}
+    strategy:
+      matrix:
+        module: ${{ fromJson(inputs.module) }}
+        os: ${{ fromJson(inputs.os) }}
+        bitness: ${{ fromJson(inputs.bitness) }}
+
+        include:
+          # Runner
+          - os: Windows
+            runner: windows-2025
+
+          - os: Linux
+            runner: ubuntu-24.04
+
+          # Architecture flags
+          - os: Windows
+            bitness: 32
+            arch: -A Win32
+
+          - os: Windows
+            bitness: 64
+            arch: -A x64
+
+          - os: Linux
+            bitness: 32
+            arch: -DCMAKE_C_FLAGS="-m32" -DCMAKE_CXX_FLAGS="-m32"
+
+          - os: Linux
+            bitness: 64
+            arch: -DCMAKE_C_FLAGS="-m64" -DCMAKE_CXX_FLAGS="-m64"
+
+          # Output paths
+          - os: Windows
+            output: ${{ env.BUILD_DIR }}\Release\*.dll
+
+          - os: Linux
+            output: ${{ env.BUILD_DIR }}\*.so
+
+
+    env:
+      BUILD_DIR: ${{ github.workspace }}/build/${{ matrix.module }}/${{ matrix.arch }}/
+
+    steps:
+      - name: '🛠️ Install 32-bit compiler toolchain'
+        if: ${{ matrix.bitness == 32 && matrix.os == 'Linux' }}
+        run: |
+          sudo apt update
+          sudo apt install gcc-multilib g++-multilib
+
+      - name: '📥 Check out repository code'
+        uses: actions/checkout@v5
+        with:
+          submodules: recursive
+
+      - name: '🗃️ Cache CPM dependencies'
+        uses: actions/cache@v4
+        with:
+          path: '${{ env.BUILD_DIR }}/build/.cache'
+
+      - name: '⚙️ Generate build files'
+        run: >
+          cmake
+            -B "${{ env.BUILD_DIR }}"
+            -DCMAKE_BUILD_TYPE=${{ inputs.config }}
+            -DMODULE=${{ matrix.module }}
+            ${{ matrix.arch }}
+
+      - name: Build the project
+        run: >
+          cmake
+            --build ${{ env.BUILD_DIR }}
+            --config Release
+            --target ${{ matrix.module }}
+
+      - name: Upload binaries
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.module }}-${{ matrix.os }}-${{ matrix.arch }}
+          path: ${{ matrix.output }}

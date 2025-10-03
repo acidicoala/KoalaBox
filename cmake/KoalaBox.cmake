@@ -52,8 +52,28 @@ function(configure_version_resource)
 endfunction()
 
 function(configure_build_config)
+    # Run a command to get the short commit hash
+    execute_process(
+        COMMAND git rev-parse --short HEAD
+        OUTPUT_VARIABLE GIT_SHORT_HASH
+        OUTPUT_STRIP_TRAILING_WHITESPACE
+    )
+
+    # Check if the current commit has tags
+    execute_process(
+        COMMAND git tag --points-at HEAD
+        OUTPUT_VARIABLE GIT_TAGS
+        OUTPUT_STRIP_TRAILING_WHITESPACE
+    )
+
+    # Set VERSION_SUFFIX based on presence of tags
+    if(GIT_TAGS STREQUAL "")
+        set(VERSION_SUFFIX "-dev[${GIT_SHORT_HASH}]")
+    else()
+        set(VERSION_SUFFIX "")
+    endif()
+
     set(BUILD_CONFIG_HEADER "${CMAKE_CURRENT_BINARY_DIR}/generated/build_config.h")
-    set(VERSION_SUFFIX "$ENV{VERSION_SUFFIX}")
 
     get_target_property(KOALABOX_SOURCE_DIR KoalaBox SOURCE_DIR)
     configure_file("${KOALABOX_SOURCE_DIR}/res/build_config.gen.h" ${BUILD_CONFIG_HEADER})
