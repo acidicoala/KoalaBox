@@ -35,6 +35,10 @@ jobs:
           - os: Linux
             runner: ubuntu-24.04
 
+          # Compiler
+          - os: Linux
+            compiler: -DCMAKE_C_COMPILER=clang -DCMAKE_CXX_COMPILER=clang++
+
           # Architecture flags
           - os: Windows
             bitness: 32
@@ -92,6 +96,7 @@ jobs:
           -DCMAKE_BUILD_TYPE=Release
           -DMODULE=${{ matrix.module }}
           ${{ matrix.arch }}
+          ${{ matrix.compiler }}
 
       - name: Build the project
         run: >
