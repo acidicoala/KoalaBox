@@ -83,6 +83,9 @@ jobs:
           sudo apt install $deps
           
           clang++ --version
+          
+          echo "LIBRARY_PATH=$LIBRARY_PATH"
+          echo "LIBRARY_PATH=$LIBRARY_PATH" >> $GITHUB_ENV
 
       - name: '📥 Check out repository code'
         uses: actions/checkout@v5
@@ -104,6 +107,7 @@ jobs:
           -DMODULE=${{ matrix.module }}
           ${{ matrix.arch }}
           ${{ matrix.compiler }}
+          --debug-output
 
       - name: Build the project
         run: >
@@ -111,6 +115,7 @@ jobs:
           --build ${{ env.BUILD_DIR }}
           --config Release
           --target ${{ matrix.module }}
+          -- VERBOSE=1
 
       - name: Upload binaries
         uses: actions/upload-artifact@v4
