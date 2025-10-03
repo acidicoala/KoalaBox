@@ -1,5 +1,6 @@
-#include "koalabox/logger.hpp"
 #include "koalabox/lib.hpp"
+#include "koalabox/core.hpp"
+#include "koalabox/logger.hpp"
 #include "koalabox/path.hpp"
 
 namespace koalabox::lib {
