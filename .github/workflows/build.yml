@@ -76,6 +76,7 @@ jobs:
       - name: '🗃️ Cache CPM dependencies'
         uses: actions/cache@v4
         with:
+          key: ${{ matrix.os }}-${{ matrix.bitness }}
           path: '${{ env.BUILD_DIR }}/.cache'
 
       - name: '⚙️ Generate build files'
