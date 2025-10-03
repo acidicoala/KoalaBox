@@ -1,4 +1,4 @@
-## 🛠 Installation instructions
+## 🛠 Installation instructions (🪟 Windows)
 
 > [!NOTE]
 > To determine the bitness of a game you can open _Task Manager_, navigate to _Details_ tab,
@@ -16,7 +16,7 @@ It works best when a game doesn't have any protections against DLL injection.
 The main advantage of this mode is its minimal setup, which adds only 1 new DLL to the game folder.
 
 - Download the [latest {{ project_name }} release zip].
-- From this downloaded zip extract {{ unlocker_dll_names }}, depending on a game's bitness.
+- From this downloaded zip extract {{ unlocker_libs_win }}, depending on a game's bitness.
 - Rename the unzipped DLL to {{ self_inject_dll }}.
 - Place this {{ self_inject_dll }} next to the game's `.exe` file.
 
@@ -33,8 +33,8 @@ For example, assuming that the game loads `d3d11.dll`:
     - Place `d3d11.dll` next to the game's `.exe` file.
 - Install {{ project_name }}
     - Download the [latest {{ project_name }} release zip].
-    - From this downloaded zip extract {{ unlocker_dll_names }}, depending on a game's bitness.
-    - Place {{ unlocker_dll_names }} next to the game's `.exe` file.
+    - From this downloaded zip extract {{ unlocker_libs_win }}, depending on a game's bitness.
+    - Place {{ unlocker_libs_win }} next to the game's `.exe` file.
 
 #### 🪝 Hook mode with Special K
 
@@ -45,11 +45,11 @@ In such cases, it might be worth trying [Special K], which can inject {{ project
 
 ### 🔀 Proxy mode
 
-- Find a {{ sdk_dll_names }} file in game directory, and rename it to {{ sdk_dll_orig_names }}.
+- Find a {{ sdk_libs_win }} file in game directory, and rename it to {{ sdk_libs_orig_win }}.
 - Download the [latest {{ project_name }} release zip].
-- From this downloaded zip extract {{ unlocker_dll_names }}, depending on a game's bitness.
-- Rename this extracted DLL to {{ sdk_dll_names }}, depending on a game's bitness.
-- Place this renamed unlocker DLL next to the {{ sdk_dll_orig_names }} file.
+- From this downloaded zip extract {{ unlocker_libs_win }}, depending on a game's bitness.
+- Rename this extracted DLL to {{ sdk_libs_win }}, depending on a game's bitness.
+- Place this renamed unlocker DLL next to the {{ sdk_libs_orig_win }} file.
 
 [latest {{ project_name }} release zip]: {{ github_repo_url }}/releases/latest
 [latest Koaloader release zip]: https://github.com/acidicoala/Koaloader/releases/latest
