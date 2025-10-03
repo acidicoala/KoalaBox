@@ -1,4 +1,5 @@
 #include <filesystem>
+#include <format>
 #include <fstream>
 #include <functional>
 #include <ios>
@@ -6,8 +7,8 @@
 
 #include <miniz.h>
 
-#include "koalabox/path.hpp"
 #include "koalabox/zip.hpp"
+#include "koalabox/path.hpp"
 
 namespace koalabox::zip {
     void extract_files(
@@ -60,11 +61,7 @@ namespace koalabox::zip {
                     if(ec) {
                         mz_zip_reader_end(&zip);
                         throw std::runtime_error(
-                            std::format(
-                                "Failed to create directory: {}. Reason: {}",
-                                out_path_str,
-                                ec.message()
-                            )
+                            std::format("Failed to create directory: {}. Reason: {}", out_path_str, ec.message())
                         );
                     }
                     continue;
@@ -77,8 +74,7 @@ namespace koalabox::zip {
                     throw std::runtime_error(
                         std::format(
                             "Failed to create parent directories for: {}. Reason: {}",
-                            out_path_str,
-                            ec.message()
+                            out_path_str, ec.message()
                         )
                     );
                 }
@@ -99,10 +95,7 @@ namespace koalabox::zip {
                         "Failed to open output file for writing: " + out_path_str
                     );
                 }
-                output_stream.write(
-                    static_cast<const char*>(p),
-                    uncompressed_size
-                );
+                output_stream.write(static_cast<const char*>(p), static_cast<std::streamsize>(uncompressed_size));
                 output_stream.close();
                 mz_free(p);
 
