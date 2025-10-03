@@ -80,19 +80,20 @@ jobs:
           path: '${{ env.BUILD_DIR }}/.cache'
 
       - name: '⚙️ Generate build files'
+        # Note: indenting arguments will lead to parsing errors
         run: >
           cmake
-            -B "${{ env.BUILD_DIR }}"
-            -DCMAKE_BUILD_TYPE=Release
-            -DMODULE=${{ matrix.module }}
-            ${{ matrix.arch }}
+          -B "${{ env.BUILD_DIR }}"
+          -DCMAKE_BUILD_TYPE=Release
+          -DMODULE=${{ matrix.module }}
+          ${{ matrix.arch }}
 
       - name: Build the project
         run: >
           cmake
-            --build ${{ env.BUILD_DIR }}
-            --config Release
-            --target ${{ matrix.module }}
+          --build ${{ env.BUILD_DIR }}
+          --config Release
+          --target ${{ matrix.module }}
 
       - name: Upload binaries
         uses: actions/upload-artifact@v4
