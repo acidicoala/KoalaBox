@@ -85,15 +85,19 @@ jobs:
 
       # TODO: Delete these debug steps
       - name: Show architecture
+        if: ${{ matrix.os == 'Linux' }}
         run: uname -a
 
       - name: Show compiler version
+        if: ${{ matrix.os == 'Linux' }}
         run: clang++ --version
 
       - name: Show CMake configuration
+        if: ${{ matrix.os == 'Linux' }}
         run: cat ${{ env.BUILD_DIR }}/CMakeCache.txt || true
 
       - name: List available libraries (i386 and x86_64)
+        if: ${{ matrix.os == 'Linux' }}
         run: |
           find /usr/lib/i386-linux-gnu -name "libssl.so*" -exec file {} \; || true
           find /usr/lib/x86_64-linux-gnu -name "libssl.so*" -exec file {} \; || true
