@@ -83,6 +83,25 @@ jobs:
             sudo apt install libbrotli-dev      libzstd-dev
           fi
 
+      # TODO: Delete these debug steps
+      - name: Show architecture
+        run: uname -a
+
+      - name: Show compiler version
+        run: clang++ --version
+
+      - name: Show CMake configuration
+        run: cat ${{ env.BUILD_DIR }}/CMakeCache.txt || true
+
+      - name: List available libraries (i386 and x86_64)
+        run: |
+          find /usr/lib/i386-linux-gnu -name "libssl.so*" -exec file {} \; || true
+          find /usr/lib/x86_64-linux-gnu -name "libssl.so*" -exec file {} \; || true
+          find /usr/lib/i386-linux-gnu -name "libbrotli*" -exec file {} \; || true
+          find /usr/lib/x86_64-linux-gnu -name "libbrotli*" -exec file {} \; || true
+          find /usr/lib/i386-linux-gnu -name "libzstd*" -exec file {} \; || true
+          find /usr/lib/x86_64-linux-gnu -name "libzstd*" -exec file {} \; || true
+
       - name: '📥 Check out repository code'
         uses: actions/checkout@v5
         with:
