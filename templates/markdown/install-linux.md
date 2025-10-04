@@ -15,7 +15,7 @@ For example:
 
 | Bitness | Launch Options                                                     |
 |---------|--------------------------------------------------------------------|
-| 32-bit  | `LD_PRELOAD=./libsmoke_api32.so ./GameExecutable.x86    `          |
+| 32-bit  | `LD_PRELOAD=./libsmoke_api32.so ./GameExecutable.x86    %command%` |
 | 64-bit  | `LD_PRELOAD=./libsmoke_api64.so ./GameExecutable.x86_64 %command%` |
 
 Naturally, the exact options might change depending on how files are located on your filesystem

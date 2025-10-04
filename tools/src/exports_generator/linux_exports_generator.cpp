@@ -130,7 +130,7 @@ namespace {{ namespace_id }} {
                     }
                 }
             } catch(const std::exception& e) {
-                // GitHub runner fails to process binaries from SDK version 106
+                // FIXME: GitHub runner fails to process binaries from SDK version 106
                 LOG_ERROR("Error processing library: {}", e.what());
             }
         }
