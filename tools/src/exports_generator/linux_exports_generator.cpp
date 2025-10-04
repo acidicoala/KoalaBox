@@ -120,13 +120,18 @@ namespace {{ namespace_id }} {
         kb::lib::exports_t results;
 
         for(const auto& lib_path : glob::rglob(input_libs_glob)) {
-            const auto exports = kb::lib::get_exports_or_throw(lib_path);
+            try {
+                const auto exports = kb::lib::get_exports_or_throw(lib_path);
 
-            for(const auto& symbol : exports) {
-                // TODO: Check if the function is implemented
-                if(!symbol.starts_with("_")) {
-                    results.insert(symbol);
+                for(const auto& symbol : exports) {
+                    // TODO: Check if the function is implemented
+                    if(!symbol.starts_with("_")) {
+                        results.insert(symbol);
+                    }
                 }
+            } catch(const std::exception& e) {
+                // GitHub runner fails to process binaries from SDK version 106
+                LOG_ERROR("Error processing library: {}", e.what());
             }
         }
 
