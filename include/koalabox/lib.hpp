@@ -48,8 +48,16 @@ namespace koalabox::lib {
     // Symbol name as it appears in symbol/export table
     using symbol_name_t = std::string;
     using exports_t = std::set<symbol_name_t>;
+#if defined(KB_WIN)
+    // On Windows we can get exports from a loaded library
+    // TODO: Maybe we should get exports from filesystem as well?
     std::optional<exports_t> get_exports(void* lib_handle);
     exports_t get_exports_or_throw(void* lib_handle);
+#elif defined(KB_LINUX)
+    // On Linux we can get exports only from a library on filesystem
+    std::optional<exports_t> get_exports(const std::filesystem::path& lib_path);
+    exports_t get_exports_or_throw(const std::filesystem::path& lib_path);
+#endif
 
     /**
      * Appends "_o" to library name and attempts to load it from the from_path

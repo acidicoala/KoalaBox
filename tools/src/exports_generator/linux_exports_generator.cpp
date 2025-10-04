@@ -115,35 +115,32 @@ namespace {{ namespace_id }} {
             return args;
         }
     };
-}
 
-int main(const int argc, const char* argv[]) {
-    try {
-        kb::logger::init_console_logger();
+    auto get_exported_symbols(const std::string& input_libs_glob) {
+        kb::lib::exports_t results;
 
-        // ReSharper disable once CppUseStructuredBinding
-        const auto args = Args::parse(argc, argv);
-
-        std::set<std::string> exported_symbols;
-        for(const auto& lib_path : glob::rglob(args.input_libs_glob)) {
-            void* lib_handle = kb::lib::load_library_or_throw(lib_path);
-            const auto exports = kb::lib::get_exports_or_throw(lib_handle);
+        for(const auto& lib_path : glob::rglob(input_libs_glob)) {
+            const auto exports = kb::lib::get_exports_or_throw(lib_path);
 
             for(const auto& symbol : exports) {
                 // TODO: Check if the function is implemented
                 if(!symbol.starts_with("_")) {
-                    exported_symbols.insert(symbol);
+                    results.insert(symbol);
                 }
             }
         }
 
-        const auto header_path = kb::path::from_str(args.output_path + ".hpp");
-        const auto source_path = kb::path::from_str(args.output_path + ".cpp");
+        return results;
+    }
+
+    void generate_header_and_source(const std::string& output_path, kb::lib::exports_t exports) {
+        const auto header_path = kb::path::from_str(output_path + ".hpp");
+        const auto source_path = kb::path::from_str(output_path + ".cpp");
 
         const nlohmann::json context = {
             {"header_filename", kb::path::to_str(header_path.filename())},
             {"namespace_id", kb::path::to_str(header_path.stem())},
-            {"exported_symbols", exported_symbols},
+            {"exported_symbols", exports},
             {"is_32bit", kb::platform::is_32bit},
 #if defined(KB_32)
             {"address_offset", 1}, // movl   takes 1 byte  for opcode + 4 bytes for address
@@ -167,6 +164,21 @@ int main(const int argc, const char* argv[]) {
         } else {
             throw std::runtime_error("Could not open source file for writing");
         }
+    }
+}
+
+int main(const int argc, const char* argv[]) {
+    try {
+        kb::logger::init_console_logger();
+
+        // ReSharper disable once CppUseStructuredBinding
+        const auto args = Args::parse(argc, argv);
+
+        const auto exported_symbols = get_exported_symbols(args.input_libs_glob);
+        LOG_INFO("Collected {} symbols", exported_symbols.size());
+
+        generate_header_and_source(args.output_path, exported_symbols);
+        LOG_INFO("Successfully generated exports in");
     } catch(const std::exception& e) {
         LOG_ERROR("Unhandled global exception: {}", e.what());
         exit(EXIT_FAILURE);

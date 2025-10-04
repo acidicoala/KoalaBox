@@ -14,6 +14,7 @@
 #include <linux/limits.h>
 #include <sys/stat.h>
 
+#include "koalabox/core.hpp"
 #include "koalabox/lib.hpp"
 #include "koalabox/logger.hpp"
 #include "koalabox/path.hpp"
@@ -52,12 +53,12 @@ namespace koalabox::lib {
 
     std::optional<section_t> get_section(void* lib_handle, const std::string& section_name) {
         link_map* lm;
-        if(dlinfo(lib_handle, RTLD_DI_LINKMAP, &lm) != 0) {
+        if(dlinfo(lib_handle, RTLD_DI_LINKMAP, &lm) != 0) { // NOLINT(*-multi-level-implicit-pointer-conversion)
             LOG_ERROR("Failed to get link_map from lib handle: {}", lib_handle);
             return std::nullopt;
         }
 
-        // Find the correct module via dl_iterate_phdr
+        // Find the correct library
         struct context_t {
             const std::string& section_name;
             const link_map* lm = nullptr;
@@ -71,6 +72,8 @@ namespace koalabox::lib {
                     return 0;
                 }
 
+                // Correct library found
+
                 ELFIO::elfio reader;
                 if(!reader.load(info->dlpi_name)) {
                     LOG_ERROR("Failed to load library in ELFIO: {}", info->dlpi_name);
@@ -78,6 +81,8 @@ namespace koalabox::lib {
                 }
                 for(const auto& sec : reader.sections) {
                     if(sec->get_name() == ctx->section_name) {
+                        // Correct section found
+
                         const auto offset = sec->get_offset();
                         const auto size = sec->get_size();
                         auto* const base = reinterpret_cast<uint8_t*>(info->dlpi_addr);
@@ -115,8 +120,8 @@ namespace koalabox::lib {
         return dlopen(full_lib_name.c_str(), RTLD_NOW | RTLD_GLOBAL);
     }
 
-    std::optional<exports_t> get_exports(void* const lib_handle) {
-        const auto lib_path_str = path::to_str(get_fs_path(lib_handle));
+    std::optional<exports_t> get_exports(const fs::path& lib_path) {
+        const auto lib_path_str = path::to_str(lib_path);
 
         ELFIO::elfio reader;
         if(!reader.load(lib_path_str)) {
@@ -156,6 +161,12 @@ namespace koalabox::lib {
         }
 
         return results;
+    }
+
+    exports_t get_exports_or_throw(const fs::path& lib_path) {
+        return get_exports(lib_path) | throw_if_empty(
+                   std::format("Failed get library exports of {}", path::to_str(lib_path))
+               );
     }
 
     std::optional<Bitness> get_bitness(const fs::path& library_path) {

@@ -6,13 +6,13 @@
 #include <wil/stl.h> // This header is absolutely necessary for wil::GetModuleFileNameW to work
 #include <wil/win32_helpers.h>
 
+#include "koalabox/core.hpp"
 #include "koalabox/lib.hpp"
 #include "koalabox/logger.hpp"
 #include "koalabox/path.hpp"
-#include "koalabox/str.hpp"
-#include "koalabox/util.hpp"
 
 namespace {
+    // TODO: Inline this function
     PIMAGE_SECTION_HEADER get_pe_section_header_or_throw(
         const HMODULE& module_handle,
         const std::string& section_name
@@ -129,6 +129,12 @@ namespace koalabox::lib {
         }
 
         return exported_functions;
+    }
+
+    exports_t get_exports_or_throw(void* lib_handle) {
+        return get_exports(lib_handle) | throw_if_empty(
+            std::format("Failed get library exports of {}", lib_handle)
+        );
     }
 
     std::optional<Bitness> get_bitness(const std::filesystem::path& library_path) {
