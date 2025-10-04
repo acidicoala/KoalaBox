@@ -4,6 +4,7 @@
 
 #include "koalabox/win.hpp"
 
+#include "koalabox/core.hpp"
 #include "koalabox/globals.hpp"
 #include "koalabox/lib.hpp"
 #include "koalabox/logger.hpp"
