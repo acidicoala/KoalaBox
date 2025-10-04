@@ -83,8 +83,6 @@ jobs:
           sudo apt install $deps
           
           clang++ --version
-          
-          echo "LIBRARY_PATH=/usr/lib/i386-linux-gnu:$LIBRARY_PATH" >> $GITHUB_ENV
 
       - name: '📥 Check out repository code'
         uses: actions/checkout@v5
@@ -103,6 +101,7 @@ jobs:
           cmake
           -B "${{ env.BUILD_DIR }}"
           -DCMAKE_BUILD_TYPE=Release
+          -DCMAKE_PREFIX_PATH=/usr/lib/i386-linux-gnu
           -DMODULE=${{ matrix.module }}
           ${{ matrix.arch }}
           ${{ matrix.compiler }}
