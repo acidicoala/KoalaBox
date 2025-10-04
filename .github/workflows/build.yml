@@ -81,8 +81,8 @@ jobs:
           sudo apt update
           sudo rm /var/lib/man-db/auto-update
           sudo apt install $deps
-
-          Install clang v20
+          
+          echo "Installing Clang v20"
           wget https://apt.llvm.org/llvm.sh
           chmod +x llvm.sh
           sudo ./llvm.sh 20
