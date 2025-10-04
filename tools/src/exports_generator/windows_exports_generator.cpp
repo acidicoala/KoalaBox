@@ -30,7 +30,6 @@ namespace {
     namespace fs = std::filesystem;
 
     struct Args {
-        bool demangle;
         std::string forwarded_dll_name;
         std::string lib_files_glob;
         std::string output_file_path;
@@ -42,7 +41,6 @@ namespace {
             KBT_CMD_PARSE_ARGS(
                 "linux_exports_generator", "Generates proxy exports for linux libraries",
                 argc, normalized.argv.data(),
-                demangle,
                 forwarded_dll_name,
                 lib_files_glob,
                 output_file_path,
@@ -92,8 +90,8 @@ namespace {
         return declared_functions;
     }
 
-    auto get_library_exports_map(const std::string& lib_files_glob, const bool undecorate) {
-        kb::lib::export_map_t dll_exports;
+    auto get_library_exports_map(const std::string& lib_files_glob) {
+        kb::lib::exports_t dll_exports;
 
         const auto lib_path_list = glob::glob(lib_files_glob);
         LOG_INFO("Found {} library file(s)", lib_path_list.size());
@@ -103,8 +101,8 @@ namespace {
                 continue;
             }
 
-            const auto* const library = kb::lib::load_library_or_throw(lib_path);
-            const auto lib_exports = kb::lib::get_export_map(library, undecorate);
+            const auto* const lib_handle = kb::lib::load_library_or_throw(lib_path);
+            const auto lib_exports = kb::lib::get_exports_or_throw(lib_handle);
 
             dll_exports.insert(lib_exports.begin(), lib_exports.end());
         }
@@ -142,17 +140,11 @@ int MAIN(const int argc, const TCHAR* argv[]) { // NOLINT(*-use-internal-linkage
         // Create directories for export file, if necessary
         fs::create_directories(output_file_path.parent_path());
 
-        const auto lib_exports = get_library_exports_map(args.lib_files_glob, args.demangle);
-
-        std::vector<std::string> function_names;
-        function_names.reserve(lib_exports.size());
-        for(const auto& function_name : lib_exports | std::views::values) {
-            function_names.push_back(function_name);
-        }
+        const auto lib_exports = get_library_exports_map(args.lib_files_glob);
 
         const nlohmann::json context = {
             {"forwarded_dll_name", args.forwarded_dll_name},
-            {"function_names", function_names},
+            {"function_names", lib_exports},
             {"implemented_functions", implemented_functions},
         };
 

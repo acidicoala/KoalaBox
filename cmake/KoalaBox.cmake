@@ -103,7 +103,7 @@ endfunction()
 
 function(configure_linker_exports)
     cmake_parse_arguments(
-        ARG "DEMANGLE" "TARGET;HEADER_NAME;FORWARDED_DLL_NAME;LIB_FILES_GLOB;SOURCES_INPUT_PATH" "" ${ARGN}
+        ARG "" "TARGET;HEADER_NAME;FORWARDED_DLL_NAME;LIB_FILES_GLOB;SOURCES_INPUT_PATH" "" ${ARGN}
     )
 
     set(GENERATED_LINKER_EXPORTS "${CMAKE_CURRENT_BINARY_DIR}/generated/${ARG_HEADER_NAME}")
@@ -115,7 +115,6 @@ function(configure_linker_exports)
     add_custom_target("${GENERATE_LINKER_EXPORTS_TARGET}" ALL
         COMMENT "Generate linker exports for export address table"
         COMMAND windows_exports_generator # Executable path
-        $<$<BOOL:${ARG_DEMANGLE}>:--demangle>
         --forwarded_dll_name "${ARG_FORWARDED_DLL_NAME}"
         --lib_files_glob "\"${ARG_LIB_FILES_GLOB}\""
         --output_file_path "\"${GENERATED_LINKER_EXPORTS}\""
