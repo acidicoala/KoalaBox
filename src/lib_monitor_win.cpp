@@ -5,6 +5,7 @@
 
 #include <ranges>
 
+#include "koalabox/core.hpp"
 #include "koalabox/lib.hpp"
 #include "koalabox/lib_monitor.hpp"
 #include "koalabox/logger.hpp"

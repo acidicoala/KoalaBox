@@ -93,7 +93,7 @@ namespace koalabox::lib {
     std::optional<exports_t> get_exports(void* const lib_handle) {
         // Adapted from: https://github.com/mborne/dll2def/blob/master/dll2def.cpp
 
-        auto exported_functions = std::map<std::string, std::string>();
+        exports_t results;
 
         const auto* dos_header = static_cast<const IMAGE_DOS_HEADER*>(lib_handle);
 
@@ -125,10 +125,10 @@ namespace koalabox::lib {
             const auto* name_ptr = base + reinterpret_cast<const DWORD*>(names)[i];
             std::string exported_name = reinterpret_cast<const char*>(name_ptr);
 
-            exported_functions.insert({exported_name, exported_name});
+            results.insert(exported_name);
         }
 
-        return exported_functions;
+        return results;
     }
 
     exports_t get_exports_or_throw(void* lib_handle) {
