@@ -18,4 +18,4 @@ RUN useradd -m -u $UID -g $GID -o -s /bin/bash $UNAME
 USER $UNAME
 
 # Set the workdir
-WORKDIR /home/UNAME
+WORKDIR /home/$UNAME
