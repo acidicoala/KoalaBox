@@ -16,7 +16,6 @@ set(KOALABOX_HEADERS
     include/koalabox/hook.hpp
     include/koalabox/http_client.hpp
     include/koalabox/io.hpp
-    include/koalabox/ipc.hpp
     include/koalabox/logger.hpp
     include/koalabox/lib.hpp
     include/koalabox/lib_monitor.hpp
@@ -26,7 +25,6 @@ set(KOALABOX_HEADERS
     include/koalabox/platform.hpp
     include/koalabox/str.hpp
     include/koalabox/util.hpp
-    include/koalabox/zip.hpp
 )
 
 set(KOALABOX_SOURCES
@@ -44,7 +42,6 @@ set(KOALABOX_SOURCES
     src/paths.cpp
     src/str.cpp
     src/util.cpp
-    src/zip.cpp
 )
 
 add_library(KoalaBox OBJECT ${KOALABOX_HEADERS} ${KOALABOX_SOURCES})
@@ -56,7 +53,6 @@ endif()
 if(WIN32)
     target_sources(KoalaBox PRIVATE
         include/koalabox/win.hpp
-        src/ipc_win.cpp
         src/lib_monitor_win.cpp
         src/lib_win.cpp
         src/path_win.cpp
@@ -85,7 +81,6 @@ endif()
 
 target_include_directories(KoalaBox PUBLIC "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>")
 
-
 set(PCH_PATH ${CMAKE_CURRENT_SOURCE_DIR}/src/pch.hpp)
 target_precompile_headers(KoalaBox PUBLIC "$<$<COMPILE_LANGUAGE:CXX>:${PCH_PATH}>")
 
@@ -93,10 +88,6 @@ target_precompile_headers(KoalaBox PUBLIC "$<$<COMPILE_LANGUAGE:CXX>:${PCH_PATH}
 
 # Note: Dependencies should be linked to KoalaBox using PUBLIC scope
 # to avoid inconsistent flags/definitions.
-
-## https://github.com/serge1/ELFIO
-CPMAddPackage("gh:serge1/ELFIO#Release_3.12")
-target_link_libraries(KoalaBox PUBLIC elfio)
 
 ## https://github.com/p-ranav/glob
 CPMAddPackage("gh:p-ranav/glob#e796e3ca94e0c514296425d9884e2198c41699ee")
@@ -108,11 +99,6 @@ CPMAddPackage(
     OPTIONS "JSON_Diagnostics ON"
 )
 target_link_libraries(KoalaBox PUBLIC nlohmann_json::nlohmann_json)
-
-## https://github.com/richgel999/miniz
-target_compile_definitions(KoalaBox PUBLIC MINIZ_NO_DEFLATE_APIS)
-CPMAddPackage("gh:richgel999/miniz#c883286f1a6443720e7705450f59e579a4bbb8e2")
-target_link_libraries(KoalaBox PUBLIC miniz)
 
 CPMAddPackage(
     URI "gh:libcpr/cpr#1.12.0"

@@ -39,7 +39,7 @@ namespace {
         const std::set lib_names(keys.begin(), keys.end());
 
         for(const auto& lib_name : lib_names) {
-            auto* const module_handle = koalabox::lib::get_library_handle(lib_name);
+            auto* const module_handle = koalabox::lib::get_lib_handle(lib_name);
 
             if(not module_handle) {
                 continue;

@@ -4,7 +4,7 @@
 #include <functional>
 #include <string>
 
-namespace koalabox::zip {
+namespace koalabox::tools::zip {
     namespace fs = std::filesystem;
 
     /**

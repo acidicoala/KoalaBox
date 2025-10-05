@@ -4,9 +4,6 @@
 #include <string>
 #include <vector>
 
-// This must be before linux headers to avoid name collisions
-#include <elfio/elfio.hpp>
-
 #include <dlfcn.h>
 #include <fcntl.h>
 #include <link.h>
@@ -99,7 +96,7 @@ namespace koalabox::lib {
         return initial_context.result;
     }
 
-    std::optional<void*> load_library(const fs::path& library_path) {
+    std::optional<void*> load(const fs::path& library_path) {
         LOG_DEBUG("Loading library: '{}'", path::to_str(library_path));
 
         // RTLD_LOCAL here is very important, it avoids unintended overwrites of function exports.
@@ -111,62 +108,13 @@ namespace koalabox::lib {
         return {};
     }
 
-    void unload_library(void* library_handle) {
+    void unload(void* library_handle) {
         dlclose(library_handle);
     }
 
-    void* get_library_handle(const std::string& library_name) {
+    void* get_lib_handle(const std::string& library_name) {
         const auto full_lib_name = std::format("{}.so", library_name);
         return dlopen(full_lib_name.c_str(), RTLD_NOW | RTLD_GLOBAL);
-    }
-
-    std::optional<exports_t> get_exports(const fs::path& lib_path) {
-        const auto lib_path_str = path::to_str(lib_path);
-
-        ELFIO::elfio reader;
-        if(!reader.load(lib_path_str)) {
-            LOG_ERROR("Failed to read ELF file: {}", lib_path_str);
-            return std::nullopt;
-        }
-
-        ELFIO::section* dynsym = reader.sections[".dynsym"];
-        if(!dynsym) {
-            LOG_ERROR("Failed to find dynamic symbol table section: {}", lib_path_str);
-            return std::nullopt;
-        }
-
-        exports_t results;
-
-        const ELFIO::symbol_section_accessor symbols(reader, dynsym);
-        for(auto i = 0U; i < symbols.get_symbols_num(); ++i) {
-            std::string name;
-            ELFIO::Elf64_Addr value;
-            ELFIO::Elf_Xword size;
-            unsigned char bind;
-            unsigned char type;
-            unsigned char other;
-            ELFIO::Elf_Half section_index;
-
-            symbols.get_symbol(i, name, value, size, bind, type, section_index, other);
-
-            // Exported functions: global/weak binding, type FUNC, default visibility, non-empty name
-            if(
-                section_index != SHN_UNDEF && // Exported, not just referenced
-                (bind == STB_GLOBAL || bind == STB_WEAK) && // Global or weak binding
-                (other & 0x3) == STV_DEFAULT && // Default visibility
-                !name.empty()
-            ) {
-                results.insert(name);
-            }
-        }
-
-        return results;
-    }
-
-    exports_t get_exports_or_throw(const fs::path& lib_path) {
-        return get_exports(lib_path) | throw_if_empty(
-                   std::format("Failed get library exports of {}", path::to_str(lib_path))
-               );
     }
 
     std::optional<Bitness> get_bitness(const fs::path& library_path) {

@@ -7,10 +7,11 @@
 
 #include <miniz.h>
 
-#include "koalabox/zip.hpp"
-#include "koalabox/path.hpp"
+#include <koalabox/path.hpp>
 
-namespace koalabox::zip {
+#include "koalabox_tools/zip.hpp"
+
+namespace koalabox::tools::zip {
     void extract_files(
         const fs::path& zip_path,
         const std::function<fs::path(const std::string& name, bool is_dir)>& predicate

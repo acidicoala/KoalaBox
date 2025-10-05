@@ -1,5 +1,4 @@
 #include <fstream>
-#include <iostream>
 #include <regex>
 #include <set>
 
@@ -8,16 +7,17 @@
 #include <inja/inja.hpp>
 
 #include <koalabox/io.hpp>
-#include <koalabox/lib.hpp>
 #include <koalabox/logger.hpp>
 #include <koalabox/path.hpp>
 
 #include <koalabox_tools/cmd.hpp>
+#include <koalabox_tools/module.hpp>
 #include <koalabox_tools/parser.hpp>
 
 namespace {
     // language=c++
-    constexpr auto* HEADER_TEMPLATE =R"(#pragma once
+    constexpr auto* HEADER_TEMPLATE =R"(// Auto-generated header file
+#pragma once
 
 ## for function_name in function_names
 {% if function_name in implemented_functions %}{% set comment="//" %}{% else %}{% set comment="" %}{% endif %}
@@ -91,40 +91,26 @@ namespace {
     }
 
     auto get_library_exports_map(const std::string& lib_files_glob) {
-        kb::lib::exports_t dll_exports;
+        kb::tools::module::exports_t all_exports;
 
-        const auto lib_path_list = glob::glob(lib_files_glob);
+        const auto lib_path_list = glob::rglob(lib_files_glob);
         LOG_INFO("Found {} library file(s)", lib_path_list.size());
 
         for(const auto& lib_path : lib_path_list) {
-            if(not fs::exists(lib_path)) {
-                continue;
-            }
+            const auto exports = kb::tools::module::get_exports_or_throw(lib_path);
 
-            const auto* const lib_handle = kb::lib::load_library_or_throw(lib_path);
-            const auto lib_exports = kb::lib::get_exports_or_throw(lib_handle);
-
-            dll_exports.insert(lib_exports.begin(), lib_exports.end());
+            all_exports.insert(exports.begin(), exports.end());
         }
 
-        LOG_INFO("Found {} exported functions", dll_exports.size());
+        LOG_INFO("Found {} exported functions", all_exports.size());
 
-        return dll_exports;
+        return all_exports;
     }
 }
 
-/**
- * Args <br>
- * 0: program name <br>
- * 1: undecorate? <br>
- * 2: forwarded dll name <br>
- * 3: glob pattern for input dll paths
- * 4: output file path <br>
- * 5: sources input path <br> (optional)
- */
 int MAIN(const int argc, const TCHAR* argv[]) { // NOLINT(*-use-internal-linkage)
     try {
-        koalabox::logger::init_console_logger();
+        kb::logger::init_console_logger();
 
         const auto args = Args::parse(argc, argv);
 

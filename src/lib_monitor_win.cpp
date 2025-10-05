@@ -10,11 +10,6 @@
 #include "koalabox/lib_monitor.hpp"
 #include "koalabox/logger.hpp"
 
-#define CALL_NT_DLL(FUNC) \
-    reinterpret_cast<decltype(&FUNC)>( \
-        kb::lib::get_function_address(kb::lib::get_library_handle("ntdll"), #FUNC).value() \
-    )
-
 namespace {
     namespace kb = koalabox;
     using namespace kb::lib_monitor;
@@ -35,6 +30,17 @@ namespace {
         }
 
         details::on_library_loaded(NotificationData->Loaded.FullDllName->Buffer, NotificationData->Loaded.DllBase);
+    }
+
+    // Since we don't statically link to NTDLL functions, we can't reference them.
+    // Hence, we shouldn't pass them as function arguments.
+#define CALL_NT_DLL(FUNC) call_nt_dll<decltype(&FUNC)>(#FUNC)
+
+    template<typename FUNC>
+    auto call_nt_dll(const char* fn_name) -> FUNC {
+        return reinterpret_cast<FUNC>(
+            kb::lib::get_function_address(kb::lib::get_lib_handle("ntdll"), fn_name).value()
+        );
     }
 }
 
