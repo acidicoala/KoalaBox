@@ -24,7 +24,7 @@ jobs:
     runs-on: ${{ inputs.os == 'Linux' &&  'ubuntu-24.04' || 'windows-2025'}}
     container: ${{ inputs.os == 'Linux' && 'ghcr.io/acidicoala/koalabox:master' || '' }}
     env:
-      BUILD_DIR: ${{ github.workspace }}/build
+      BUILD_DIR: ./build
       C_COMPILER: ${{ inputs.os == 'Linux' && 'clang' || 'cl' }}
       CXX_COMPILER: ${{ inputs.os == 'Linux' && 'clang++' || 'cl' }}
       OUTPUT_PATH: ${{ inputs.os == 'Linux' && '*.so' || 'Release/*.dll' }}
@@ -34,7 +34,7 @@ jobs:
       # Fix dubious ownership errors in docker container
       - name: '✔️ Mark GitHub workspace as safe'
         if: ${{ inputs.os == 'Linux' }}
-        run: git config --global --add safe.directory "$GITHUB_WORKSPACE"
+        run: git config --global --add safe.directory "${{ github.workspace }}"
 
       - name: '🛠️ Check compiler versions'
         if: ${{ inputs.os == 'Linux' }}
@@ -64,7 +64,6 @@ jobs:
           -DCMAKE_CXX_COMPILER=${{ env.CXX_COMPILER }}
           ${{ env.WIN_FLAGS }}
           ${{ env.LINUX_FLAGS }}
-          --debug-output
 
       - name: '🏗️ Build ${{ inputs.module }}'
         run: >
