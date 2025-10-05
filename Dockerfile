@@ -7,4 +7,9 @@ RUN pacman -Syu --noconfirm \
     && pacman -S --noconfirm base-devel gcc lib32-gcc-libs clang \
     gtk3 brotli zstd \
     cmake git \
-    && pacman -Scc --noconfirm
+    && pacman -Scc --noconfirm \
+
+# Set up a non-root user (recommended for CI security)
+RUN useradd -m builder
+USER builder
+WORKDIR /home/builder/project
