@@ -1,3 +1,5 @@
+#include <format>
+
 #include <koalabox/core.hpp>
 #include <koalabox/path.hpp>
 
