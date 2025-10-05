@@ -10,6 +10,5 @@ RUN pacman -Syu --noconfirm \
     && pacman -Scc --noconfirm \
 
 # Set up a non-root user (recommended for CI security)
-RUN useradd -m builder
-USER builder
-WORKDIR /home/builder/project
+USER github-actions
+WORKDIR /home/github-actions/project
