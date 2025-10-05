@@ -1,4 +1,10 @@
-## 🛠 Installation instructions (🐧 Linux)
+## 🛠️ Installation instructions (🐧 Linux)
+
+> [!NOTE]
+> Linux support in {{ project_name }} is highly experimental and has known issues.
+> If none of the methods below work for you, then consider running a Windows version of a game
+> via Proton compatibility layer and follow the instructions in the Windows section.
+
 
 ### ✔️ Requirements
 
@@ -41,10 +47,14 @@ For example:
 Naturally, the exact options might change depending on how files are located on your filesystem
 or depending on other environment variables you might have configured.
 If you have other environment variables, and you don't know how to correctly combine them,
-then please make heavy use of search engines and LLMs for guidance examples instead of the official forum topic.
+then please make heavy use of search engines and LLMs for guidance and examples instead of the official forum topic.
 
 ### 🔀 Proxy mode (🐧 Linux)
 
 Same as on Windows:
 1. Rename the original {{ sdk_libs_linux }} to {{ sdk_libs_orig_linux }}
 2. Extract and paste the {{ unlocker_libs_linux }} to the same directory, renaming it to {{ sdk_libs_linux }}.
+
+### 🐞 Known issues
+
+- Steam overlay is not working in hook mode
