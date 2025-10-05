@@ -11,8 +11,9 @@ _C++ utilities for koality projects_
 
 ### 🐧 Linux
 
-- Clang compiler toolchain
-- GTK 3
+inja::## for package in ["brotli", "gcc", "clang", "gtk3", "libidn2", "libnghttp2", "libssh2", "openssl", "zlib", "zstd"]
+- [{{ package }}](https://archlinux.org/packages/core/x86_64/{{ package }}/)
+inja::## endfor
 
 ## ❓Trivia
 

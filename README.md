@@ -3,6 +3,7 @@
 # KoalaBox
 
 
+
 _C++ utilities for koality projects_
 
 ## 🛠️ System requirements
@@ -13,8 +14,16 @@ _C++ utilities for koality projects_
 
 ### 🐧 Linux
 
-- Clang compiler toolchain
-- GTK 3
+- [brotli](https://archlinux.org/packages/core/x86_64/brotli/)
+- [gcc](https://archlinux.org/packages/core/x86_64/gcc/)
+- [clang](https://archlinux.org/packages/core/x86_64/clang/)
+- [gtk3](https://archlinux.org/packages/core/x86_64/gtk3/)
+- [libidn2](https://archlinux.org/packages/core/x86_64/libidn2/)
+- [libnghttp2](https://archlinux.org/packages/core/x86_64/libnghttp2/)
+- [libssh2](https://archlinux.org/packages/core/x86_64/libssh2/)
+- [openssl](https://archlinux.org/packages/core/x86_64/openssl/)
+- [zlib](https://archlinux.org/packages/core/x86_64/zlib/)
+- [zstd](https://archlinux.org/packages/core/x86_64/zstd/)
 
 ## ❓Trivia
 
@@ -39,12 +48,15 @@ This project makes use of the following open source projects:
 - [p-ranav/glob](https://github.com/p-ranav/glob)
 - [pantor/inja](https://github.com/pantor/inja)
 - [jarro2783/cxxopts](https://github.com/jarro2783/cxxopts)
-- [serge1/ELFIO](https://github.com/serge1/ELFIO)
+- [serge1/ELFIO](https://github.com/serge1/ELFIO) 
+
+
 
 
 ## 📄 License
 
 This software is licensed under the [Unlicense](https://unlicense.org),
 terms of which are available in [UNLICENSE.txt](UNLICENSE.txt).
+
 
 [Koaloader]: https://github.com/acidicoala/Koaloader
