@@ -5,6 +5,6 @@ LABEL org.opencontainers.image.description="An image used for building koality p
 # Update and install build tools and compilers
 RUN pacman -Syu --noconfirm && \
     pacman -S --noconfirm base-devel gcc lib32-gcc-libs clang \
-    gtk3 brotli zstd \
+    gtk3 brotli zstd libssh2 lib32-libssh2 \
     cmake git && \
     pacman -Scc --noconfirm

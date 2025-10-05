@@ -1,0 +1,61 @@
+name: Create release
+
+on:
+  workflow_call:
+    inputs:
+      version:
+        description: 'A version suffix to be used for zip name'
+        required: true
+        type: string
+
+      zip_command:
+        description: 'A shell command for creating a release zip'
+        required: true
+        type: string
+
+jobs:
+  create-release:
+    name: 'Create Release'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    env:
+      ZIP_NAME: ${{ github.event.repository.name }}-${{ inputs.version }}
+    steps:
+      - name: Install required tools
+        run: |
+          sudo apt update
+          sudo apt install zip tree
+
+      - name: Check out repository code
+        uses: actions/checkout@v5
+        with:
+          submodules: recursive
+
+      - name: Download all workflow run artifacts
+        uses: actions/download-artifact@v5
+        with:
+          path: artifacts
+
+      - name: Print artifact tree
+        run: tree artifacts
+
+#      - name: Make release zip
+#        run: ${{ inputs.zip_command }}
+
+#      - name: 'Test upload'
+#        uses: actions/upload-artifact@v4
+#        with:
+#          name: release
+#          path: ${{ env.BUILD_DIR }}/${{ env.OUTPUT_PATH }}
+
+#      - name: Create a release draft
+#        uses: softprops/action-gh-release@v2
+#        with:
+#          body: '# 📑 Changelog'
+#          draft: true
+#          prerelease: false
+#          files: ${{ env.ZIP_NAME }}
+#          name: Release ${{ env.VERSION_TAG }}
+#          tag_name: ${{ env.VERSION_TAG }}
+#          fail_on_unmatched_files: true
