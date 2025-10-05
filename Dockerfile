@@ -8,7 +8,7 @@ RUN echo -e '\n[multilib]\nInclude = /etc/pacman.d/mirrorlist' >> /etc/pacman.co
 
 # Update and install build tools, compilers, and libraries
 RUN pacman -S --noconfirm \
-    cmake git \
+    cmake git tree \
     base-devel gcc lib32-gcc-libs clang \
     gtk3 brotli zstd libssh2 lib32-libssh2
 
