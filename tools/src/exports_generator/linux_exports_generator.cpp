@@ -129,7 +129,7 @@ namespace {{ namespace_id }} {
                 }
             } else {
                 // FIXME: GitHub runner fails to process binaries from SDK version 106
-                LOG_WARN("Failed to get module exports:{}", kb::path::to_str(lib_path));
+                LOG_WARN("Failed to get module exports: {}", kb::path::to_str(lib_path));
             }
         }
 
