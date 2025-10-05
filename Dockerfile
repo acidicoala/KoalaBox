@@ -8,14 +8,3 @@ RUN pacman -Syu --noconfirm && \
     gtk3 brotli zstd \
     cmake git && \
     pacman -Scc --noconfirm
-
-# Set up a non-root user (required to avoid dubious ownership git error)
-ARG UNAME=github
-ARG UID=1001
-ARG GID=1001
-RUN groupadd -g $GID -o $UNAME
-RUN useradd -m -u $UID -g $GID -o -s /bin/bash $UNAME
-USER $UNAME
-
-# Set the workdir
-WORKDIR /home/$UNAME
