@@ -1,4 +1,4 @@
-name: 🐋 Build and Publish Docker Image to GHCR
+name: 🐋 Docker Build
 
 on:
   workflow_dispatch:
@@ -7,6 +7,7 @@ on:
 
 jobs:
   build-and-publish:
+    name: 🐋 Build and Publish Docker Image to GHCR
     runs-on: ubuntu-24.04
     permissions:
       contents: read
@@ -37,5 +38,4 @@ jobs:
         with:
           context: .
           push: true
-          tags: ${{ steps.meta.outputs.tags }}
-          labels: ${{ steps.meta.outputs.labels }}
+          labels: master
