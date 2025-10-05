@@ -67,6 +67,7 @@ jobs:
           --debug-output
 
       - name: Print build tree
+        if: ${{ inputs.os == 'Linux' }}
         run: tree ${{ env.BUILD_DIR }}
 
       - name: '🏗️ Build ${{ inputs.module }}'
