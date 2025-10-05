@@ -1,5 +1,25 @@
 ## 🛠 Installation instructions (🐧 Linux)
 
+### ✔️ Requirements
+
+Linux builds of {{ project_name }} depend on several libraries. Make sure they are installed on your system.
+The following list features links in Arch Linux repositories, but if you are using a different distribution,
+you should use the equivalent package for your distro.
+
+inja::## set core-32bit=["gcc-libs", "glibc"]
+Required libraries:
+inja::## for package in ["brotli", "gcc-libs", "glibc", "libidn2", "libnghttp2", "libssh2", "openssl", "zlib", "zstd"]
+- [{{ package }}](https://archlinux.org/packages/core/x86_64/{{ package }}/)
+  [[32-bit](https://archlinux.org/packages/{% if package in core-32bit %}core{% else %}multilib{% endif %}/x86_64/lib32-{{ package }}/)]
+
+inja::## endfor
+
+Optional libraries:
+- [gtk3](https://archlinux.org/packages/extra/x86_64/gtk3/)
+  [[32-bit](https://archlinux.org/packages/multilib/x86_64/lib32-gtk3/)]
+
+---
+
 Just like on Windows, {{ project_name }} features 32 and 64-bit Linux builds.
 In release archive they are named as {{ unlocker_libs_linux }} respectively.
 

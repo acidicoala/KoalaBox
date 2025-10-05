@@ -73,7 +73,7 @@ jobs:
           --config Release
           --target ${{ inputs.module }}
 
-      - name: Print build tree
+      - name: '🌳 Print build tree'
         if: ${{ inputs.os == 'Linux' }}
         run: tree ${{ env.BUILD_DIR }}
 
