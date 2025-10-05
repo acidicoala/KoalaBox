@@ -160,6 +160,10 @@ if(WIN32)
     # https://github.com/winsiderss/phnt
     CPMAddPackage("gh:winsiderss/phnt#fc1f96ee976635f51faa89896d1d805eb0586350")
     target_link_libraries(KoalaBox PUBLIC phnt)
+else()
+    ## https://github.com/serge1/ELFIO
+    CPMAddPackage("gh:serge1/ELFIO#Release_3.12")
+    target_link_libraries(KoalaBox PUBLIC elfio)
 endif()
 
 add_subdirectory(tools)

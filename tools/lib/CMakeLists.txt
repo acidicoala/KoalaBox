@@ -82,11 +82,6 @@ if(WIN32)
     target_link_libraries(KoalaBoxTools PUBLIC pe-parse)
 endif()
 
-## Steamworks downloader needs this to fix linux binaries
-## https://github.com/serge1/ELFIO
-CPMAddPackage("gh:serge1/ELFIO#Release_3.12")
-target_link_libraries(KoalaBoxTools PUBLIC elfio)
-
 target_link_libraries(KoalaBoxTools PUBLIC
     KoalaBox $<TARGET_OBJECTS:KoalaBox>
     boost_preprocessor

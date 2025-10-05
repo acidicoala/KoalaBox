@@ -1,10 +1,15 @@
-// This must be before linux headers to avoid name collisions
+// ELFIO must be included before linux headers to avoid name collisions
 #include <elfio/elfio.hpp>
+
+#include <elf.h>
+
+#include <koalabox/logger.hpp>
+#include <koalabox/path.hpp>
 
 #include "koalabox_tools/module.hpp"
 
 namespace koalabox::tools::module {
-    std::optional<exports_t> get_exports(const fs::path& module_path) {
+    std::optional<exports_t> get_exports(const std::filesystem::path& module_path) {
         const auto module_path_str = path::to_str(module_path);
 
         ELFIO::elfio reader;

@@ -5,12 +5,12 @@
 #include <glob/glob.h>
 #include <inja/inja.hpp>
 
-#include <koalabox/lib.hpp>
 #include <koalabox/logger.hpp>
 #include <koalabox/path.hpp>
 #include <koalabox/platform.hpp>
 
 #include <koalabox_tools/cmd.hpp>
+#include <koalabox_tools/module.hpp>
 
 namespace {
     // language=c++
@@ -117,28 +117,26 @@ namespace {{ namespace_id }} {
     };
 
     auto get_exported_symbols(const std::string& input_libs_glob) {
-        kb::lib::exports_t results;
+        kb::tools::module::exports_t results;
 
         for(const auto& lib_path : glob::rglob(input_libs_glob)) {
-            try {
-                const auto exports = kb::lib::get_exports_or_throw(lib_path);
-
-                for(const auto& symbol : exports) {
+            if(const auto exports = kb::tools::module::get_exports(lib_path)) {
+                for(const auto& symbol : *exports) {
                     // TODO: Check if the function is implemented
                     if(!symbol.starts_with("_")) {
                         results.insert(symbol);
                     }
                 }
-            } catch(const std::exception& e) {
+            } else {
                 // FIXME: GitHub runner fails to process binaries from SDK version 106
-                LOG_ERROR("Error processing library: {}", e.what());
+                LOG_WARN("Failed to get module exports:{}", kb::path::to_str(lib_path));
             }
         }
 
         return results;
     }
 
-    void generate_header_and_source(const std::string& output_path, kb::lib::exports_t exports) {
+    void generate_header_and_source(const std::string& output_path, kb::tools::module::exports_t exports) {
         const auto header_path = kb::path::from_str(output_path + ".hpp");
         const auto source_path = kb::path::from_str(output_path + ".cpp");
 
@@ -183,7 +181,7 @@ int main(const int argc, const char* argv[]) {
         LOG_INFO("Collected {} symbols", exported_symbols.size());
 
         generate_header_and_source(args.output_path, exported_symbols);
-        LOG_INFO("Successfully generated exports in");
+        LOG_INFO("Successfully generated proxy exports");
     } catch(const std::exception& e) {
         LOG_ERROR("Unhandled global exception: {}", e.what());
         exit(EXIT_FAILURE);

@@ -1,8 +1,10 @@
 #include <cstring>
 #include <fstream>
-#include <map>
 #include <string>
 #include <vector>
+
+// ELFIO must be included before linux headers to avoid name collisions
+#include <elfio/elfio.hpp>
 
 #include <dlfcn.h>
 #include <fcntl.h>
@@ -20,10 +22,10 @@ namespace koalabox::lib {
     using namespace koalabox::lib;
     namespace fs = std::filesystem;
 
-    fs::path get_fs_path(void* const module_handle) {
+    fs::path get_fs_path(void* const lib_handle) {
         char path[PATH_MAX]{};
 
-        if(!module_handle) {
+        if(!lib_handle) {
             // Get path to the current executable
             const auto len = readlink("/proc/self/exe", path, sizeof(path) - 1);
             if(len != -1) {
@@ -32,7 +34,7 @@ namespace koalabox::lib {
             }
         } else {
             link_map* lm;
-            if(dlinfo(module_handle, RTLD_DI_LINKMAP, &lm) == 0) { // NOLINT(*-multi-level-implicit-pointer-conversion)
+            if(dlinfo(lib_handle, RTLD_DI_LINKMAP, &lm) == 0) { // NOLINT(*-multi-level-implicit-pointer-conversion)
                 return path::from_str(lm->l_name);
             }
         }
