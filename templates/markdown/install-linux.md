@@ -28,26 +28,11 @@ Optional libraries:
 
 Just like on Windows, {{ project_name }} features 32 and 64-bit Linux builds.
 In release archive they are named as {{ unlocker_libs_linux }} respectively.
-
-### 🪝 Hook mode (🐧 Linux)
-
-Linux doesn't have the same easily exploitable library injection mechanism that Windows has.
-However, it is possible to force any Linux executable to load any library by using the
-`LD_PRELOAD` environment variable.
-For example:
-
-1. Extract and paste the {{ unlocker_libs_linux }} next to the game's executable.
-2. In Steam _Library_ open game's _Properties_, switch to the _General_ tab, and set the following _LAUNCH OPTIONS_:
-
-| Bitness | Launch Options                                                     |
-|---------|--------------------------------------------------------------------|
-| 32-bit  | `LD_PRELOAD=./libsmoke_api32.so ./GameExecutable.x86    %command%` |
-| 64-bit  | `LD_PRELOAD=./libsmoke_api64.so ./GameExecutable.x86_64 %command%` |
-
-Naturally, the exact options might change depending on how files are located on your filesystem
-or depending on other environment variables you might have configured.
-If you have other environment variables, and you don't know how to correctly combine them,
-then please make heavy use of search engines and LLMs for guidance and examples instead of the official forum topic.
+However, unlike Windows, it is recommended to use proxy mode, rather than hook mode.
+This is because the current hook mode installation method has to directly launch game
+executable. However, by default {{ store_name }} doesn't do that, instead it launches certain wrappers
+that setup game environment with optimal parameters. Hence, launching a game without those
+wrappers might cause issues. That is why proxy mode is recommended on Linux for now.
 
 ### 🔀 Proxy mode (🐧 Linux)
 
@@ -55,6 +40,26 @@ Same as on Windows:
 1. Rename the original {{ sdk_libs_linux }} to {{ sdk_libs_orig_linux }}
 2. Extract and paste the {{ unlocker_libs_linux }} to the same directory, renaming it to {{ sdk_libs_linux }}.
 
-### 🐞 Known issues
+### 🪝 Hook mode (🐧 Linux)
 
-- Steam overlay is not working in hook mode
+Linux doesn't have the same easily exploitable library injection mechanism that Windows has.
+However, it is possible to force any Linux executable to load any library by using the
+`LD_PRELOAD` environment variable. In fact, {{ store_name }} itself already uses that to inject its overlay,
+hence we can use it as well. But we have to include that overlay library as well when specifying
+`LD_PRELOAD`, otherwise the game will be launched with {{ project_name }}, but without {{ store_name }} overlay.
+
+For example:
+
+1. Extract and paste the {{ unlocker_libs_linux }} next to the game's executable.
+2. In Steam _Library_ open game's _Properties_, switch to the _General_ tab, and set the following _LAUNCH OPTIONS_:
+
+| Bitness | Launch Options                                                                                                                   |
+|---------|----------------------------------------------------------------------------------------------------------------------------------|
+| 32-bit  | `LD_PRELOAD="./libsmoke_api32.so $HOME/.local/share/Steam/ubuntu12_32/gameoverlayrenderer.so" ./GameExecutable.x86    %command%` |
+| 64-bit  | `LD_PRELOAD="./libsmoke_api64.so $HOME/.local/share/Steam/ubuntu12_64/gameoverlayrenderer.so" ./GameExecutable.x86_64 %command%` |
+
+Naturally, the exact options might change depending on where files are located on your filesystem
+and other environment variables you might have specified previously.
+If you have other environment variables, and you don't know how to correctly combine them,
+then please make extensive use of search engines and LLMs for guidance and examples
+before seeking help the official forum topic.

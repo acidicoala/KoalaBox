@@ -65,6 +65,9 @@ jobs:
           ${{ env.WIN_FLAGS }}
           ${{ env.LINUX_FLAGS }}
 
+      - name: '📄 Print short git commit hash'
+        run: git rev-parse --short HEAD
+
       - name: '🏗️ Build ${{ inputs.module }}'
         run: >
           cmake
