@@ -25,5 +25,5 @@ RUN pacman -S --noconfirm \
 RUN pacman -Scc --noconfirm
 
 # Setup github user
-RUN useradd -u 1001 -m -g 1001 github
+RUN useradd -u 1001 -m github
 USER github
