@@ -32,7 +32,7 @@ jobs:
           artifacts/*/*.so
           ${{ inputs.zip_files }}
 
-      - name: ':octocat: Create a release draft'
+      - name: '📑 Create a release draft'
         uses: softprops/action-gh-release@v2
         with:
           body: '# 📑 Changelog'
