@@ -45,7 +45,7 @@ jobs:
       - name: '🗃️ Cache CPM dependencies'
         uses: actions/cache@v4
         with:
-          key: ${{ inputs.os }}-CPM-cache
+          key: CPM-cache-${{ inputs.os }}-${{ hashFiles('**/CMakeLists.txt') }}
           path: '${{ env.BUILD_DIR }}/.cache'
 
       - name: '⚙️ Generate build files'
