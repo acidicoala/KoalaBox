@@ -61,6 +61,7 @@ jobs:
           ${{ env.LINUX_FLAGS }}
 
       - name: '📄 Print short git commit hash'
+        if: ${{ inputs.os == 'Linux' }}
         run: |
           echo "User: $(whoami), UID: $(id -u), GID: $(id -g)"
           pwd

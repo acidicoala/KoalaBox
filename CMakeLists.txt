@@ -11,7 +11,6 @@ set(KOALABOX_HEADERS
     include/koalabox/cache.hpp
     include/koalabox/core.hpp
     include/koalabox/config.hpp
-    include/koalabox/crypto.hpp
     include/koalabox/globals.hpp
     include/koalabox/hook.hpp
     include/koalabox/http_client.hpp
@@ -29,7 +28,6 @@ set(KOALABOX_HEADERS
 
 set(KOALABOX_SOURCES
     src/cache.cpp
-    src/crypto.cpp
     src/globals.cpp
     src/logger.cpp
     src/hook.cpp

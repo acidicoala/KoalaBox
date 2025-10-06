@@ -53,11 +53,9 @@ endfunction()
 
 function(configure_build_config)
     # Run a command to get the short commit hash
-    # FIXME: Not working in CI on Linux
-
     execute_process(
         COMMAND git rev-parse --short HEAD
-        WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
+        WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
         OUTPUT_VARIABLE GIT_SHORT_HASH
         OUTPUT_STRIP_TRAILING_WHITESPACE
     )
