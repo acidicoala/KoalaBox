@@ -152,7 +152,7 @@ namespace {
             return false;
         }
 
-        // load_sections( stream, is_lazy );
+        load_sections( stream, is_lazy );
         // bool is_still_good = load_segments( stream, is_lazy );
         // return is_still_good;
         return true;
