@@ -27,6 +27,12 @@ else()
     set(BITNESS 64)
 endif()
 
+if(WIN32)
+    set(IS_WINDOWS TRUE)
+elseif(UNIX AND NOT APPLE)
+    set(IS_LINUX TRUE)
+endif()
+
 # Sets the variable ${VAR} with val_for_32 on 32-bit build
 # and appends 64 to val_for_32 on 64-bit build, unless an optional argument is provided.
 function(set_32_and_64 VAR val_for_32)
