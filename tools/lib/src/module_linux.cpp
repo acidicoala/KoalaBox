@@ -1,12 +1,71 @@
-// ELFIO must be included before linux headers to avoid name collisions
 #include <elfio/elfio.hpp>
-
-#include <elf.h>
 
 #include <koalabox/logger.hpp>
 #include <koalabox/path.hpp>
 
 #include "koalabox_tools/module.hpp"
+
+namespace {
+    //------------------------------------------------------------------------------
+    bool load_internal(std::istream& stream, bool is_lazy = false) {
+        std::array<char, ELFIO::EI_NIDENT> e_ident = {0};
+        // Read ELF file signature
+        stream.seekg(0);
+        stream.read(e_ident.data(), sizeof(e_ident));
+
+        // Is it ELF file?
+        if(stream.gcount() != sizeof(e_ident) ||
+           e_ident[ELFIO::EI_MAG0] != ELFIO::ELFMAG0 || e_ident[ELFIO::EI_MAG1] != ELFIO::ELFMAG1 ||
+           e_ident[ELFIO::EI_MAG2] != ELFIO::ELFMAG2 || e_ident[ELFIO::EI_MAG3] != ELFIO::ELFMAG3) {
+            LOG_ERROR("Unexpected identification index: {}", e_ident);
+            return false;
+        }
+
+        if((e_ident[ELFIO::EI_CLASS] != ELFIO::ELFCLASS64) &&
+           (e_ident[ELFIO::EI_CLASS] != ELFIO::ELFCLASS32)) {
+            LOG_ERROR("Unexpected class: {}", e_ident);
+            return false;
+        }
+
+        if((e_ident[ELFIO::EI_DATA] != ELFIO::ELFDATA2LSB) &&
+           (e_ident[ELFIO::EI_DATA] != ELFIO::ELFDATA2MSB)) {
+            LOG_ERROR("Unexpected encoding: {}", e_ident);
+            return false;
+        }
+
+        // convertor.setup( e_ident[ELFIO::EI_DATA] );
+        // header = create_header( e_ident[ELFIO::EI_CLASS], e_ident[ELFIO::EI_DATA] );
+        // if ( nullptr == header ) {
+        //     return false;
+        // }
+        // if ( !header->load( stream ) ) {
+        //     return false;
+        // }
+
+        // load_sections( stream, is_lazy );
+        // bool is_still_good = load_segments( stream, is_lazy );
+        // return is_still_good;
+        return true;
+    }
+
+    //------------------------------------------------------------------------------
+    bool debug_load(const std::string& file_name, bool is_lazy = false) {
+        std::unique_ptr<std::ifstream> pstream = std::make_unique<std::ifstream>();
+        pstream->open(file_name.c_str(), std::ios::in | std::ios::binary);
+        if(pstream == nullptr || !*pstream) {
+            LOG_ERROR("Failed to open file stream")
+            return false;
+        }
+
+        bool ret = load_internal(*pstream, is_lazy);
+
+        if(!is_lazy) {
+            pstream.reset();
+        }
+
+        return ret;
+    }
+}
 
 namespace koalabox::tools::module {
     std::optional<exports_t> get_exports(const std::filesystem::path& module_path) {
@@ -15,6 +74,10 @@ namespace koalabox::tools::module {
         ELFIO::elfio reader;
         if(!reader.load(module_path_str)) {
             LOG_ERROR("Failed to read ELF file: {}", module_path_str);
+
+            // Try to debug the error:
+            debug_load(module_path_str);
+
             return std::nullopt;
         }
 
@@ -38,11 +101,10 @@ namespace koalabox::tools::module {
 
             symbols.get_symbol(i, name, value, size, bind, type, section_index, other);
 
-            // Exported functions: global/weak binding, type FUNC, default visibility, non-empty name
             if(
-                section_index != SHN_UNDEF && // Exported, not just referenced
-                (bind == STB_GLOBAL || bind == STB_WEAK) && // Global or weak binding
-                (other & 0x3) == STV_DEFAULT && // Default visibility
+                section_index != ELFIO::SHN_UNDEF && // Exported, not just referenced
+                (bind == ELFIO::STB_GLOBAL || bind == ELFIO::STB_WEAK) && // Global or weak binding
+                (other & 0x3) == ELFIO::STV_DEFAULT && // Default visibility
                 !name.empty()
             ) {
                 results.insert(name);
