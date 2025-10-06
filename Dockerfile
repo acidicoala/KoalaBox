@@ -23,3 +23,8 @@ RUN pacman -S --noconfirm \
 
 # Clear package cache
 RUN pacman -Scc --noconfirm
+
+# Setup github user
+RUN addgroup --gid 1001 github
+RUN adduser --uid 1001 --gid 1001 --disabled-password github
+USER github

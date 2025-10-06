@@ -31,12 +31,7 @@ jobs:
       WIN_FLAGS: ${{ inputs.os == 'Windows' && inputs.bitness == 32 && '-A=Win32' || '' }}
       LINUX_FLAGS: ${{ inputs.os == 'Linux' && inputs.bitness == 32 && '-DCMAKE_C_FLAGS=-m32 -DCMAKE_CXX_FLAGS=-m32' || '' }}
     steps:
-      # Fix dubious ownership errors in docker container
-      - name: '✔️ Mark GitHub workspace as safe'
-        if: ${{ inputs.os == 'Linux' }}
-        run: git config --global --add safe.directory "${{ github.workspace }}"
-
-      - name: '🛠️ Check compiler versions'
+      - name: '🛠️ Check Linux compiler versions'
         if: ${{ inputs.os == 'Linux' }}
         run: |
           clang++ --version
