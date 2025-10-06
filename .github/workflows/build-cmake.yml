@@ -60,14 +60,6 @@ jobs:
           ${{ env.WIN_FLAGS }}
           ${{ env.LINUX_FLAGS }}
 
-      - name: '📄 Print short git commit hash'
-        if: ${{ inputs.os == 'Linux' }}
-        run: |
-          echo "User: $(whoami), UID: $(id -u), GID: $(id -g)"
-          pwd
-          ls -la .
-          git rev-parse --short HEAD
-
       - name: '🏗️ Build ${{ inputs.module }}'
         run: >
           cmake
