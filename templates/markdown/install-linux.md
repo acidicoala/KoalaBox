@@ -49,7 +49,7 @@ hence we can use it as well. But we have to include that overlay library as well
 
 For example:
 
-1. Extract and paste the {{ unlocker_libs_linux }} next to the game's executable.
+1. Extract and paste the {{ unlocker_libs_linux }} in the root of game's installation directory.
 2. In Steam _Library_ open game's _Properties_, switch to the _General_ tab, and set the following _LAUNCH OPTIONS_:
 
 | Bitness | Launch Options                                                                                                         |
@@ -62,13 +62,11 @@ Where `<GameExe32>` and `<GameExe64>` correspond to the actual filename of the g
 - `TheEscapists2.x86_64` (64-bit)
 - `_linux/darkest.bin.x86` (32-bit)
 - `_linux/darkest.bin.x86_64` (64-bit)
-- `eurotrucks2` (64-bit)
-- `victoria3` (64-bit)
+- `bin/linux_x64/eurotrucks2` (64-bit)
+- `binaries/victoria3` (64-bit)
 
 And so on. Notice that Linux executables do not have `.exe` extension like on Windows, so make sure to copy the entire
-file name as-is.
-
-Naturally, the exact options might change depending on where files are located on your filesystem
+file name as it is. Naturally, the exact options might change depending on where files are located on your filesystem
 and other environment variables you might have specified previously.
 If you have other environment variables, and you don't know how to correctly combine them,
 then please make extensive use of search engines and LLMs for guidance and examples
