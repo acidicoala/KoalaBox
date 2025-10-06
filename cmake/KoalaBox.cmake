@@ -15,10 +15,16 @@ if(CMAKE_BUILD_TYPE STREQUAL "Debug")
     add_definitions(-DDEBUG_BUILD)
 endif()
 
-if(CMAKE_SIZEOF_VOID_P EQUAL 8)
-    set(IS_64 TRUE)
-else()
+if(CMAKE_SIZEOF_VOID_P EQUAL 4)
     set(IS_32 TRUE)
+else()
+    set(IS_64 TRUE)
+endif()
+
+if(CMAKE_SIZEOF_VOID_P EQUAL 4)
+    set(BITNESS 32)
+else()
+    set(BITNESS 64)
 endif()
 
 # Sets the variable ${VAR} with val_for_32 on 32-bit build

@@ -1,3 +1,4 @@
+#include <filesystem>
 #include <fstream>
 #include <set>
 
@@ -180,7 +181,9 @@ int main(const int argc, const char* argv[]) {
         const auto exported_symbols = get_exported_symbols(args.input_libs_glob);
         LOG_INFO("Collected {} symbols", exported_symbols.size());
 
+        std::filesystem::create_directories(kb::path::from_str(args.output_path).parent_path());
         generate_header_and_source(args.output_path, exported_symbols);
+
         LOG_INFO("Successfully generated proxy exports");
     } catch(const std::exception& e) {
         LOG_ERROR("Unhandled global exception: {}", e.what());
