@@ -54,4 +54,6 @@ namespace koalabox::lib {
     std::optional<Bitness> get_bitness(const std::filesystem::path& library_path);
     std::optional<bool> is_32bit(const std::filesystem::path& library_path);
     std::optional<bool> is_64bit(const std::filesystem::path& library_path);
+
+    void* get_exe_handle();
 }

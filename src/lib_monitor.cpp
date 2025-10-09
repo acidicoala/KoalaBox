@@ -2,14 +2,17 @@
 #include <set>
 
 #include "koalabox/lib_monitor.hpp"
-#include "koalabox/logger.hpp"
 #include "koalabox/lib.hpp"
+#include "koalabox/logger.hpp"
 #include "koalabox/path.hpp"
 
 namespace {
     using namespace koalabox::lib_monitor;
 
     void process_library(const std::string& lib_name, void* lib_handle) {
+        static std::mutex section;
+        const std::lock_guard lock(section);
+
         auto& callbacks = details::get_callbacks();
 
         bool should_remove_callback;

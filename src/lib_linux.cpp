@@ -10,6 +10,7 @@
 #include <fcntl.h>
 #include <link.h>
 #include <unistd.h>
+#include <asmjit/core/virtmem.h>
 #include <linux/limits.h>
 #include <sys/stat.h>
 
@@ -18,8 +19,39 @@
 #include "koalabox/logger.hpp"
 #include "koalabox/path.hpp"
 
-namespace koalabox::lib {
+namespace {
     using namespace koalabox::lib;
+
+    std::optional<section_t> read_section(
+        const std::string& elf_path,
+        const std::string& section_name,
+        ElfW(Addr) const lib_base
+    ) {
+        ELFIO::elfio reader;
+        if(!reader.load(elf_path)) {
+            LOG_ERROR("Failed to load library in ELFIO: {}", elf_path);
+            return std::nullopt;
+        }
+
+        for(const auto& sec : reader.sections) {
+            if(sec->get_name() == section_name) {
+                // Correct section found
+
+                const auto offset = sec->get_offset();
+                const auto size = sec->get_size();
+                auto* const base = reinterpret_cast<uint8_t*>(lib_base);
+                auto* start = base + offset;
+                auto* end = start + size;
+                return section_t{start, end, static_cast<uint32_t>(size)};
+            }
+        }
+
+        LOG_ERROR("Failed to find section '{}' in {}", section_name, elf_path);
+        return std::nullopt;
+    }
+}
+
+namespace koalabox::lib {
     namespace fs = std::filesystem;
 
     fs::path get_fs_path(void* const lib_handle) {
@@ -67,31 +99,25 @@ namespace koalabox::lib {
         dl_iterate_phdr(
             [](dl_phdr_info* const info, size_t, void* data) {
                 auto* ctx = static_cast<context_t*>(data);
-                if(info->dlpi_addr != ctx->lm->l_addr) {
-                    return 0;
+
+                if(info->dlpi_addr == ctx->lm->l_addr) {
+                    // Correct library found
+
+                    ctx->result = read_section(info->dlpi_name, ctx->section_name, info->dlpi_addr);
+
+                    return 1; // Stop iteration
                 }
 
-                // Correct library found
+                if(info->dlpi_addr == reinterpret_cast<ElfW(Addr)>(ctx->lm)) {
+                    // Special case for exe handle
+                    const auto exe_path = get_fs_path(nullptr);
 
-                ELFIO::elfio reader;
-                if(!reader.load(info->dlpi_name)) {
-                    LOG_ERROR("Failed to load library in ELFIO: {}", info->dlpi_name);
+                    ctx->result = read_section(path::to_str(exe_path), ctx->section_name, info->dlpi_addr);
+
                     return 1;
                 }
-                for(const auto& sec : reader.sections) {
-                    if(sec->get_name() == ctx->section_name) {
-                        // Correct section found
 
-                        const auto offset = sec->get_offset();
-                        const auto size = sec->get_size();
-                        auto* const base = reinterpret_cast<uint8_t*>(info->dlpi_addr);
-                        auto* start = base + offset;
-                        auto* end = start + size;
-                        ctx->result = section_t{start, end, static_cast<uint32_t>(size)};
-                        break;
-                    }
-                }
-                return 1; // Stop iteration
+                return 0;
             }, &initial_context
         );
 
@@ -110,13 +136,32 @@ namespace koalabox::lib {
         return {};
     }
 
-    void unload(void* library_handle) {
-        dlclose(library_handle);
+    void unload(void* lib_handle) {
+        dlclose(lib_handle);
     }
 
-    void* get_lib_handle(const std::string& library_name) {
-        const auto full_lib_name = std::format("{}.so", library_name);
-        return dlopen(full_lib_name.c_str(), RTLD_NOW | RTLD_GLOBAL);
+    void* get_lib_handle(const std::string& lib_name) {
+        struct context_t {
+            const std::string& lib_name;
+            void* result;
+        } initial_context{lib_name, nullptr};
+
+        dl_iterate_phdr(
+            [](dl_phdr_info* const info, size_t, void* ctx) {
+                auto* context = static_cast<context_t*>(ctx);
+                const auto current_name = path::to_str(path::from_str(info->dlpi_name).stem());
+
+                // current_name might end with version, like .so.1, so we have to check the start
+                if(current_name.starts_with(context->lib_name)) {
+                    context->result = reinterpret_cast<void*>(info->dlpi_addr);
+                    return 1;
+                }
+
+                return 0; // Continue
+            }, &initial_context
+        );
+
+        return initial_context.result;
     }
 
     std::optional<Bitness> get_bitness(const fs::path& library_path) {
@@ -134,5 +179,29 @@ namespace koalabox::lib {
             LOG_ERROR("Unknown ELF class: {}", reader.get_class());
             return std::nullopt;
         }
+    }
+
+    void* get_exe_handle() {
+        // This doesn't return actual exe handle: dlopen(nullptr, RTLD_NOW);
+
+        std::ifstream maps(std::format("/proc/{}/maps", getpid()));
+        if(!maps) {
+            LOG_ERROR("Failed to open self maps")
+            return nullptr;
+        }
+
+        std::string line;
+        if(!std::getline(maps, line)) {
+            LOG_ERROR("Failed to read line from self maps")
+            return nullptr;
+        }
+
+        const auto hex_str = line.substr(0, sizeof(uintptr_t) * 2);
+        LOG_TRACE("{} -> first line: {}", __func__, line);
+
+        const auto start_addr = std::stoul(hex_str, nullptr, 16);
+        LOG_TRACE("{} -> start addr: {:#x}", __func__, start_addr);
+
+        return reinterpret_cast<void*>(start_addr);
     }
 }
