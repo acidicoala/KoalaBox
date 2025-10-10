@@ -1,5 +1,7 @@
 #pragma once
 
+// ReSharper disable once CppUnusedIncludeDirective
+#include <format> // Used by KB_RT_ERROR
 #include <optional>
 #include <stdexcept>
 #include <string>
