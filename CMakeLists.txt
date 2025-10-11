@@ -16,6 +16,7 @@ set(KOALABOX_HEADERS
     include/koalabox/http_client.hpp
     include/koalabox/io.hpp
     include/koalabox/logger.hpp
+    include/koalabox/json.hpp
     include/koalabox/lib.hpp
     include/koalabox/lib_monitor.hpp
     include/koalabox/patcher.hpp
