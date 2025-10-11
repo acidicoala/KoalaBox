@@ -2,6 +2,9 @@
 
 #include <string>
 
+// Type-safe macro for stringifying a type. This makes compiler enforce the type reference.
+#define STR_TYPE(TYPE) reinterpret_cast<const char*>(reinterpret_cast<const TYPE*>(#TYPE))
+
 namespace koalabox::str {
 #if defined(KB_WIN)
     using platform_string = std::wstring;
