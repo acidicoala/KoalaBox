@@ -10,7 +10,6 @@
 #include <fcntl.h>
 #include <link.h>
 #include <unistd.h>
-#include <asmjit/core/virtmem.h>
 #include <linux/limits.h>
 #include <sys/stat.h>
 
