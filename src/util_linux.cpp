@@ -42,6 +42,13 @@ namespace koalabox::util {
         lib_gtk_widget_destroy(dialog);
     }
 
+    void set_env(const std::string& key, const std::string& value) noexcept {
+        // 1 means overwrite any existing variable
+        if (setenv(key.c_str(), value.c_str(), 1) != 0) {
+            LOG_ERROR("Failed to set environment variable '{}' to '{}'", key, value);
+        }
+    }
+
     [[noreturn]] void panic(const std::string& message) {
         const auto title = std::format("[{}] Panic!", globals::get_project_name());
 

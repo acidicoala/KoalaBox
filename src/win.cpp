@@ -28,7 +28,7 @@ namespace koalabox::win {
     }
 
     std::optional<std::vector<uint8_t>> get_module_version_info(const HMODULE module_handle) noexcept {
-        const auto module_path = get_module_path(module_handle);
+        const auto module_path = lib::get_fs_path(module_handle);
         const auto module_path_wstr = path::to_wstr(module_path);
 
         DWORD version_handle = 0;
@@ -76,55 +76,6 @@ namespace koalabox::win {
         }
     }
 
-    PROCESS_INFORMATION create_process(
-        const std::string& app_name,
-        const std::string& args,
-        const fs::path& working_dir,
-        const bool show_window
-    ) {
-        const auto working_dir_wstr = path::to_wstr(working_dir);
-
-        PROCESS_INFORMATION process_info{};
-        STARTUPINFO startup_info{};
-
-        const auto cmd_line = app_name + " " + args;
-
-        LOG_TRACE("Launching {}", cmd_line);
-
-        const auto success = CreateProcess(
-                                 nullptr,
-                                 str::to_wstr(cmd_line).data(),
-                                 nullptr,
-                                 nullptr,
-                                 NULL,
-                                 show_window ? 0 : CREATE_NO_WINDOW,
-                                 nullptr,
-                                 working_dir_wstr.c_str(),
-                                 &startup_info,
-                                 &process_info
-                             ) != 0;
-
-        if(!success) {
-            DWORD exit_code = 0;
-            GetExitCodeProcess(process_info.hProcess, &exit_code);
-
-            throw std::runtime_error(
-                std::format(
-                    R"(Error creating process "{}" with args "{}" at "{}". Last error: {}, Exit code: {})",
-                    app_name,
-                    args,
-                    path::to_str(working_dir),
-                    get_last_error(),
-                    exit_code
-                )
-            );
-        }
-
-        WaitForInputIdle(process_info.hProcess, INFINITE);
-
-        return process_info;
-    }
-
     std::string format_message(const DWORD message_id) {
         TCHAR buffer[1024];
 
@@ -145,55 +96,7 @@ namespace koalabox::win {
         return std::format("0x{0:x}", GetLastError());
     }
 
-    fs::path get_module_path(const HMODULE& handle) {
-        const auto wstr_path = wil::GetModuleFileNameW<std::wstring>(handle);
-        return path::from_wstr(wstr_path);
-    }
-
-    HMODULE get_module_handle_or_throw(const std::string& module_name) {
-        auto* const handle = GetModuleHandle(str::to_wstr(module_name).c_str());
-
-        if(not handle) {
-            throw std::runtime_error(
-                std::format("Failed to get a handle of the module: '{}'", module_name)
-            );
-        }
-
-        return handle;
-    }
-
-    HMODULE get_module_handle(const std::string& module_name) {
-        PANIC_ON_CATCH(get_module_handle_or_throw, module_name)
-    }
-
-    HMODULE get_process_handle() {
-        return GetModuleHandle(nullptr);
-    }
-
-    MODULEINFO get_module_info_or_throw(const HMODULE& module_handle) {
-        MODULEINFO module_info = {nullptr};
-        const auto success = ::GetModuleInformation(
-            GetCurrentProcess(),
-            module_handle,
-            &module_info,
-            sizeof(module_info)
-        );
-
-        return success
-                   ? module_info
-                   : throw std::runtime_error(
-                       std::format(
-                           "Failed to get module info of the given module handle: {}",
-                           reinterpret_cast<void*>(module_handle)
-                       )
-                   );
-    }
-
-    MODULEINFO get_module_info(const HMODULE& module_handle) {
-        PANIC_ON_CATCH(get_module_info_or_throw, module_handle)
-    }
-
-    std::string get_module_manifest(const HMODULE& module_handle) {
+    std::string get_module_manifest(void* module_handle) {
         struct Response {
             bool success = false;
             std::string manifest_or_error;
@@ -229,7 +132,7 @@ namespace koalabox::win {
                 }
             };
 
-            HRSRC resource_handle = ::FindResource(hModule, lpName, lpType);
+            const HRSRC resource_handle = ::FindResource(hModule, lpName, lpType);
             if(resource_handle == nullptr) {
                 return response(false, "FindResource returned null.");
             }
@@ -254,7 +157,7 @@ namespace koalabox::win {
 
         Response response;
         if(not EnumResourceNames(
-            module_handle,
+            static_cast<HMODULE>(module_handle),
             RT_MANIFEST,
             callback,
             reinterpret_cast<LONG_PTR>(&response)
@@ -377,16 +280,6 @@ namespace koalabox::win {
         const SIZE_T size
     ) {
         PANIC_ON_CATCH(write_process_memory_or_throw, process, address, buffer, size)
-    }
-
-    std::string get_env_var(const std::string& key) {
-        const auto wide_key = str::to_wstr(key);
-
-        // @doc https://learn.microsoft.com/en-us/windows/win32/api/winbase/nf-winbase-getenvironmentvariable
-        TCHAR buffer[32 * 1024];
-        const auto bytes_read = GetEnvironmentVariable(wide_key.c_str(), buffer, sizeof(buffer));
-
-        return str::to_str({buffer, bytes_read});
     }
 
     void check_self_duplicates() noexcept {

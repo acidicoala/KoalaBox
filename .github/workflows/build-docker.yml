@@ -1,6 +1,7 @@
 name: 🐋 Docker Image
 
 on:
+  workflow_call:
   push:
     branches:
       - master

@@ -37,6 +37,12 @@ namespace koalabox::util {
         exit(last_error);
     }
 
+    void set_env(const std::string& key, const std::string& value) noexcept {
+        if(!SetEnvironmentVariable(str::to_wstr(key).c_str(), str::to_wstr(value).c_str())) {
+            LOG_ERROR("Failed to set environment variable '{}' to '{}'", key, value);
+        }
+    }
+
     bool is_wine_env() {
         static const auto ntdll_handle = GetModuleHandle(TEXT("ntdll.dll"));
         if(!ntdll_handle) {

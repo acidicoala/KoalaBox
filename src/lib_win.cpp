@@ -116,4 +116,8 @@ namespace koalabox::lib {
             return std::nullopt;
         }
     }
+
+    void* get_exe_handle() {
+        return GetModuleHandle(nullptr);
+    }
 }

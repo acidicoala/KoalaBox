@@ -146,6 +146,10 @@ CPMAddPackage("gh:nemtrif/utfcpp@4.0.6")
 target_compile_definitions(KoalaBox PUBLIC UTF_CPP_CPLUSPLUS=202002L)
 target_link_libraries(KoalaBox PUBLIC utf8cpp)
 
+## https://github.com/OperationDarkside/ct_string
+CPMAddPackage("gh:OperationDarkside/ct_string#e24aaf7754e1e24e5dc2e916754de431e3bd2b8c")
+target_link_libraries(KoalaBox PUBLIC ct_string)
+
 if(WIN32)
     ## https://github.com/microsoft/wil
     CPMAddPackage(

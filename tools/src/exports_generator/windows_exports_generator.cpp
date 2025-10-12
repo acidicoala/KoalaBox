@@ -38,6 +38,8 @@ namespace {
         static Args parse(const int argc, const TCHAR** argv) {
             const auto normalized = kb::tools::cmd::normalize_args(argc, argv);
 
+            LOG_DEBUG("Argc: {}, Argv: {}", argc, normalized.argv);
+
             KBT_CMD_PARSE_ARGS(
                 "linux_exports_generator", "Generates proxy exports for linux libraries",
                 argc, normalized.argv.data(),
