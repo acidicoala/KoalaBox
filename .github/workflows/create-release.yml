@@ -15,7 +15,7 @@ jobs:
     permissions:
       contents: write # Needed to create a release
     env:
-      ZIP_NAME: ${{ github.event.repository.name }}-${{ github.ref_name }}
+      ZIP_NAME: '${{ github.event.repository.name }}-${{ github.ref_name }}.zip'
     steps:
       - name: '📥 Check out repository code'
         uses: actions/checkout@v5
