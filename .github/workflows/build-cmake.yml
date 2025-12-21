@@ -38,12 +38,12 @@ jobs:
           g++ --version
 
       - name: '📥 Check out repository code'
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
         with:
           submodules: recursive
 
       - name: '🗃️ Cache CPM dependencies'
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         with:
           key: CPM-cache-${{ inputs.os }}-${{ hashFiles('**/CMakeLists.txt') }}
           path: '${{ env.BUILD_DIR }}/.cache'
@@ -72,7 +72,7 @@ jobs:
         run: tree ${{ env.BUILD_DIR }}
 
       - name: '📤 Upload binaries'
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: ${{ inputs.module }}-${{ inputs.os }}-${{ inputs.bitness }}
           path: ${{ env.BUILD_DIR }}/${{ env.OUTPUT_PATH }}

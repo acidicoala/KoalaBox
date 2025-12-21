@@ -11,17 +11,17 @@ on:
 jobs:
   create-release:
     name: 'Create Release ${{ github.ref_name }}'
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     permissions:
       contents: write # Needed to create a release
     env:
       ZIP_NAME: '${{ github.event.repository.name }}-${{ github.ref_name }}.zip'
     steps:
       - name: '📥 Check out repository code'
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
 
       - name: '⚙️ Download all workflow run artifacts'
-        uses: actions/download-artifact@v5
+        uses: actions/download-artifact@v7
         with:
           path: artifacts
 
