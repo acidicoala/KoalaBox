@@ -124,7 +124,8 @@ function(configure_linker_exports)
     # Make the linker_exports header available before build
     file(TOUCH ${GENERATED_LINKER_EXPORTS})
 
-    set(GENERATE_LINKER_EXPORTS_TARGET "generate_linker_exports_for_${ARG_HEADER_NAME}")
+    # Prefix target nane with PROJECT_NAME to avoid naming conflicts with nested projects
+    set(GENERATE_LINKER_EXPORTS_TARGET "${PROJECT_NAME}_generate_linker_exports_for_${ARG_HEADER_NAME}")
     add_custom_target("${GENERATE_LINKER_EXPORTS_TARGET}" ALL
         COMMENT "Generate linker exports for export address table"
         COMMAND windows_exports_generator # Executable path
