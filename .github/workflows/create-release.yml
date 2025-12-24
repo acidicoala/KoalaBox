@@ -31,8 +31,8 @@ jobs:
       - name: '📦 Make a release archive'
         run: >
           zip -j ${{ env.ZIP_NAME }}
-          artifacts/*/*.dll
-          artifacts/*/*.so
+          -r artifacts -i "*.dll"
+          -r artifacts -i "*.so"
           ${{ inputs.zip_files }}
 
       - name: '📑 Create a release draft'
