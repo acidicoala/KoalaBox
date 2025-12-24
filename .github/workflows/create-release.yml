@@ -29,7 +29,8 @@ jobs:
         run: tree .
 
       - name: '📦 Make a release archive'
-        run: >
+        run: > # `shopt -s globstar` enables recursive globs
+          shopt -s globstar &&
           zip -j ${{ env.ZIP_NAME }}
           artifacts/**/*.dll
           artifacts/**/*.so
