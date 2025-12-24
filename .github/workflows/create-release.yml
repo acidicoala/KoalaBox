@@ -25,6 +25,9 @@ jobs:
         with:
           path: artifacts
 
+      - name: '📂 Print file tree'
+        run: tree .
+
       - name: '📦 Make a release archive'
         run: >
           zip -j ${{ env.ZIP_NAME }}
