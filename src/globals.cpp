@@ -1,9 +1,8 @@
-#include <stdexcept>
-
 #include "koalabox/globals.hpp"
 #include "koalabox/util.hpp"
 
 #ifdef _DEBUG
+#include <stdexcept>
 #define VALIDATE_INIT()                                                                            \
     if (not initialized) {                                                                         \
         throw std::runtime_error("Koalabox not initialized");                                      \
