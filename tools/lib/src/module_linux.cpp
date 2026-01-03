@@ -37,7 +37,8 @@ namespace koalabox::tools::module {
 
             if(
                 section_index != ELFIO::SHN_UNDEF && // Exported, not just referenced
-                (bind == ELFIO::STB_GLOBAL || bind == ELFIO::STB_WEAK) && // Global or weak binding
+                bind == ELFIO::STB_GLOBAL && // GLOBAL binding
+                (type == ELFIO::STT_FUNC || type == ELFIO::STT_OBJECT) && // FUNC or OBJECT type
                 (other & 0x3) == ELFIO::STV_DEFAULT && // Default visibility
                 !name.empty()
             ) {

@@ -117,6 +117,18 @@ namespace {{ namespace_id }} {
         }
     };
 
+    bool is_ignored(const std::string& symbol_name) {
+        static const std::set<std::string> ignored_prefixes = {
+            "__cxa", // C++ ABI functions,
+            "_init", "_fini" // Already defined in this project
+        };
+
+        return std::ranges::any_of(
+            ignored_prefixes,
+            [&](const std::string& prefix) { return symbol_name.starts_with(prefix); }
+        );
+    }
+
     auto get_exported_symbols(const std::string& input_libs_glob) {
         kb::tools::module::exports_t results;
 
@@ -124,7 +136,7 @@ namespace {{ namespace_id }} {
             if(const auto exports = kb::tools::module::get_exports(lib_path)) {
                 for(const auto& symbol : *exports) {
                     // TODO: Check if the function is implemented
-                    if(!symbol.starts_with("_")) {
+                    if(!is_ignored(symbol)) {
                         results.insert(symbol);
                     }
                 }
@@ -146,9 +158,9 @@ namespace {{ namespace_id }} {
             {"namespace_id", kb::path::to_str(header_path.stem())},
             {"exported_symbols", exports},
             {"is_32bit", kb::platform::is_32bit},
-#if defined(KB_32)
+#ifdef KB_32
             {"address_offset", 1}, // movl   takes 1 byte  for opcode + 4 bytes for address
-#elif defined(KB_64)
+#elifdef KB_64
             {"address_offset", 2}, // movabs takes 2 bytes for opcode + 8 bytes for address
 #endif
         };
