@@ -13,7 +13,7 @@ you should use the equivalent package for your distro.
 
 inja::## set core-32bit=["gcc-libs", "glibc"]
 Required libraries:
-inja::## for package in ["brotli", "gcc-libs", "glibc", "libidn2", "libnghttp2", "libssh2", "openssl", "zlib", "zstd"]
+inja::## for package in ["gcc-libs", "glibc", "libidn2", "libnghttp2", "zlib", "zstd"]
 - [{{ package }}](https://archlinux.org/packages/core/x86_64/{{ package }}/)
   [[32-bit](https://archlinux.org/packages/{% if package in core-32bit %}core{% else %}multilib{% endif %}/x86_64/lib32-{{ package }}/)]
 
@@ -35,7 +35,6 @@ wrappers might cause issues in theory. However, in practice real tests show that
 chance of success compared to proxy mode. So, at the end of the day, try both modes to see which one works
 best for you.
 
-
 ### 🔀 Proxy mode (🐧 Linux)
 
 Same as on Windows:
@@ -55,10 +54,10 @@ For example:
 1. Extract and paste the {{ unlocker_libs_linux }} in the root of game's installation directory.
 2. In Steam _Library_ open game's _Properties_, switch to the _General_ tab, and set the following _LAUNCH OPTIONS_:
 
-| Bitness | Launch Options                                                                                                         |
-|---------|------------------------------------------------------------------------------------------------------------------------|
-| 32-bit  | `LD_PRELOAD="./libsmoke_api32.so $HOME/.local/share/Steam/ubuntu12_32/gameoverlayrenderer.so" ./<GameExe32> %command%` |
-| 64-bit  | `LD_PRELOAD="./libsmoke_api64.so $HOME/.local/share/Steam/ubuntu12_64/gameoverlayrenderer.so" ./<GameExe64> %command%` |
+| Bitness | Launch Options                                                                                                                  |
+|---------|---------------------------------------------------------------------------------------------------------------------------------|
+| 32-bit  | `LD_PRELOAD="./libsmoke_api32.so $HOME/.local/share/Steam/ubuntu12_32/gameoverlayrenderer.so" ./<GameExe32> ; exit ; %command%` |
+| 64-bit  | `LD_PRELOAD="./libsmoke_api64.so $HOME/.local/share/Steam/ubuntu12_64/gameoverlayrenderer.so" ./<GameExe64> ; exit ; %command%` |
 
 Where `<GameExe32>` and `<GameExe64>` correspond to the actual filename of the game executable. For example:
 - `TheEscapists2.x86` (32-bit)
@@ -74,3 +73,7 @@ and other environment variables you might have specified previously.
 If you have other environment variables, and you don't know how to correctly combine them,
 then please make extensive use of search engines and LLMs for guidance and examples
 before seeking help the official forum topic.
+
+> [!NOTE]
+> The `; exit ; %command%` at the end of launch options
+> is a trick used to force Steam to directly run the game executable.

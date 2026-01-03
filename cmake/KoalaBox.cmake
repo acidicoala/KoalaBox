@@ -8,8 +8,19 @@ set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 
 add_compile_options("$<$<CXX_COMPILER_ID:MSVC>:-Zc:preprocessor>")
 
-set(CPM_SOURCE_CACHE "${CMAKE_SOURCE_DIR}/build/.cache" CACHE STRING "CPM.cmake source cache")
+set(
+    CPM_SOURCE_CACHE
+    "$ENV{HOME}/.cache/cmake/cpm"
+    CACHE PATH "CPM.cmake source cache"
+)
 include("${CMAKE_CURRENT_LIST_DIR}/get_cpm.cmake")
+
+set(
+    FETCHCONTENT_BASE_DIR
+    "$ENV{HOME}/.cache/cmake/fetchcontent"
+    CACHE PATH
+    "Base directory for FetchContent dependencies"
+)
 
 if(CMAKE_BUILD_TYPE STREQUAL "Debug")
     add_definitions(-DDEBUG_BUILD)

@@ -11,7 +11,7 @@ _C++ utilities for koality projects_
 
 ### 🐧 Linux
 
-inja::## for package in ["brotli", "gcc", "clang", "gtk3", "libidn2", "libnghttp2", "libssh2", "openssl", "zlib", "zstd"]
+inja::## for package in ["gcc", "clang", "gtk3", "libidn2", "libnghttp2", "zlib", "zstd"]
 - [{{ package }}](https://archlinux.org/packages/core/x86_64/{{ package }}/)
 inja::## endfor
 

@@ -100,10 +100,21 @@ CPMAddPackage(
 target_link_libraries(KoalaBox PUBLIC nlohmann_json::nlohmann_json)
 
 CPMAddPackage(
-    URI "gh:libcpr/cpr#1.12.0"
+    URI "gh:Mbed-TLS/mbedtls#mbedtls-3.6.5" # CURL doesn't support v4 yet
     OPTIONS
-    "CURL_USE_LIBPSL OFF"
-    "CPR_USE_SYSTEM_LIB_PSL ON"
+    "DISABLE_PACKAGE_CONFIG_AND_INSTALL OFF"
+    "ENABLE_PROGRAMS OFF"
+    "ENABLE_TESTING OFF"
+)
+
+CPMAddPackage(
+    URI "gh:libcpr/cpr#1.13.0"
+    OPTIONS
+    "CURL_BROTLI OFF" # Brotli is unavailable in certain Steam Linux Runtime environments.
+    "CURL_USE_LIBSSH2 OFF" # SFTP and SCP support is not needed
+    "CURL_USE_OPENSSL OFF"
+    "CPR_FORCE_MBEDTLS_BACKEND ON"
+    "CPR_CURL_USE_LIBPSL OFF" # Requires meson to build
     "ENABLE_CURL_MANUAL OFF"
     "BUILD_LIBCURL_DOCS OFF"
     "BUILD_EXAMPLES OFF"

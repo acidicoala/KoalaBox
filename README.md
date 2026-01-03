@@ -14,14 +14,11 @@ _C++ utilities for koality projects_
 
 ### 🐧 Linux
 
-- [brotli](https://archlinux.org/packages/core/x86_64/brotli/)
 - [gcc](https://archlinux.org/packages/core/x86_64/gcc/)
 - [clang](https://archlinux.org/packages/core/x86_64/clang/)
 - [gtk3](https://archlinux.org/packages/core/x86_64/gtk3/)
 - [libidn2](https://archlinux.org/packages/core/x86_64/libidn2/)
 - [libnghttp2](https://archlinux.org/packages/core/x86_64/libnghttp2/)
-- [libssh2](https://archlinux.org/packages/core/x86_64/libssh2/)
-- [openssl](https://archlinux.org/packages/core/x86_64/openssl/)
 - [zlib](https://archlinux.org/packages/core/x86_64/zlib/)
 - [zstd](https://archlinux.org/packages/core/x86_64/zstd/)
 

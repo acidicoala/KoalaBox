@@ -10,13 +10,10 @@ RUN echo -e '\n[multilib]\nInclude = /etc/pacman.d/mirrorlist' >> /etc/pacman.co
 RUN pacman -S --noconfirm \
     cmake git tree zip base-devel gcc clang \
     \
-    brotli     lib32-brotli \
     gcc-libs   lib32-gcc-libs \
     gtk3       lib32-gtk3 \
     libidn2    lib32-libidn2 \
     libnghttp2 lib32-libnghttp2 \
-    libssh2    lib32-libssh2 \
-    openssl    lib32-openssl \
     zlib       lib32-zlib \
     zstd       lib32-zstd
 
