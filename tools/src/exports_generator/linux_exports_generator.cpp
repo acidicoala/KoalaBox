@@ -119,8 +119,9 @@ namespace {{ namespace_id }} {
 
     bool is_ignored(const std::string& symbol_name) {
         static const std::set<std::string> ignored_prefixes = {
-            "__cxa", // C++ ABI functions,
-            "_init", "_fini" // Already defined in this project
+            "__cxa", // C++ ABI functions
+            "_init", "_fini", // Already defined in this project
+            "_DYNAMIC"
         };
 
         return std::ranges::any_of(
