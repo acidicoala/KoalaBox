@@ -107,6 +107,12 @@ CPMAddPackage(
     "ENABLE_TESTING OFF"
 )
 
+# Makes CURL use the local mbedtls instead of system one
+if(mbedtls_ADDED)
+    # Export targets for find_package
+    set(CMAKE_PREFIX_PATH "${mbedtls_BINARY_DIR};${CMAKE_PREFIX_PATH}")
+endif()
+
 CPMAddPackage(
     URI "gh:libcpr/cpr#1.13.0"
     OPTIONS
