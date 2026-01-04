@@ -45,7 +45,8 @@ This project makes use of the following open source projects:
 - [p-ranav/glob](https://github.com/p-ranav/glob)
 - [pantor/inja](https://github.com/pantor/inja)
 - [jarro2783/cxxopts](https://github.com/jarro2783/cxxopts)
-- [serge1/ELFIO](https://github.com/serge1/ELFIO) 
+- [serge1/ELFIO](https://github.com/serge1/ELFIO)
+- [Mbed-TLS/mbedtls](https://github.com/Mbed-TLS/mbedtls) 
 
 
 

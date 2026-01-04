@@ -99,6 +99,7 @@ CPMAddPackage(
 )
 target_link_libraries(KoalaBox PUBLIC nlohmann_json::nlohmann_json)
 
+## https://github.com/Mbed-TLS/mbedtls - replacement for openssl
 CPMAddPackage(
     URI "gh:Mbed-TLS/mbedtls#mbedtls-3.6.5" # CURL doesn't support v4 yet
     OPTIONS
@@ -107,11 +108,13 @@ CPMAddPackage(
     "ENABLE_TESTING OFF"
 )
 
-# Makes CURL use the local mbedtls instead of system one
 if(mbedtls_ADDED)
+    # Makes CURL use the local mbedtls instead of system one
     # Export targets for find_package
-    set(CMAKE_PREFIX_PATH "${mbedtls_BINARY_DIR};${CMAKE_PREFIX_PATH}")
+    set(MBEDTLS_INCLUDE_DIRS "${mbedtls_SOURCE_DIR}/include")
 endif()
+
+# TODO: Manually add zlib to avoid redownload in each project
 
 CPMAddPackage(
     URI "gh:libcpr/cpr#1.13.0"
@@ -125,6 +128,7 @@ CPMAddPackage(
     "BUILD_LIBCURL_DOCS OFF"
     "BUILD_EXAMPLES OFF"
 )
+target_link_libraries(cpr PRIVATE mbedtls mbedx509 mbedcrypto)
 target_link_libraries(KoalaBox PUBLIC cpr)
 
 ## https://github.com/stevemk14ebr/PolyHook_2_0
