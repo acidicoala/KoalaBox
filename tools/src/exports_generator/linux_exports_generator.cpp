@@ -89,6 +89,7 @@ namespace {{ namespace_id }} {
 
         dest_address = dlsym(self_lib_handle, "{{ symbol_name }}");
         src_address = dlsym(original_lib_handle, "{{ symbol_name }}");
+        LOG_TRACE("{} -> '{{ symbol_name }}' src: {}, dest: {}", __func__, src_address, dest_address);
         if(!src_address) src_address = reinterpret_cast<void*>(panic_exit);
         std::memcpy(static_cast<uint8_t*>(dest_address) + {{ address_offset }}, &src_address, sizeof(void*));
 ## endfor
