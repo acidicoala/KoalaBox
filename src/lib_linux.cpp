@@ -7,11 +7,9 @@
 #include <elfio/elfio.hpp>
 
 #include <dlfcn.h>
-#include <fcntl.h>
 #include <link.h>
 #include <unistd.h>
 #include <linux/limits.h>
-#include <sys/stat.h>
 
 #include "koalabox/core.hpp"
 #include "koalabox/lib.hpp"
@@ -152,7 +150,7 @@ namespace koalabox::lib {
 
                 // current_name might end with version, like .so.1, so we have to check the start
                 if(current_name.starts_with(context->lib_name)) {
-                    context->result = reinterpret_cast<void*>(info->dlpi_addr);
+                    context->result = dlopen(info->dlpi_name, RTLD_NOW | RTLD_NOLOAD);
                     return 1;
                 }
 
