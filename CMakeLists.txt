@@ -99,22 +99,33 @@ CPMAddPackage(
 )
 target_link_libraries(KoalaBox PUBLIC nlohmann_json::nlohmann_json)
 
-## https://github.com/Mbed-TLS/mbedtls - replacement for openssl
-CPMAddPackage(
-    URI "gh:Mbed-TLS/mbedtls#mbedtls-3.6.5" # CURL doesn't support v4 yet
-    OPTIONS
-    "DISABLE_PACKAGE_CONFIG_AND_INSTALL OFF"
-    "ENABLE_PROGRAMS OFF"
-    "ENABLE_TESTING OFF"
-)
 
-if(mbedtls_ADDED)
-    # Makes CURL use the local mbedtls instead of system one
-    # Export targets for find_package
-    set(MBEDTLS_INCLUDE_DIRS "${mbedtls_SOURCE_DIR}/include")
+if(CMAKE_SYSTEM_NAME STREQUAL "Linux")
+    ## https://github.com/Mbed-TLS/mbedtls - replacement for openssl on Linux
+    CPMAddPackage(
+        URI "gh:Mbed-TLS/mbedtls#mbedtls-3.6.5" # CURL doesn't support v4 yet
+        OPTIONS
+        "DISABLE_PACKAGE_CONFIG_AND_INSTALL OFF"
+        "ENABLE_PROGRAMS OFF"
+        "ENABLE_TESTING OFF"
+    )
+
+    if(mbedtls_ADDED)
+        # Makes CURL use the local mbedtls instead of system one
+        # Export targets for find_package
+        set(MBEDTLS_INCLUDE_DIRS "${mbedtls_SOURCE_DIR}/include")
+    endif()
 endif()
 
+
 # TODO: Manually add zlib to avoid redownload in each project
+if(WIN32)
+    set(CPR_FORCE_WINSSL_BACKEND ON)
+    set(CPR_FORCE_MBEDTLS_BACKEND OFF)
+else()
+    set(CPR_FORCE_WINSSL_BACKEND OFF)
+    set(CPR_FORCE_MBEDTLS_BACKEND ON)
+endif()
 
 CPMAddPackage(
     URI "gh:libcpr/cpr#1.13.0"
@@ -122,13 +133,17 @@ CPMAddPackage(
     "CURL_BROTLI OFF" # Brotli is unavailable in certain Steam Linux Runtime environments.
     "CURL_USE_LIBSSH2 OFF" # SFTP and SCP support is not needed
     "CURL_USE_OPENSSL OFF"
-    "CPR_FORCE_MBEDTLS_BACKEND ON"
+    "CPR_FORCE_WINSSL_BACKEND ${CPR_FORCE_WINSSL_BACKEND}"
+    "CPR_FORCE_MBEDTLS_BACKEND ${CPR_FORCE_MBEDTLS_BACKEND}"
     "CPR_CURL_USE_LIBPSL OFF" # Requires meson to build
     "ENABLE_CURL_MANUAL OFF"
     "BUILD_LIBCURL_DOCS OFF"
     "BUILD_EXAMPLES OFF"
 )
-target_link_libraries(cpr PRIVATE mbedtls mbedx509 mbedcrypto)
+if(mbedtls_ADDED)
+    target_link_libraries(cpr PRIVATE mbedtls mbedx509 mbedcrypto)
+endif()
+
 target_link_libraries(KoalaBox PUBLIC cpr)
 
 ## https://github.com/stevemk14ebr/PolyHook_2_0

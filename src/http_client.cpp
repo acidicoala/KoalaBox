@@ -13,8 +13,8 @@ namespace koalabox::http_client {
 
                 throw std::runtime_error(
                     std::format(
-                        "Status code: {}, Error code: {}",
-                        res.status_code, static_cast<int>(res.error.code)
+                        "Status code: {}, Error code: {}, Error message: {}",
+                        res.status_code, static_cast<int>(res.error.code), res.error.message
                     )
                 );
             }
@@ -25,7 +25,6 @@ namespace koalabox::http_client {
         LOG_DEBUG("GET {}", url);
 
         const auto res = cpr::Get(cpr::Url{url});
-
         validate_ok_response(res);
 
         LOG_TRACE("Response text: \n{}", res.text);
