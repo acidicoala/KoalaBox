@@ -34,7 +34,7 @@ namespace {
             if(sec->get_name() == section_name) {
                 // Correct section found
 
-                const auto offset = sec->get_offset();
+                const auto offset = sec->get_address();
                 const auto size = sec->get_size();
                 auto* const base = reinterpret_cast<uint8_t*>(lib_base);
                 auto* start = base + offset;
