@@ -35,6 +35,7 @@ namespace koalabox::lib {
         return reinterpret_cast<F>(get_function_address_or_throw(lib_handle, procedure_name));
     }
 
+    std::optional<void*> get_base_address(void* lib_handle);
     std::optional<section_t> get_section(void* lib_handle, const std::string& section_name);
     section_t get_section_or_throw(void* lib_handle, const std::string& section_name);
 

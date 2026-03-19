@@ -79,6 +79,16 @@ namespace koalabox::lib {
         return {};
     }
 
+    std::optional<void*> get_base_address(void* lib_handle) {
+        link_map* lm;
+        if(dlinfo(lib_handle, RTLD_DI_LINKMAP, &lm) != 0) { // NOLINT(*-multi-level-implicit-pointer-conversion)
+            LOG_ERROR("{} -> Failed to get link_map from lib handle: {}", __func__, lib_handle);
+            return std::nullopt;
+        }
+
+        return reinterpret_cast<void*>(lm->l_addr);
+    }
+
     std::optional<section_t> get_section(void* lib_handle, const std::string& section_name) {
         link_map* lm;
         if(dlinfo(lib_handle, RTLD_DI_LINKMAP, &lm) != 0) { // NOLINT(*-multi-level-implicit-pointer-conversion)
