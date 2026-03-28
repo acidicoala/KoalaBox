@@ -100,7 +100,7 @@ namespace koalabox::lib_monitor {
             const auto lib_name = path::to_str(std::filesystem::path(lib_path).stem());
 
 #ifdef KB_DEBUG
-            LOG_TRACE("DLL loaded: '{}' -> '{}", lib_name, lib_path);
+            LOG_TRACE("DLL loaded: '{}' -> '{}'", lib_name, lib_path);
 #else
             LOG_DEBUG("DLL loaded: '{}'", lib_name);
 #endif

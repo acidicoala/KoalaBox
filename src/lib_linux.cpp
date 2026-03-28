@@ -34,7 +34,7 @@ namespace {
             if(sec->get_name() == section_name) {
                 // Correct section found
 
-                const auto offset = sec->get_offset();
+                const auto offset = sec->get_address();
                 const auto size = sec->get_size();
                 auto* const base = reinterpret_cast<uint8_t*>(lib_base);
                 auto* start = base + offset;
@@ -77,6 +77,16 @@ namespace koalabox::lib {
         }
 
         return {};
+    }
+
+    std::optional<void*> get_base_address(void* lib_handle) {
+        link_map* lm;
+        if(dlinfo(lib_handle, RTLD_DI_LINKMAP, &lm) != 0) { // NOLINT(*-multi-level-implicit-pointer-conversion)
+            LOG_ERROR("{} -> Failed to get link_map from lib handle: {}", __func__, lib_handle);
+            return std::nullopt;
+        }
+
+        return reinterpret_cast<void*>(lm->l_addr);
     }
 
     std::optional<section_t> get_section(void* lib_handle, const std::string& section_name) {
