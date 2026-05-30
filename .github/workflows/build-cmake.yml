@@ -21,7 +21,7 @@ on:
 jobs:
   build:
     name: ${{ inputs.module }}-${{ inputs.os }}-${{ inputs.bitness }}
-    runs-on: ${{ inputs.os == 'Linux' &&  'ubuntu-24.04' || 'windows-2025'}}
+    runs-on: ${{ inputs.os == 'Linux' &&  'ubuntu-24.04' || 'windows-2025-vs2026'}}
     container: ${{ inputs.os == 'Linux' && 'ghcr.io/acidicoala/koalabox:master' || '' }}
     env:
       BUILD_DIR: ./build
