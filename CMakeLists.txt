@@ -40,7 +40,6 @@ set(KOALABOX_SOURCES
     src/path.cpp
     src/paths.cpp
     src/str.cpp
-    src/util.cpp
 )
 
 add_library(KoalaBox OBJECT ${KOALABOX_HEADERS} ${KOALABOX_SOURCES})

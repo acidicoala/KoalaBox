@@ -96,6 +96,90 @@ namespace koalabox::win {
         return std::format("0x{0:x}", GetLastError());
     }
 
+    std::optional<std::string> registry_read_string(
+        const HKEY hive,
+        const std::string& subkey,
+        const std::string& value_name
+    ) noexcept {
+        const auto subkey_w = str::to_wstr(subkey);
+        const auto value_name_w = str::to_wstr(value_name);
+
+        DWORD size = 0; // in bytes
+        // RRF_RT_REG_SZ restricts the read to string values and queries the required size first.
+        if(::RegGetValueW(
+               hive, subkey_w.c_str(), value_name_w.c_str(), RRF_RT_REG_SZ, nullptr, nullptr, &size
+           ) != ERROR_SUCCESS || size == 0) {
+            return std::nullopt;
+        }
+
+        std::wstring buffer(size / sizeof(wchar_t), L'\0');
+        if(::RegGetValueW(
+               hive, subkey_w.c_str(), value_name_w.c_str(), RRF_RT_REG_SZ, nullptr, buffer.data(), &size
+           ) != ERROR_SUCCESS) {
+            return std::nullopt;
+        }
+
+        // size (bytes) includes the terminating NUL; trim to the actual character count.
+        const auto char_count = size / sizeof(wchar_t);
+        buffer.resize(char_count > 0 ? char_count - 1 : 0);
+        return str::to_str(buffer);
+    }
+
+    bool registry_write_string(
+        const HKEY hive,
+        const std::string& subkey,
+        const std::string& value_name,
+        const std::string& value
+    ) noexcept {
+        const auto value_w = str::to_wstr(value);
+        return ::RegSetKeyValueW(
+            hive, str::to_wstr(subkey).c_str(), str::to_wstr(value_name).c_str(), REG_SZ,
+            value_w.c_str(), static_cast<DWORD>((value_w.size() + 1) * sizeof(wchar_t))
+        ) == ERROR_SUCCESS;
+    }
+
+    bool registry_delete_value(
+        const HKEY hive,
+        const std::string& subkey,
+        const std::string& value_name
+    ) noexcept {
+        return ::RegDeleteKeyValueW(
+            hive, str::to_wstr(subkey).c_str(), str::to_wstr(value_name).c_str()
+        ) == ERROR_SUCCESS;
+    }
+
+    bool is_debugger_present() noexcept {
+        return ::IsDebuggerPresent() != FALSE;
+    }
+
+    void debug_break() noexcept {
+        ::DebugBreak();
+    }
+
+    uint32_t get_current_process_id() noexcept {
+        return ::GetCurrentProcessId();
+    }
+
+    bool create_detached_process(const std::string& command_line) noexcept {
+        auto command_line_w = str::to_wstr(command_line); // CreateProcessW needs a mutable buffer
+
+        STARTUPINFOW startup_info{};
+        startup_info.cb = sizeof(startup_info);
+        PROCESS_INFORMATION process_info{};
+
+        const auto created = ::CreateProcessW(
+            nullptr, command_line_w.data(), nullptr, nullptr, FALSE,
+            DETACHED_PROCESS, nullptr, nullptr, &startup_info, &process_info
+        );
+
+        if(created) {
+            ::CloseHandle(process_info.hThread);
+            ::CloseHandle(process_info.hProcess);
+        }
+
+        return created != FALSE;
+    }
+
     std::string get_module_manifest(void* module_handle) {
         struct Response {
             bool success = false;

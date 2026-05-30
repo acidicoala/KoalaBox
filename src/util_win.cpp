@@ -37,6 +37,25 @@ namespace koalabox::util {
         exit(last_error);
     }
 
+    std::optional<std::string> get_env(const std::string& key) noexcept {
+        const auto key_w = str::to_wstr(key);
+
+        const auto size = ::GetEnvironmentVariableW(key_w.c_str(), nullptr, 0);
+        if(size == 0) {
+            return {}; // ERROR_ENVVAR_NOT_FOUND (or other error) -> treat as unset
+        }
+
+        std::wstring buffer(size, L'\0'); // size includes room for the terminating NUL
+        const auto written = ::GetEnvironmentVariableW(key_w.c_str(), buffer.data(), size);
+        if(written >= size) {
+            // The value grew between the two calls and no longer fits; treat as unavailable.
+            return {};
+        }
+
+        buffer.resize(written); // written excludes the NUL when the buffer is large enough
+        return str::to_str(buffer);
+    }
+
     void set_env(const std::string& key, const std::string& value) noexcept {
         if(!SetEnvironmentVariable(str::to_wstr(key).c_str(), str::to_wstr(value).c_str())) {
             LOG_ERROR("Failed to set environment variable '{}' to '{}'", key, value);

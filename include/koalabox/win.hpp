@@ -26,6 +26,39 @@ namespace koalabox::win {
 
     std::string get_last_error();
 
+    // Reads a REG_SZ value at hive\subkey\value_name. Returns nullopt if absent or not a string.
+    std::optional<std::string> registry_read_string(
+        HKEY hive,
+        const std::string& subkey,
+        const std::string& value_name
+    ) noexcept;
+
+    // Writes a REG_SZ value at hive\subkey\value_name (the subkey must already exist).
+    // Returns false on failure (e.g. insufficient privileges).
+    bool registry_write_string(
+        HKEY hive,
+        const std::string& subkey,
+        const std::string& value_name,
+        const std::string& value
+    ) noexcept;
+
+    // Deletes value_name under hive\subkey. Returns false on failure (including value-not-found).
+    bool registry_delete_value(
+        HKEY hive,
+        const std::string& subkey,
+        const std::string& value_name
+    ) noexcept;
+
+    bool is_debugger_present() noexcept;
+
+    void debug_break() noexcept;
+
+    uint32_t get_current_process_id() noexcept;
+
+    // Launches command_line as a detached process (own console, not waited on). Returns false on
+    // failure. command_line follows CreateProcess rules (quote the executable path if it has spaces).
+    bool create_detached_process(const std::string& command_line) noexcept;
+
     std::string get_module_manifest(void* module_handle);
 
     std::string get_module_version_or_throw(const HMODULE& module_handle);

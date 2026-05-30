@@ -1,4 +1,5 @@
 #include <cerrno>
+#include <cstdlib>
 
 #include <dlfcn.h>
 #include <gtk/gtk.h>
@@ -40,6 +41,14 @@ namespace koalabox::util {
 
         lib_gtk_dialog_run(reinterpret_cast<GtkDialog*>(dialog));
         lib_gtk_widget_destroy(dialog);
+    }
+
+    std::optional<std::string> get_env(const std::string& key) noexcept {
+        if(const auto* value = std::getenv(key.c_str())) {
+            return value;
+        }
+
+        return {};
     }
 
     void set_env(const std::string& key, const std::string& value) noexcept {
