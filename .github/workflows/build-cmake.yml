@@ -18,6 +18,24 @@ on:
         required: true
         type: number
 
+      run_tests:
+        description: 'Build the test target and run CTest before building the module (gates the binary)'
+        required: false
+        type: boolean
+        default: false
+
+      test_cmake_flags:
+        description: 'Extra CMake configure flags that enable the test target (e.g. -DLG_BUILD_TESTS=ON)'
+        required: false
+        type: string
+        default: ''
+
+      test_target:
+        description: 'CMake target that builds the test executable (required when run_tests is true)'
+        required: false
+        type: string
+        default: ''
+
 jobs:
   build:
     name: ${{ inputs.module }}-${{ inputs.os }}-${{ inputs.bitness }}
@@ -45,8 +63,10 @@ jobs:
       - name: '🗃️ Cache CPM dependencies'
         uses: actions/cache@v5
         with:
-          key: CPM-cache-${{ inputs.os }}-${{ hashFiles('**/CMakeLists.txt') }}
-          path: '${{ env.BUILD_DIR }}/.cache'
+          # KoalaBox.cmake points CPM_SOURCE_CACHE and FETCHCONTENT_BASE_DIR at
+          # $HOME/.cache/cmake/{cpm,fetchcontent} — not the build dir — so that is what we cache.
+          key: deps-cache-${{ inputs.os }}-${{ hashFiles('**/CMakeLists.txt') }}
+          path: ~/.cache/cmake
 
       - name: '⚙️ Generate build files'
         # Note: indenting arguments will lead to parsing errors
@@ -59,6 +79,22 @@ jobs:
           -DCMAKE_CXX_COMPILER=${{ env.CXX_COMPILER }}
           ${{ env.WIN_FLAGS }}
           ${{ env.LINUX_FLAGS }}
+          ${{ inputs.test_cmake_flags }}
+
+      # Gate the binary on the tests: the test target shares this configured build tree with the
+      # module, so the heavy dependencies are compiled once. A failure here fails the job before
+      # the module is built or uploaded.
+      - name: '🏗️ Build tests'
+        if: ${{ inputs.run_tests }}
+        run: >
+          cmake
+          --build ${{ env.BUILD_DIR }}
+          --config Release
+          --target ${{ inputs.test_target }}
+
+      - name: '🧪 Run tests'
+        if: ${{ inputs.run_tests }}
+        run: ctest --test-dir ${{ env.BUILD_DIR }} --build-config Release --output-on-failure
 
       - name: '🏗️ Build ${{ inputs.module }}'
         run: >
