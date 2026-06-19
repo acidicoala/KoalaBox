@@ -99,7 +99,13 @@ namespace koalabox::logger {
     }
 
     void init_null_logger() {
-        const auto logger = spdlog::null_logger_mt("null");
+        // Reuse an existing "null" logger if one was already registered: spdlog's named factory
+        // throws if the name is taken, and this is legitimately called more than once per process
+        // (e.g. an early silence-everything call followed by the logging-disabled config branch).
+        auto logger = spdlog::get("null");
+        if(!logger) {
+            logger = spdlog::null_logger_mt("null");
+        }
         spdlog::set_default_logger(logger);
     }
 

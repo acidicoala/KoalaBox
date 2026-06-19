@@ -3,7 +3,7 @@ cmake_minimum_required(VERSION 3.24)
 include(cmake/KoalaBox.cmake)
 
 project(
-    KoalaBox LANGUAGES CXX
+    KoalaBox LANGUAGES C CXX
     DESCRIPTION "A box of koality tools"
 )
 
@@ -23,6 +23,7 @@ set(KOALABOX_HEADERS
     include/koalabox/path.hpp
     include/koalabox/paths.hpp
     include/koalabox/platform.hpp
+    include/koalabox/re.hpp
     include/koalabox/str.hpp
     include/koalabox/util.hpp
 )
@@ -39,6 +40,7 @@ set(KOALABOX_SOURCES
     src/patcher.cpp
     src/path.cpp
     src/paths.cpp
+    src/re.cpp
     src/str.cpp
 )
 
@@ -55,6 +57,7 @@ if(WIN32)
         src/lib_win.cpp
         src/path_win.cpp
         src/paths_win.cpp
+        src/re_win.cpp
         src/str_win.cpp
         src/util_win.cpp
         src/win.cpp
@@ -65,6 +68,7 @@ elseif(LINUX)
         src/lib_monitor_linux.cpp
         src/path_linux.cpp
         src/paths_linux.cpp
+        src/re_linux.cpp
         src/str_linux.cpp
         src/util_linux.cpp
     )
@@ -201,3 +205,9 @@ else()
 endif()
 
 add_subdirectory(tools)
+
+option(KB_BUILD_TESTS "Build KoalaBox unit tests" OFF)
+if(KB_BUILD_TESTS)
+    enable_testing()
+    add_subdirectory(tests)
+endif()
