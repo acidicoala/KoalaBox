@@ -1,0 +1,59 @@
+name: Test
+
+# KoalaBox is a library consumed by downstream projects; KoalaBoxTests (tests/, gated behind
+# KB_BUILD_TESTS, off by default) is its unit-test target. This workflow builds and runs it on both
+# platforms so the koalabox::re unwind primitives (get_function_start: .eh_frame_hdr on Linux,
+# RtlLookupFunctionEntry on Windows) get CI coverage on each.
+
+on:
+  push:
+    branches: [ master ]
+  pull_request:
+
+jobs:
+  test:
+    name: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ Windows, Linux ]
+
+    # Match the runner/toolchain the reusable build-cmake.yml uses for downstream builds, so the
+    # tests exercise KoalaBox in the same environment it actually ships in: VS 2026 + cl on Windows,
+    # and the koalabox dev container (clang + GTK3 and the other Linux build deps) on Linux.
+    runs-on: ${{ matrix.os == 'Linux' && 'ubuntu-24.04' || 'windows-2025-vs2026' }}
+    container: ${{ matrix.os == 'Linux' && 'ghcr.io/acidicoala/koalabox:master' || '' }}
+    env:
+      BUILD_DIR: ./build
+      C_COMPILER: ${{ matrix.os == 'Linux' && 'clang' || 'cl' }}
+      CXX_COMPILER: ${{ matrix.os == 'Linux' && 'clang++' || 'cl' }}
+    steps:
+      - name: '📥 Check out repository code'
+        uses: actions/checkout@v6
+
+      - name: '🗃️ Cache CPM dependencies'
+        uses: actions/cache@v5
+        with:
+          # KoalaBox.cmake points CPM_SOURCE_CACHE and FETCHCONTENT_BASE_DIR at $HOME/.cache/cmake.
+          key: deps-cache-${{ matrix.os }}-${{ hashFiles('**/CMakeLists.txt') }}
+          path: ~/.cache/cmake
+
+      - name: '⚙️ Generate build files'
+        # Note: indenting arguments will lead to parsing errors
+        run: >
+          cmake
+          -B "${{ env.BUILD_DIR }}"
+          -DCMAKE_BUILD_TYPE=Release
+          -DCMAKE_C_COMPILER=${{ env.C_COMPILER }}
+          -DCMAKE_CXX_COMPILER=${{ env.CXX_COMPILER }}
+          -DKB_BUILD_TESTS=ON
+
+      - name: '🏗️ Build tests'
+        run: >
+          cmake
+          --build "${{ env.BUILD_DIR }}"
+          --config Release
+          --target KoalaBoxTests
+
+      - name: '🧪 Run tests'
+        run: ctest --test-dir "${{ env.BUILD_DIR }}" --build-config Release --output-on-failure
