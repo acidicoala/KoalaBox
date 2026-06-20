@@ -12,21 +12,34 @@
 #endif
 
 namespace {
-    // Two functions with real, non-trivial bodies. The volatile accumulator and loop keep the
-    // optimizer from shrinking them to nothing or folding the two together (identical-code
-    // folding), which would make their entry addresses coincide and invalidate the adjacency test.
+    // A sink the optimizer cannot see through (a separate noinline function whose only observable
+    // effect is a volatile write), so calls to it below cannot be elided. This matters on Windows:
+    // get_function_start relies on RtlLookupFunctionEntry, which returns nullopt for a *leaf*
+    // function that has no .pdata/unwind entry. A function whose body is merely a volatile local
+    // plus arithmetic can compile to exactly such a leaf in optimized builds. Forcing a real call
+    // makes each sample below non-leaf, so the compiler must emit a stack frame and a .pdata entry —
+    // matching the non-leaf functions the analyzer actually resolves in steamclient.
+    KB_TEST_NOINLINE int sink(const int value) {
+        volatile int v = value;
+        return v;
+    }
+
+    // Two functions with real, non-trivial bodies. The differing constants/iteration counts keep
+    // the optimizer from folding the two together (identical-code folding), which would make their
+    // entry addresses coincide and invalidate the adjacency test; the sink() calls keep them
+    // non-leaf so they have the .pdata entry get_function_start needs on Windows (see sink above).
     KB_TEST_NOINLINE int sample_function_a(const int seed) {
-        volatile int acc = seed;
+        int acc = seed;
         for(int i = 0; i < 7; ++i) {
-            acc = acc * 3 + i;
+            acc = sink(acc * 3 + i);
         }
         return acc;
     }
 
     KB_TEST_NOINLINE int sample_function_b(const int seed) {
-        volatile int acc = seed ^ 0x55;
+        int acc = seed ^ 0x55;
         for(int i = 0; i < 11; ++i) {
-            acc = acc + i * i - 1;
+            acc = sink(acc + i * i - 1);
         }
         return acc;
     }
