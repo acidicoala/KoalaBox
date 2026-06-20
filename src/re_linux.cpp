@@ -130,6 +130,16 @@ namespace koalabox::re {
             return std::nullopt;
         }
 
+        // TODO(linux): handle split functions, the .eh_frame analog of the Windows chain-follow fix in
+        // re_win.cpp. This isn't a Windows quirk — it's universal to optimized x64: clang/gcc split a
+        // function into .text.hot/.text.unlikely, and each region gets its own FDE in .eh_frame with an
+        // initial_location pointing at that region. So the search below can land on a *fragment's*
+        // start rather than the function's canonical start, the same "one function, several entries"
+        // reality RtlLookupFunctionEntry hit on Windows. clang tends to keep the primary entry's range
+        // covering the canonical start, so the search happens to return the right answer here for now —
+        // but sanity-check this on a real Linux target and fix it if a fragment's initial_location ever
+        // wins the search.
+
         // The search table holds fde_count entries of {sdata4 initial_location, sdata4 fde_address},
         // sorted ascending by initial_location, each value relative to the .eh_frame_hdr address.
         // Binary-search for the greatest initial_location <= address.
