@@ -1,7 +1,9 @@
 #pragma once
 
 #include <filesystem>
+#include <functional>
 #include <optional>
+#include <vector>
 
 #define KB_LIB_GET_FUNC(MODULE, PROC_NAME) \
     koalabox::lib::get_function(MODULE, #PROC_NAME, PROC_NAME)
@@ -38,6 +40,12 @@ namespace koalabox::lib {
     std::optional<void*> get_base_address(void* lib_handle);
     std::optional<section_t> get_section(void* lib_handle, const std::string& section_name);
     section_t get_section_or_throw(void* lib_handle, const std::string& section_name);
+
+    /// Returns every section whose name satisfies @p name_matches. Lets callers select a family of
+    /// sections by pattern (e.g. all read-only string pools) instead of probing exact names.
+    std::vector<section_t> get_sections(
+        void* lib_handle, const std::function<bool(const std::string& section_name)>& name_matches
+    );
 
     std::optional<void*> load(const std::filesystem::path& library_path);
     void* load_or_throw(const std::filesystem::path& library_path);

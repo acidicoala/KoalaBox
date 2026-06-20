@@ -19,32 +19,31 @@
 namespace {
     using namespace koalabox::lib;
 
-    std::optional<section_t> read_section(
+    std::vector<section_t> read_sections(
         const std::string& elf_path,
-        const std::string& section_name,
+        const std::function<bool(const std::string&)>& name_matches,
         ElfW(Addr) const lib_base
     ) {
+        std::vector<section_t> sections;
+
         ELFIO::elfio reader;
         if(!reader.load(elf_path)) {
             LOG_ERROR("Failed to load library in ELFIO: {}", elf_path);
-            return std::nullopt;
+            return sections;
         }
 
         for(const auto& sec : reader.sections) {
-            if(sec->get_name() == section_name) {
-                // Correct section found
-
+            if(name_matches(sec->get_name())) {
                 const auto offset = sec->get_address();
                 const auto size = sec->get_size();
                 auto* const base = reinterpret_cast<uint8_t*>(lib_base);
                 auto* start = base + offset;
                 auto* end = start + size;
-                return section_t{start, end, static_cast<uint32_t>(size)};
+                sections.push_back(section_t{start, end, static_cast<uint32_t>(size)});
             }
         }
 
-        LOG_ERROR("Failed to find section '{}' in {}", section_name, elf_path);
-        return std::nullopt;
+        return sections;
     }
 }
 
@@ -89,19 +88,21 @@ namespace koalabox::lib {
         return reinterpret_cast<void*>(lm->l_addr);
     }
 
-    std::optional<section_t> get_section(void* lib_handle, const std::string& section_name) {
+    std::vector<section_t> get_sections(
+        void* lib_handle, const std::function<bool(const std::string&)>& name_matches
+    ) {
         link_map* lm;
         if(dlinfo(lib_handle, RTLD_DI_LINKMAP, &lm) != 0) { // NOLINT(*-multi-level-implicit-pointer-conversion)
             LOG_ERROR("Failed to get link_map from lib handle: {}", lib_handle);
-            return std::nullopt;
+            return {};
         }
 
         // Find the correct library
         struct context_t {
-            const std::string& section_name;
+            const std::function<bool(const std::string&)>& name_matches;
             const link_map* lm = nullptr;
-            std::optional<section_t> result;
-        } initial_context{section_name, lm, {}};
+            std::vector<section_t> result;
+        } initial_context{name_matches, lm, {}};
 
         dl_iterate_phdr(
             [](dl_phdr_info* const info, size_t, void* data) {
@@ -109,18 +110,14 @@ namespace koalabox::lib {
 
                 if(info->dlpi_addr == ctx->lm->l_addr) {
                     // Correct library found
-
-                    ctx->result = read_section(info->dlpi_name, ctx->section_name, info->dlpi_addr);
-
+                    ctx->result = read_sections(info->dlpi_name, ctx->name_matches, info->dlpi_addr);
                     return 1; // Stop iteration
                 }
 
                 if(info->dlpi_addr == reinterpret_cast<ElfW(Addr)>(ctx->lm)) {
                     // Special case for exe handle
                     const auto exe_path = get_fs_path(nullptr);
-
-                    ctx->result = read_section(path::to_str(exe_path), ctx->section_name, info->dlpi_addr);
-
+                    ctx->result = read_sections(path::to_str(exe_path), ctx->name_matches, info->dlpi_addr);
                     return 1;
                 }
 
@@ -129,6 +126,19 @@ namespace koalabox::lib {
         );
 
         return initial_context.result;
+    }
+
+    std::optional<section_t> get_section(void* lib_handle, const std::string& section_name) {
+        const auto sections = get_sections(
+            lib_handle, [&](const std::string& name) { return name == section_name; }
+        );
+
+        if(sections.empty()) {
+            LOG_ERROR("Failed to find section '{}'", section_name);
+            return std::nullopt;
+        }
+
+        return sections.front();
     }
 
     std::optional<void*> load(const fs::path& library_path) {
