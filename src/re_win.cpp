@@ -1,6 +1,11 @@
 #include "koalabox/re.hpp"
 
-// RtlLookupFunctionEntry / RUNTIME_FUNCTION come from <Windows.h>, force-included via the PCH.
+#ifdef _WIN64
+
+// RtlLookupFunctionEntry / RUNTIME_FUNCTION come from <Windows.h>, force-included via the PCH. They
+// exist only on 64-bit Windows: table-based exception handling (.pdata / unwind info) is a 64-bit
+// ABI mechanism. 32-bit x86 unwinds through FS:[0] SEH chains and has no such table, so the resolver
+// below is compiled only for _WIN64; the 32-bit definition at the bottom of the file throws.
 
 namespace {
     // Head of the x64 UNWIND_INFO structure. The Windows SDK does not expose it publicly; we only
@@ -18,6 +23,10 @@ namespace {
 }
 
 namespace koalabox::re {
+    // Resolves the containing function's start from the module's .pdata exception directory via
+    // RtlLookupFunctionEntry. This is exact and independent of inter-function padding, unlike a
+    // backward scan for int3 (0xCC) padding followed by a prologue, which fails when a function
+    // starts on an alignment boundary (e.g. right after a noreturn call).
     std::optional<uintptr_t> get_function_start(const uintptr_t address) {
         DWORD64 image_base = 0;
         auto* function_entry = RtlLookupFunctionEntry(address, &image_base, nullptr);
@@ -52,3 +61,19 @@ namespace koalabox::re {
         return static_cast<uintptr_t>(image_base) + function_entry->BeginAddress;
     }
 }
+
+#else
+
+#include "koalabox/core.hpp" // KB_RT_ERROR
+
+namespace koalabox::re {
+    // 32-bit x86 Windows has no table-based exception handling (no .pdata / RUNTIME_FUNCTION), so this
+    // resolver cannot run here. Its only caller is 64-bit-only, so reaching this on x86 means the code
+    // was built or dispatched for the wrong target. Returning nullopt would masquerade as a
+    // legitimate "no unwind entry" result and be silently swallowed by callers, so fail loudly.
+    std::optional<uintptr_t> get_function_start(uintptr_t /*address*/) {
+        throw KB_RT_ERROR("koalabox::re::get_function_start is unsupported on 32-bit Windows");
+    }
+}
+
+#endif
