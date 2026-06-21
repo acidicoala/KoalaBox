@@ -56,4 +56,7 @@ jobs:
           --target KoalaBoxTests
 
       - name: '🧪 Run tests'
-        run: ctest --test-dir "${{ env.BUILD_DIR }}" --build-config Release --output-on-failure
+        # Scope ctest to the tests/ subtree, which holds only KoalaBoxTests. Dependencies (e.g. glob)
+        # unconditionally register their own CTest tests, whose executables this workflow does not
+        # build; running ctest over the whole build tree would try to run them and fail.
+        run: ctest --test-dir "${{ env.BUILD_DIR }}/tests" --build-config Release --output-on-failure
